@@ -1,0 +1,82 @@
+﻿@model AdvancedProgramming.Data.Propiedad
+
+@{
+    ViewBag.Title = "Details";
+}
+
+<h2>Details</h2>
+
+<div>
+    <h4>Propiedad</h4>
+    <hr />
+    <dl class="dl-horizontal">
+        <dt>
+            @Html.DisplayNameFor(model => model.Titulo)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Titulo)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.Descripcion)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Descripcion)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.Precio)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Precio)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.Area_Construccion)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Area_Construccion)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.Area_Terreno)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Area_Terreno)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.Estado_Publicacion)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Estado_Publicacion)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.Usuario.Nombre)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Usuario.Nombre)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.Ubicacion.Provincia)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Ubicacion.Provincia)
+        </dd>
+
+    </dl>
+</div>
+<p>
+    @Html.ActionLink("Edit", "Edit", new { id = Model.Propiedad_ID }) |
+    @Html.ActionLink("Back to List", "Index")
+</p>

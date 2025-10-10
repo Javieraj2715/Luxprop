@@ -1,0 +1,6 @@
+C:\Users\pepon\Documents\GitHub\Luxprop-Technology\Luxprop-Technology-main\AdvancedProgramming\AdvancedProgramming.Models\bin\Debug\AdvancedProgramming.Models.dll
+C:\Users\pepon\Documents\GitHub\Luxprop-Technology\Luxprop-Technology-main\AdvancedProgramming\AdvancedProgramming.Models\bin\Debug\AdvancedProgramming.Models.pdb
+C:\Users\pepon\Documents\GitHub\Luxprop-Technology\Luxprop-Technology-main\AdvancedProgramming\AdvancedProgramming.Models\obj\Debug\AdvancedProgramming.Models.csproj.AssemblyReference.cache
+C:\Users\pepon\Documents\GitHub\Luxprop-Technology\Luxprop-Technology-main\AdvancedProgramming\AdvancedProgramming.Models\obj\Debug\AdvancedProgramming.Models.csproj.CoreCompileInputs.cache
+C:\Users\pepon\Documents\GitHub\Luxprop-Technology\Luxprop-Technology-main\AdvancedProgramming\AdvancedProgramming.Models\obj\Debug\AdvancedProgramming.Models.dll
+C:\Users\pepon\Documents\GitHub\Luxprop-Technology\Luxprop-Technology-main\AdvancedProgramming\AdvancedProgramming.Models\obj\Debug\AdvancedProgramming.Models.pdb
