@@ -24,3 +24,6 @@ TestResult*/
 
 # Logs
 *.log
+# VS design files (no versionar)
+*.dbmdl
+*.jfm
