@@ -1,29 +1,20 @@
-# Visual Studio
+# VS / .NET
 .vs/
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-
-# Build
 bin/
 obj/
-[Bb]uild/
-[Dd]ebug*/
-[Rr]elease*/
-x64/
-x86/
-*.cache
-*.opendb
-*.dbmdl
-TestResult*/
-
-# IDEs
-.vscode/
-.idea/
-
-# Logs
+**/bin/
+**/obj/
+*.user
+*.suo
+*.pdb
 *.log
-# VS design files (no versionar)
-*.dbmdl
-*.jfm
+*.cache
+*.deps.json
+
+# NuGet
+packages/
+*.nupkg
+
+# IIS Express
+*.vspscc
+
