@@ -264,7 +264,7 @@ namespace AdvancedProgramming.Mvc.Controllers
 
             return null;
         }
-
+        s
         private static async Task AddBotMessage(AppDbContext db, int threadId, string text)
         {
             var bot = new ChatMessage

@@ -1,52 +1,78 @@
-﻿﻿
+﻿@{
+    var isAdmin = User.IsInRole("Admin");
+    var isAgent = User.IsInRole("Agent");
+    var isClient = User.IsInRole("Client");
+}
+
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewBag.Title - My ASP.NET Application</title>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <title>@ViewBag.Title - 2CRRE Docs</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
     @Styles.Render("~/Content/css")
     @Scripts.Render("~/bundles/modernizr")
 </head>
 <body>
+    <!-- Header -->
     <header class="main-header">
         <div class="logo-title">
-            <a href="dashboard.html"><img src="https://i.imgur.com/nmN7x14.png" alt="2CRRE Logo" /></a>
+            <a href="@Url.Action("Index","Dashboard")">
+                <img src="https://i.imgur.com/nmN7x14.png" alt="2CRRE Logo" />
+            </a>
             <span class="title">2CRRE Docs</span>
         </div>
         <nav class="user-nav">
-            <a href="#" id="userToggle">Admin</a>
+            <a href="#" id="userToggle">@User.Identity.Name</a>
         </nav>
     </header>
 
-
-
+    <!-- Top nav (role-based) -->
     <nav class="top-nav">
-        @Html.ActionLink("Home", "Dashboard", "Home", null, new { @class = "nav-link" })
-        @Html.ActionLink("Properties", "Index", "Properties", null, new { @class = "nav-link" })
-        @Html.ActionLink("Expediente", "Index", "Expediente", null, new { @class = "nav-link" })
-        @Html.ActionLink("Mapa", "Index", "Mapa", null, new { @class = "nav-link" })
-        @Html.ActionLink("Chat", "Index", "Chat", null, new { @class = "nav-link" })
+        @* Un único Dashboard: el controller elige la vista por rol *@
+        <a class="nav-link" href="@Url.Action("Index","Dashboard")">Dashboard</a>
+
+        @if (isAdmin || isAgent)
+        {
+            <a class="nav-link" href="@Url.Action("Documents","Agent")">Documents</a>
+            <a class="nav-link" href="@Url.Action("Map","Agent")">Map</a>
+
+            @* Mantengo estos si existen en tu solución *@
+            <a class="nav-link" href="@Url.Action("Index","Properties")">Properties</a>
+            <a class="nav-link" href="@Url.Action("Index","Expediente")">Files</a>
+        }
+
+        @if (isClient)
+        {
+            <a class="nav-link" href="@Url.Action("MyCases","User")">My Cases</a>
+            <a class="nav-link" href="@Url.Action("MyDocuments","User")">My Documents</a>
+            <a class="nav-link" href="@Url.Action("Profile","User")">My Profile</a>
+        }
+
+        <a class="nav-link" href="@Url.Action("Index","Chat")">Live Chat</a>
     </nav>
 
-
+    <!-- Body -->
     <div class="container body-content">
         @RenderBody()
         <hr />
         <footer>
-            <p>&copy; @DateTime.Now.Year - My ASP.NET Application</p>
+            <p>&copy; @DateTime.Now.Year - 2CRRE Docs</p>
         </footer>
     </div>
 
     @Scripts.Render("~/bundles/jquery")
     @Scripts.Render("~/bundles/bootstrap")
+
+    @* IMPORTANTE: usa 'scripts' en minúscula en tus vistas *@
     @RenderSection("scripts", required: false)
 
+    @* Widget del chat si hay sesión *@
     @if (Session["UsuarioId"] != null)
     {
-    @Html.Action("Widget", "Chat")
+        @Html.Action("Widget", "Chat")
     }
-
 </body>
 </html>

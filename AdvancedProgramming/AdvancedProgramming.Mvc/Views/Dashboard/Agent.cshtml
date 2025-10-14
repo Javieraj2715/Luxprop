@@ -1,0 +1,159 @@
+﻿@{
+    ViewBag.Title = "2CRRE Docs - Agent Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+    body {
+        background: #f9f9f9;
+        color: #333
+    }
+
+    .main-header {
+        background: #0d505a;
+        color: #fff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 2rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,.1);
+        position: relative;
+        z-index: 10
+    }
+
+    .logo-title {
+        display: flex;
+        align-items: center
+    }
+
+        .logo-title img {
+            height: 60px;
+            margin-right: 1rem
+        }
+
+        .logo-title .title {
+            font-size: 1.6rem;
+            font-weight: 600
+        }
+
+    .user-nav a {
+        color: #fff;
+        background: #093e47;
+        padding: .5rem 1rem;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: 500
+    }
+
+        .user-nav a:hover {
+            background: #062f33
+        }
+
+    .top-nav {
+        background: #fff;
+        padding: .75rem 2rem;
+        display: flex;
+        gap: 2rem;
+        border-bottom: 1px solid #e0e0e0
+    }
+
+        .top-nav a {
+            text-decoration: none;
+            color: #0d505a;
+            font-weight: 500
+        }
+
+            .top-nav a:hover {
+                text-decoration: underline
+            }
+
+    .main-content {
+        padding: 3rem 2rem;
+        max-width: 1200px;
+        margin: 0 auto
+    }
+
+    .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
+        gap: 2rem;
+        margin-top: 2rem
+    }
+
+    .card {
+        background: #fff;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.05);
+        border-left: 5px solid #7ab942
+    }
+
+        .card h3 {
+            margin: 0 0 .5rem 0;
+            font-size: 1.2rem;
+            color: #0d505a
+        }
+
+        .card p {
+            color: #555;
+            margin-bottom: 1rem
+        }
+
+        .card a {
+            display: inline-block;
+            padding: .5rem 1rem;
+            background: #0d505a;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: .9rem;
+            font-weight: 500
+        }
+
+            .card a:hover {
+                background: #093e47
+            }
+</style>
+
+<header class="main-header">
+    <div class="logo-title">
+        <a href="@Url.Action("Index","Dashboard")">
+            <img src="https://i.imgur.com/nmN7x14.png" alt="2CRRE Logo" />
+        </a>
+        <span class="title">2CRRE Docs</span>
+    </div>
+    <nav class="user-nav">
+        <a href="#">Agent</a>
+    </nav>
+</header>
+
+<nav class="top-nav">
+    <a href="@Url.Action("Index","Dashboard")">Dashboard</a>
+    <a href="@Url.Action("Documents","Agent")">Documents</a>
+    <a href="@Url.Action("Map","Agent")">Map</a>
+    <a href="@Url.Action("Index","Chat")">Chat</a>
+</nav>
+
+<main class="main-content">
+    <h2>Welcome back 👋</h2>
+    <p>Here’s a quick summary of your pending items:</p>
+
+    <section class="card-grid">
+        <div class="card">
+            <h3>📄 Pending Documents</h3>
+            <p>3 documents require your signature</p>
+            <a href="@Url.Action("Documents","Agent")">View documents</a>
+        </div>
+        <div class="card">
+            <h3>⏰ Reminders</h3>
+            <p>2 processes expire this week</p>
+            <a href="#">View reminders</a>
+        </div>
+        <div class="card">
+            <h3>🚧 Active Processes</h3>
+            <p>1 under review, 2 pending</p>
+            <a href="@Url.Action("Index","Agent")">View files</a>
+        </div>
+    </section>
+</main>
