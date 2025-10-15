@@ -23,7 +23,7 @@
         <section class="login-container">
             <h2>Admin Login</h2>
 
-            <EditForm EditContext="@editContext" OnSubmit="@Submit">
+            <EditForm Model="@loginModel" OnValidSubmit="@HandleLogin">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
                 
@@ -73,15 +73,11 @@
 
 @code {
     private Luxprop.Web.Models.LoginVM loginModel { get; set; } = new();
-    private EditContext editContext = default!;
     private bool isLoading = false;
     private string errorMessage = string.Empty;
     private bool isFirstRender = true;
 
-    protected override void OnInitialized()
-    {
-        editContext = new EditContext(loginModel);
-    }
+    protected override void OnInitialized() { }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -129,21 +125,7 @@
         }
     }
 
-    private async Task Submit()
-    {
-        // Sync values in case the browser auto-filled and didn't raise input events
-        try
-        {
-            var emailVal = await JSRuntime.InvokeAsync<string>("luxpropGetInputValue", "email");
-            var passwordVal = await JSRuntime.InvokeAsync<string>("luxpropGetInputValue", "password");
-            if (!string.IsNullOrEmpty(emailVal)) loginModel.Email = emailVal;
-            if (!string.IsNullOrEmpty(passwordVal)) loginModel.Password = passwordVal;
-        }
-        catch { /* JS not available during prerender */ }
-
-        if (!editContext.Validate()) return;
-        await HandleLogin();
-    }
+    
 }
 
 <style>
