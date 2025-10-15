@@ -1,4 +1,5 @@
 @page "/login"
+@rendermode InteractiveServer
 @using Luxprop.Data
 @using Luxprop.Data.Models
 @using Luxprop.Web.Models
@@ -22,12 +23,13 @@
         <section class="login-container">
             <h2>Admin Login</h2>
 
-            <EditForm Model="@loginModel" OnValidSubmit="@HandleLogin">
+            <EditForm EditContext="@editContext" OnSubmit="@Submit">
                 <DataAnnotationsValidator />
+                <ValidationSummary />
                 
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <InputText id="email"
+                    <InputText id="email" type="email"
                                @bind-Value="loginModel.Email"
                                @bind-Value:event="oninput"
                                class="form-control"
@@ -70,10 +72,16 @@
 </div>
 
 @code {
-    private LoginVM loginModel = new();
+    private Luxprop.Web.Models.LoginVM loginModel { get; set; } = new();
+    private EditContext editContext = default!;
     private bool isLoading = false;
     private string errorMessage = string.Empty;
     private bool isFirstRender = true;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(loginModel);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -119,6 +127,22 @@
         {
             isLoading = false;
         }
+    }
+
+    private async Task Submit()
+    {
+        // Sync values in case the browser auto-filled and didn't raise input events
+        try
+        {
+            var emailVal = await JSRuntime.InvokeAsync<string>("luxpropGetInputValue", "email");
+            var passwordVal = await JSRuntime.InvokeAsync<string>("luxpropGetInputValue", "password");
+            if (!string.IsNullOrEmpty(emailVal)) loginModel.Email = emailVal;
+            if (!string.IsNullOrEmpty(passwordVal)) loginModel.Password = passwordVal;
+        }
+        catch { /* JS not available during prerender */ }
+
+        if (!editContext.Validate()) return;
+        await HandleLogin();
     }
 }
 
