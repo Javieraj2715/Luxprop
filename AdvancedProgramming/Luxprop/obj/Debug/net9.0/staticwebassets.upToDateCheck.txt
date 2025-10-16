@@ -1,10 +1,10 @@
-E:\repositories\UFide\PJM\Luxprop\AdvancedProgramming\Luxprop\wwwroot\css\open-iconic\font\fonts\open-iconic.otf
-E:\repositories\UFide\PJM\Luxprop\AdvancedProgramming\Luxprop\wwwroot\css\open-iconic\font\css\open-iconic-bootstrap.min.css
-E:\repositories\UFide\PJM\Luxprop\AdvancedProgramming\Luxprop\wwwroot\css\bootstrap\bootstrap.min.css
-E:\repositories\UFide\PJM\Luxprop\AdvancedProgramming\Luxprop\wwwroot\css\open-iconic\font\fonts\open-iconic.svg
-E:\repositories\UFide\PJM\Luxprop\AdvancedProgramming\Luxprop\wwwroot\css\site.css
-E:\repositories\UFide\PJM\Luxprop\AdvancedProgramming\Luxprop\wwwroot\css\bootstrap\bootstrap.min.css.map
-E:\repositories\UFide\PJM\Luxprop\AdvancedProgramming\Luxprop\wwwroot\css\open-iconic\README.md
+C:\Users\pepon\Documents\GitHub\Luxprop\AdvancedProgramming\Luxprop\wwwroot\css\open-iconic\font\fonts\open-iconic.otf
+C:\Users\pepon\Documents\GitHub\Luxprop\AdvancedProgramming\Luxprop\wwwroot\css\open-iconic\font\css\open-iconic-bootstrap.min.css
+C:\Users\pepon\Documents\GitHub\Luxprop\AdvancedProgramming\Luxprop\wwwroot\css\bootstrap\bootstrap.min.css
+C:\Users\pepon\Documents\GitHub\Luxprop\AdvancedProgramming\Luxprop\wwwroot\css\open-iconic\font\fonts\open-iconic.svg
+C:\Users\pepon\Documents\GitHub\Luxprop\AdvancedProgramming\Luxprop\wwwroot\css\site.css
+C:\Users\pepon\Documents\GitHub\Luxprop\AdvancedProgramming\Luxprop\wwwroot\css\bootstrap\bootstrap.min.css.map
+C:\Users\pepon\Documents\GitHub\Luxprop\AdvancedProgramming\Luxprop\wwwroot\css\open-iconic\README.md
 wwwroot\css\bootstrap\bootstrap.min.css
 wwwroot\css\bootstrap\bootstrap.min.css.map
 wwwroot\css\open-iconic\font\css\open-iconic-bootstrap.min.css

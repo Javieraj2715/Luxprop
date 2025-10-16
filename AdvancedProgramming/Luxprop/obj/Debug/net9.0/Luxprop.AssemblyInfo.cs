@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Luxprop")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5a4d7d067855157a235aaa48c52089e0405ce670")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c6da72a939b0271b68fb4969349c999aa7d39296")]
 [assembly: System.Reflection.AssemblyProductAttribute("Luxprop")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Luxprop")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
