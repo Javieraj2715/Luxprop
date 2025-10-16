@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Web\\Luxprop.Web.csproj": {}
+    "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Web\\Luxprop.Web.csproj": {}
   },
   "projects": {
-    "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Data\\Luxprop.Data.csproj": {
+    "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Data\\Luxprop.Data.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Data\\Luxprop.Data.csproj",
+        "projectUniqueName": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Data\\Luxprop.Data.csproj",
         "projectName": "Luxprop.Data",
-        "projectPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Data\\Luxprop.Data.csproj",
+        "projectPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Data\\Luxprop.Data.csproj",
         "packagesPath": "C:\\Users\\pepon\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Data\\obj\\",
+        "outputPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Data\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -33,8 +33,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Global\\Luxprop.Global.csproj": {
-                "projectPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Global\\Luxprop.Global.csproj"
+              "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Global\\Luxprop.Global.csproj": {
+                "projectPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Global\\Luxprop.Global.csproj"
               }
             }
           }
@@ -88,18 +88,18 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Global\\Luxprop.Global.csproj": {
+    "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Global\\Luxprop.Global.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Global\\Luxprop.Global.csproj",
+        "projectUniqueName": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Global\\Luxprop.Global.csproj",
         "projectName": "Luxprop.Global",
-        "projectPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Global\\Luxprop.Global.csproj",
+        "projectPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Global\\Luxprop.Global.csproj",
         "packagesPath": "C:\\Users\\pepon\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Global\\obj\\",
+        "outputPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Global\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -154,18 +154,18 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Web\\Luxprop.Web.csproj": {
+    "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Web\\Luxprop.Web.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Web\\Luxprop.Web.csproj",
+        "projectUniqueName": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Web\\Luxprop.Web.csproj",
         "projectName": "Luxprop.Web",
-        "projectPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Web\\Luxprop.Web.csproj",
+        "projectPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Web\\Luxprop.Web.csproj",
         "packagesPath": "C:\\Users\\pepon\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Web\\obj\\",
+        "outputPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Web\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -187,11 +187,11 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Data\\Luxprop.Data.csproj": {
-                "projectPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Data\\Luxprop.Data.csproj"
+              "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Data\\Luxprop.Data.csproj": {
+                "projectPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Data\\Luxprop.Data.csproj"
               },
-              "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Global\\Luxprop.Global.csproj": {
-                "projectPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop-Technology\\Luxprop-Technology-main\\AdvancedProgramming\\Luxprop.Global\\Luxprop.Global.csproj"
+              "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Global\\Luxprop.Global.csproj": {
+                "projectPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Global\\Luxprop.Global.csproj"
               }
             }
           }
@@ -230,7 +230,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
