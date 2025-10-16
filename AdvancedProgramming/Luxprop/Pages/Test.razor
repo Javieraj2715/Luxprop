@@ -1,0 +1,17 @@
+@page "/test"
+
+<h1>Test Page</h1>
+<p>Current time: @DateTime.Now</p>
+
+<button @onclick="TestClick">Click Me</button>
+
+<p>@message</p>
+
+@code {
+    private string message = "No message yet";
+
+    private void TestClick()
+    {
+        message = "Button clicked at " + DateTime.Now;
+    }
+}
