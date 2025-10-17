@@ -78,4 +78,12 @@
     <Build Include="dbo\Tables\ChatThreads.sql" />
     <Build Include="dbo\Tables\ChatMessages.sql" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\_Imports.razor">
+      <Link>_Imports.razor</Link>
+    </None>
+    <None Include="..\Luxprop\Shared\Component.razor">
+      <Link>Component.razor</Link>
+    </None>
+  </ItemGroup>
 </Project>
