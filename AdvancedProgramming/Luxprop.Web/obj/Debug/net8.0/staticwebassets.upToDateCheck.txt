@@ -1,6 +1,0 @@
-wwwroot\app.css
-wwwroot\bootstrap\bootstrap.min.css
-wwwroot\bootstrap\bootstrap.min.css.map
-wwwroot\css\home.css
-wwwroot\favicon.png
-wwwroot\js\chat.js
