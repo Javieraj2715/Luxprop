@@ -1,8 +1,13 @@
+# Ignore everything in the .vs folder except .gitignore
+.vs/*
+!.vs/.gitignore
+
 # Visual Studio
-.vs/
 .vscode/
 *.suo
 *.user
+*.userosscache
+*.sln.docstates
 *.cache
 *.dbmdl
 *.jfm
@@ -14,9 +19,6 @@
 bin/
 obj/
 TestResults/
-*.pdb
-*.dll
-*.exe
 
 # Entity Framework Migrations snapshots
 Migrations/
@@ -27,4 +29,7 @@ CopilotIndices/
 *.shm
 
 # Others
+*.pdb
+*.dll
+*.exe
 launchSettings.json
