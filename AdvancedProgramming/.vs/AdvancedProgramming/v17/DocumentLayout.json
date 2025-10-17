@@ -3,16 +3,16 @@
   "WorkspaceRootPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{B6A946B1-97C7-223A-C5E4-D100DB1E47DC}|Luxprop\\Luxprop.csproj|c:\\users\\pepon\\documents\\github\\luxprop\\advancedprogramming\\luxprop\\pages\\login.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{B6A946B1-97C7-223A-C5E4-D100DB1E47DC}|Luxprop\\Luxprop.csproj|solutionrelative:luxprop\\pages\\login.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{B6A946B1-97C7-223A-C5E4-D100DB1E47DC}|Luxprop\\Luxprop.csproj|c:\\users\\pepon\\documents\\github\\luxprop\\advancedprogramming\\luxprop\\pages\\user\\create.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{B6A946B1-97C7-223A-C5E4-D100DB1E47DC}|Luxprop\\Luxprop.csproj|solutionrelative:luxprop\\pages\\user\\create.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{B6A946B1-97C7-223A-C5E4-D100DB1E47DC}|Luxprop\\Luxprop.csproj|c:\\users\\pepon\\documents\\github\\luxprop\\advancedprogramming\\luxprop\\shared\\mainlayout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{B6A946B1-97C7-223A-C5E4-D100DB1E47DC}|Luxprop\\Luxprop.csproj|solutionrelative:luxprop\\shared\\mainlayout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{B6A946B1-97C7-223A-C5E4-D100DB1E47DC}|Luxprop\\Luxprop.csproj|c:\\users\\pepon\\documents\\github\\luxprop\\advancedprogramming\\luxprop\\pages\\login.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{B6A946B1-97C7-223A-C5E4-D100DB1E47DC}|Luxprop\\Luxprop.csproj|solutionrelative:luxprop\\pages\\login.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     }
   ],
   "DocumentGroupContainers": [
@@ -22,7 +22,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 13,
+          "SelectedChildIndex": 15,
           "Children": [
             {
               "$type": "Bookmark",
@@ -73,8 +73,12 @@
               "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
             },
             {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c64b9c2-e352-428e-a56d-0ace190b99a6}"
+            },
+            {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "MainLayout.razor",
               "DocumentMoniker": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop\\Shared\\MainLayout.razor",
               "RelativeDocumentMoniker": "Luxprop\\Shared\\MainLayout.razor",
@@ -82,31 +86,30 @@
               "RelativeToolTip": "Luxprop\\Shared\\MainLayout.razor",
               "ViewState": "AgIAACsAAAAAAAAAAAAcwEMAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-10-17T01:14:59.046Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-17T01:14:59.046Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "Create.razor",
               "DocumentMoniker": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop\\Pages\\User\\Create.razor",
               "RelativeDocumentMoniker": "Luxprop\\Pages\\User\\Create.razor",
               "ToolTip": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop\\Pages\\User\\Create.razor",
               "RelativeToolTip": "Luxprop\\Pages\\User\\Create.razor",
-              "ViewState": "AgIAAG8AAAAAAAAAAAAcwIcAAAAFAAAAAAAAAA==",
+              "ViewState": "AgIAAHgAAAAAAAAAAAAcwIcAAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2025-10-17T01:12:40.75Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "Login.razor",
               "DocumentMoniker": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop\\Pages\\Login.razor",
               "RelativeDocumentMoniker": "Luxprop\\Pages\\Login.razor",
               "ToolTip": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop\\Pages\\Login.razor",
               "RelativeToolTip": "Luxprop\\Pages\\Login.razor",
-              "ViewState": "AgIAACEAAAAAAAAAAAAAADQAAAA5AAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADQAAAA5AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2025-10-17T01:09:20.041Z",
               "EditorCaption": ""
