@@ -7,19 +7,28 @@
 @inject PasswordHelper PasswordHelper
 @inject AuditoriaService AuditoriaService
 @inject NavigationManager Navigation
+@inject SessionService SessionService
 
 <PageTitle>Create User - Luxprop</PageTitle>
 
 <div class="create-user-page">
     <div class="page-header">
         <h1>Create New User</h1>
-        <a href="/" class="btn btn-secondary">Back to Home</a>
+
+        @if (isAuthenticated)
+        {
+            <button type="button" class="btn btn-secondary" @onclick="GoBack">Back to Dashboard</button>
+        }
+        else
+        {
+            <button type="button" class="btn btn-secondary" @onclick="GoBack">Back to Login</button>
+        }
     </div>
 
     <div class="form-container">
         <EditForm Model="@userModel" OnValidSubmit="@HandleSubmit" FormName="CreateUserForm">
             <DataAnnotationsValidator />
-            
+
             <div class="form-row">
                 <div class="form-group">
                     <label for="nombre">First Name</label>
@@ -82,7 +91,7 @@
                         <span>Create User</span>
                     }
                 </button>
-                <a href="/" class="btn btn-secondary">Cancel</a>
+                <button type="button" class="btn btn-secondary" @onclick="GoBack">Cancel</button>
             </div>
 
             @if (!string.IsNullOrEmpty(errorMessage))
@@ -104,10 +113,26 @@
     private bool isLoading = false;
     private string errorMessage = string.Empty;
     private string successMessage = string.Empty;
+    private bool isAuthenticated = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await LoadRoles();
+        if (firstRender)
+        {
+            await LoadRoles();
+
+            try
+            {
+                var userName = await SessionService.GetUserNameAsync();
+                isAuthenticated = !string.IsNullOrEmpty(userName);
+                StateHasChanged(); // refresca la UI una vez cargado el estado
+            }
+            catch
+            {
+                // Si ocurre el error de interop (no hay contexto JS), simplemente ignoramos
+                isAuthenticated = false;
+            }
+        }
     }
 
     private async Task LoadRoles()
@@ -162,7 +187,7 @@
             );
 
             successMessage = "Usuario creado y rol asignado.";
-            
+
             // Reset form after successful creation
             userModel = new CreateUserVM();
         }
@@ -175,6 +200,14 @@
         {
             isLoading = false;
         }
+    }
+
+    private void GoBack()
+    {
+        if (isAuthenticated)
+            Navigation.NavigateTo("/dashboard", forceLoad: true);
+        else
+            Navigation.NavigateTo("/login", forceLoad: true);
     }
 }
 
@@ -192,10 +225,10 @@
         margin-bottom: 2rem;
     }
 
-    .page-header h1 {
-        margin: 0;
-        color: #0d505a;
-    }
+        .page-header h1 {
+            margin: 0;
+            color: #0d505a;
+        }
 
     .form-container {
         background: white;
@@ -214,12 +247,12 @@
         margin-bottom: 1.5rem;
     }
 
-    .form-group label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-        color: #333;
-    }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
 
     .form-control {
         width: 100%;
@@ -230,11 +263,11 @@
         transition: border-color 0.2s;
     }
 
-    .form-control:focus {
-        outline: none;
-        border-color: #0d505a;
-        box-shadow: 0 0 0 2px rgba(13, 80, 90, 0.2);
-    }
+        .form-control:focus {
+            outline: none;
+            border-color: #0d505a;
+            box-shadow: 0 0 0 2px rgba(13, 80, 90, 0.2);
+        }
 
     .form-check {
         display: flex;
@@ -276,15 +309,15 @@
         border-color: #0d505a;
     }
 
-    .btn-primary:hover:not(:disabled) {
-        background-color: #093e47;
-        border-color: #093e47;
-    }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #093e47;
+            border-color: #093e47;
+        }
 
-    .btn-primary:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
 
     .btn-secondary {
         background-color: #6c757d;
@@ -292,10 +325,10 @@
         border-color: #6c757d;
     }
 
-    .btn-secondary:hover {
-        background-color: #545b62;
-        border-color: #545b62;
-    }
+        .btn-secondary:hover {
+            background-color: #545b62;
+            border-color: #545b62;
+        }
 
     .error-message {
         color: #dc3545;
@@ -314,5 +347,4 @@
         border-radius: 4px;
         margin-top: 1rem;
     }
-
 </style>

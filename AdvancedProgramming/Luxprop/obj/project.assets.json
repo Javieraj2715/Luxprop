@@ -2780,23 +2780,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\User\\.nuget\\packages\\": {},
+    "C:\\Users\\pepon\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "E:\\repositories\\UFide\\PJM\\Luxprop\\AdvancedProgramming\\Luxprop\\Luxprop.csproj",
+      "projectUniqueName": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop\\Luxprop.csproj",
       "projectName": "Luxprop",
-      "projectPath": "E:\\repositories\\UFide\\PJM\\Luxprop\\AdvancedProgramming\\Luxprop\\Luxprop.csproj",
-      "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-      "outputPath": "E:\\repositories\\UFide\\PJM\\Luxprop\\AdvancedProgramming\\Luxprop\\obj\\",
+      "projectPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop\\Luxprop.csproj",
+      "packagesPath": "C:\\Users\\pepon\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\pepon\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -2812,8 +2812,8 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "E:\\repositories\\UFide\\PJM\\Luxprop\\AdvancedProgramming\\Luxprop.Data\\Luxprop.Data.csproj": {
-              "projectPath": "E:\\repositories\\UFide\\PJM\\Luxprop\\AdvancedProgramming\\Luxprop.Data\\Luxprop.Data.csproj"
+            "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Data\\Luxprop.Data.csproj": {
+              "projectPath": "C:\\Users\\pepon\\Documents\\GitHub\\Luxprop\\AdvancedProgramming\\Luxprop.Data\\Luxprop.Data.csproj"
             }
           }
         }
@@ -2852,7 +2852,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.300/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

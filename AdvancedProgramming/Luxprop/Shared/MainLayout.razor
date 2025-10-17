@@ -1,19 +1,143 @@
-﻿@inherits LayoutComponentBase
+﻿@using Luxprop.Services
+@inherits LayoutComponentBase
+@inject SessionService SessionService
+@inject NavigationManager Navigation
 
-<PageTitle>Luxprop</PageTitle>
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+    @if (isAuthenticated)
+    {
+    <div class="layout-container">
+        
+        <div class="sidebar">
+            <nav>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/properties">Properties</a>
+                <a href="/user/create">Create User</a>
+                <a href="/chat">Chat Support</a>
+            </nav>
         </div>
 
-        <article class="content px-4">
+        <div class="main-content">
+            <header class="header-bar">
+                <div class="user-info">
+                    <span>@userName</span>
+                    <button class="logout-btn" @onclick="Logout">Logout</button>
+                </div>
+            </header>
+
+            <div class="content-body">
+                @Body
+            </div>
+        </div>
+
+        </div>
+    }
+    else
+    {
+        <div>
             @Body
-        </article>
-    </main>
-</div>
+        </div>
+    }
+
+
+@code {
+    private bool isAuthenticated = false;
+    private string? userName;
+    private bool hasInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !hasInitialized)
+        {
+            hasInitialized = true;
+
+            userName = await SessionService.GetUserNameAsync();
+            isAuthenticated = !string.IsNullOrEmpty(userName);
+
+            if (!isAuthenticated)
+            {
+                var currentUri = Navigation.Uri.ToLower();
+
+                // Permitir acceso solo a /login y /user/create
+                if (!currentUri.EndsWith("/login") && !currentUri.EndsWith("/user/create"))
+                {
+                    Navigation.NavigateTo("/login", forceLoad: true);
+                }
+            }
+
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task Logout()
+    {
+        await SessionService.LogoutAsync();
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+}
+
+<style>
+.layout-container {
+    display: flex;
+    height: 100vh;
+}
+
+.sidebar {
+    width: 220px;
+    background: #0d505a;
+    color: white;
+    padding: 1rem;
+}
+
+.sidebar nav a {
+    display: block;
+    color: white;
+    text-decoration: none;
+    margin: 10px 0;
+    font-weight: 500;
+}
+
+.sidebar nav a:hover {
+    color: #ccc;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.header-bar {
+    background: #f5f5f5;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: flex-end;
+    border-bottom: 1px solid #ddd;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-weight: 600;
+}
+
+.logout-btn {
+    background: #0d505a;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+}
+
+.logout-btn:hover {
+    background: #093e47;
+}
+
+.content-body {
+    padding: 1rem;
+}
+</style>

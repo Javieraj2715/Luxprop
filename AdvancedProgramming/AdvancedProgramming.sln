@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luxprop.Global", "Luxprop.G
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luxprop.Business", "Luxprop.Business\Luxprop.Business.csproj", "{D297E441-F5D4-432D-A701-2CF6FDC7C671}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luxprop", "Luxprop\Luxprop.csproj", "{B6A946B1-97C7-223A-C5E4-D100DB1E47DC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +49,10 @@ Global
 		{D297E441-F5D4-432D-A701-2CF6FDC7C671}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D297E441-F5D4-432D-A701-2CF6FDC7C671}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D297E441-F5D4-432D-A701-2CF6FDC7C671}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6A946B1-97C7-223A-C5E4-D100DB1E47DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6A946B1-97C7-223A-C5E4-D100DB1E47DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6A946B1-97C7-223A-C5E4-D100DB1E47DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6A946B1-97C7-223A-C5E4-D100DB1E47DC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
