@@ -13,7 +13,12 @@
             <nav>
                 <a href="/dashboard">Dashboard</a>
                 <a href="/properties">Properties</a>
-                <a href="/user/create">Create User</a>
+                @if(userRole == "Administrador")
+                {
+                   
+                    <a href="/users">Manage Users</a>
+                }
+                
                 <a href="/chat">Chat Support</a>
             </nav>
         </div>
@@ -45,12 +50,15 @@
     private bool isAuthenticated = false;
     private string? userName;
     private bool hasInitialized = false;
+    private string? userRole;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !hasInitialized)
         {
             hasInitialized = true;
+            userRole = await SessionService.GetUserRoleAsync();
+            StateHasChanged(); // actualiza la UI después de cargar el rol
 
             userName = await SessionService.GetUserNameAsync();
             isAuthenticated = !string.IsNullOrEmpty(userName);

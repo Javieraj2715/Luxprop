@@ -78,22 +78,25 @@
                 return;
             }
 
-            // Hashear contraseña ingresada
+            //  Hashear la contraseña ingresada
             string hashed = PasswordHelper.HashPassword(loginModel.Password);
 
-            // Buscar usuario
+            //  Buscar usuario con su rol (importante incluir la relación)
             var user = await Db.Usuarios
+                .Include(u => u.UsuarioRols)
+                    .ThenInclude(ur => ur.Rol)
                 .FirstOrDefaultAsync(u => u.Email == loginModel.Email && u.Password == hashed);
 
             if (user != null)
             {
-                // Guardar en sesión del navegador
-                await SessionService.SetUserAsync(user.UsuarioId, user.Nombre);
+                //  Obtener el nombre del rol
+                var roleName = user.UsuarioRols.FirstOrDefault()?.Rol?.Nombre ?? "SinRol";
 
-                //  Redirigir al dashboard
+                //  Guardar en la sesión del navegador
+                await SessionService.SetUserAsync(user.UsuarioId, user.Nombre, roleName);
+
+                //  Redirigir al Dashboard
                 Navigation.NavigateTo("/dashboard", forceLoad: true);
-
-                
             }
             else
             {
@@ -110,6 +113,7 @@
             isLoading = false;
         }
     }
+
 
     private void NavigateToCreateUser()
     {

@@ -1,4 +1,4 @@
-@page "/user/create"
+﻿@page "/user/create"
 @using Luxprop.Data
 @using Luxprop.Data.Models
 @using Luxprop.Models
@@ -63,15 +63,29 @@
 
             <div class="form-group">
                 <label for="rolId">Role</label>
-                <InputSelect id="rolId" @bind-Value="userModel.RolId" class="form-control">
-                    <option value="">Select Role</option>
-                    @foreach (var role in roles)
-                    {
-                        <option value="@role.RolId">@role.Nombre</option>
-                    }
-                </InputSelect>
+
+                @if (isAuthenticated)
+                {
+                    <!-- MODO ADMIN: puede elegir cualquier rol -->
+                    <InputSelect id="rolId" @bind-Value="userModel.RolId" class="form-control">
+                        <option value="">Select Role</option>
+                        @foreach (var role in roles)
+                        {
+                            <option value="@role.RolId">@role.Nombre</option>
+                        }
+                    </InputSelect>
+                }
+                else
+                {
+                    <!-- MODO PÚBLICO (desde Login): solo Cliente -->
+                    <InputSelect id="rolId" @bind-Value="userModel.RolId" class="form-control" disabled>
+                        <option value="3">Cliente</option>
+                    </InputSelect>
+                }
+
                 <ValidationMessage For="@(() => userModel.RolId)" />
             </div>
+
 
             <div class="form-group">
                 <div class="form-check">
@@ -124,16 +138,26 @@
             try
             {
                 var userName = await SessionService.GetUserNameAsync();
+                var userRole = await SessionService.GetUserRoleAsync();
                 isAuthenticated = !string.IsNullOrEmpty(userName);
-                StateHasChanged(); // refresca la UI una vez cargado el estado
+
+                //  Si está logueado pero no es administrador, redirigir
+                if (isAuthenticated && userRole != "Administrador")
+                {
+                    Navigation.NavigateTo("/dashboard", forceLoad: true);
+                    return;
+                }
+
+                StateHasChanged();
             }
             catch
             {
-                // Si ocurre el error de interop (no hay contexto JS), simplemente ignoramos
+                // Si ocurre error (sin contexto JS), ignorar
                 isAuthenticated = false;
             }
         }
     }
+
 
     private async Task LoadRoles()
     {
@@ -168,6 +192,11 @@
 
             Db.Usuarios.Add(usuario);
             await Db.SaveChangesAsync();
+
+            if (!isAuthenticated)
+            {
+                userModel.RolId = 3;
+            }
 
             var ur = new UsuarioRol
             {
