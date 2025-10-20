@@ -5,6 +5,9 @@ namespace Luxprop.Models
     public class CreateUserVM
     {
         [Required]
+        public int UsuarioID { get; set; }
+
+        [Required]
         public string Nombre { get; set; } = string.Empty;
 
         [Required]

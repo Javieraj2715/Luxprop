@@ -1,5 +1,4 @@
 ﻿using Microsoft.JSInterop;
-using System.Threading.Tasks;
 
 namespace Luxprop.Services
 {
@@ -12,10 +11,11 @@ namespace Luxprop.Services
             _js = js;
         }
 
-        public async Task SetUserAsync(int userId, string userName)
+        public async Task SetUserAsync(int userId, string userName, string roleName)
         {
             await _js.InvokeVoidAsync("sessionStorage.setItem", "UserId", userId.ToString());
             await _js.InvokeVoidAsync("sessionStorage.setItem", "UserName", userName);
+            await _js.InvokeVoidAsync("sessionStorage.setItem", "UserRole", roleName);
         }
 
         public async Task<string?> GetUserNameAsync()
@@ -23,10 +23,9 @@ namespace Luxprop.Services
             return await _js.InvokeAsync<string>("sessionStorage.getItem", "UserName");
         }
 
-        public async Task<int?> GetUserIdAsync()
+        public async Task<string?> GetUserRoleAsync()
         {
-            var id = await _js.InvokeAsync<string>("sessionStorage.getItem", "UserId");
-            return int.TryParse(id, out var userId) ? userId : null;
+            return await _js.InvokeAsync<string>("sessionStorage.getItem", "UserRole");
         }
 
         public async Task LogoutAsync()
