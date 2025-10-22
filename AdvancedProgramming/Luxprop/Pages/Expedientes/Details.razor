@@ -4,59 +4,653 @@
 @inject LuxpropContext Db
 @inject NavigationManager Navigation
 
-<PageTitle>Detalles del Expediente</PageTitle>
+<PageTitle>Case File Details</PageTitle>
 
 @if (expediente == null)
 {
-    <div class="alert alert-info">Cargando expediente...</div>
+    <div class="loading">Loading case file…</div>
 }
 else
 {
-    <div class="card p-4 shadow-sm">
-        <h3>📁 Expediente #@expediente.ExpedienteId</h3>
-
-        <p><strong>Propiedad:</strong> @expediente.Propiedad?.Titulo</p>
-        <p><strong>Cliente:</strong> @expediente.Cliente?.Usuario</p>
-        <p><strong>Estado:</strong> @expediente.Estado</p>
-        <p><strong>Tipo de Ocupación:</strong> @expediente.TipoOcupacion</p>
-        <p><strong>Fecha de Apertura:</strong> @expediente.FechaApertura?.ToString("yyyy-MM-dd")</p>
-        <p><strong>Fecha de Cierre:</strong> @(expediente.FechaCierre?.ToString("yyyy-MM-dd") ?? "En proceso")</p>
-
-        <div class="mt-3">
-            <a href="/expedientes" class="btn btn-secondary me-2">← Volver</a>
-            <a href="/expedientes/edit/@expediente.ExpedienteId" class="btn btn-primary">✏ Editar</a>
+    <div class="case-card">
+        <div class="header-row">
+            <h1>Case File #@expediente.ExpedienteId</h1>
+            <div class="header-actions">
+                <a class="btn btn-secondary" href="/expedientes">← Back</a>
+                <a class="btn btn-primary" href="/expedientes/edit/@expediente.ExpedienteId">Edit Case File</a>
+            </div>
         </div>
+
+        <!-- Tabs -->
+        <ul class="tabs">
+            <li class="@GetTabClass("info")" @onclick="@(() => Activate("info"))">Information</li>
+            <li class="@GetTabClass("docs")" @onclick="@(() => Activate("docs"))">Documents</li>
+            <li class="@GetTabClass("history")" @onclick="@(() => Activate("history"))">History</li>
+            <li class="@GetTabClass("tasks")" @onclick="@(() => Activate("tasks"))">Tasks</li>
+        </ul>
+
+        <!-- Information -->
+        @if (activeTab == "info")
+        {
+            <div class="panel">
+                <div class="kv">
+                    <span class="k">Property</span>
+                    <span class="v">@expediente.Propiedad?.Titulo</span>
+                </div>
+                <div class="kv">
+                    <span class="k">Client</span>
+                    <span class="v">@expediente.Cliente?.Usuario?.Nombre @expediente.Cliente?.Usuario?.Apellido</span>
+                </div>
+                <div class="kv">
+                    <span class="k">Status</span>
+                    <span class="v"><span class="badge badge-muted">@expediente.Estado</span></span>
+                </div>
+                <div class="kv">
+                    <span class="k">Occupation Type</span>
+                    <span class="v">@expediente.TipoOcupacion</span>
+                </div>
+                <div class="kv">
+                    <span class="k">Opened</span>
+                    <span class="v">@expediente.FechaApertura?.ToString("yyyy-MM-dd")</span>
+                </div>
+                <div class="kv">
+                    <span class="k">Closed</span>
+                    <span class="v">@(expediente.FechaCierre?.ToString("yyyy-MM-dd") ?? "In progress")</span>
+                </div>
+            </div>
+        }
+
+        <!-- Documents -->
+        @if (activeTab == "docs")
+        {
+            <div class="panel">
+                @if (expediente.Documentos != null && expediente.Documentos.Any())
+                {
+                    <table class="grid">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Uploaded</th>
+                                <th>Status</th>
+                                <th style="width:1%;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var d in expediente.Documentos.OrderByDescending(x => x.FechaCarga))
+                            {
+                                <tr>
+                                    <td>@d.Nombre</td>
+                                    <td>@d.FechaCarga?.ToString("yyyy-MM-dd")</td>
+                                    <td><span class="badge">@d.Estado</span></td>
+                                    <td class="text-right">
+                                        <a class="btn btn-ghost" href="@GetDownloadHref(d.Nombre)" download>Download</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="empty">No documents uploaded yet.</div>
+                }
+            </div>
+        }
+
+        <!-- History -->
+        @if (activeTab == "history")
+        {
+            <div class="panel">
+                @if (historial != null && historial.Any())
+                {
+                    <table class="grid">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>New Status</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var h in historial)
+                            {
+                                <tr>
+                                    <td>@h.FechaModificacion.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td><span class="badge badge-muted">@h.EstadoNuevo</span></td>
+                                    <td>@h.Descripcion</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="empty">No history records yet.</div>
+                }
+            </div>
+        }
+
+        <!-- Tasks -->
+        @if (activeTab == "tasks")
+        {
+            <div class="panel">
+                <div class="row-between mb16">
+                    <h3 class="section-title">Tasks</h3>
+                    <button class="btn btn-primary" @onclick="() => ShowTaskModal(true)">+ Add Task</button>
+                </div>
+
+                @if (tasks != null && tasks.Any())
+                {
+                    <table class="grid">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Start</th>
+                                <th>Due</th>
+                                <th>Closed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in tasks.OrderByDescending(x => x.FechaInicio))
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="title-cell">
+                                            <div class="title">@t.Titulo</div>
+                                            @if (!string.IsNullOrWhiteSpace(t.Descripcion))
+                                            {
+                                                <div class="sub">@t.Descripcion</div>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>@BadgeForStatus(t.Estado)</td>
+                                    <td>@BadgeForPriority(t.Prioridad)</td>
+                                    <td>@(t.FechaInicio?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                    <td>@(t.FechaCompromiso?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                    <td>@(t.FechaCierre?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="empty">No tasks yet. Add the first one to start tracking progress.</div>
+                }
+            </div>
+        }
+    </div>
+}
+
+<!-- Task Modal -->
+@if (showTaskModal)
+{
+    <div class="modal-backdrop" @onclick="CloseModal"></div>
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Add Task</h3>
+            <button class="icon-btn" title="Close" @onclick="CloseModal">✕</button>
+        </div>
+        <EditForm Model="newTask" OnValidSubmit="SaveTaskAsync">
+            <DataAnnotationsValidator />
+            <div class="modal-body">
+                <div class="form-row">
+                    <label>Title</label>
+                    <InputText class="form-control" @bind-Value="newTask.Titulo" />
+                </div>
+                <div class="form-row">
+                    <label>Description</label>
+                    <InputTextArea class="form-control" rows="3" @bind-Value="newTask.Descripcion" />
+                </div>
+                <div class="grid-2">
+                    <div class="form-row">
+                        <label>Status</label>
+                        <InputSelect class="form-control" @bind-Value="newTask.Estado">
+                            <option value="">Select…</option>
+                            <option>Open</option>
+                            <option>In Progress</option>
+                            <option>Completed</option>
+                            <option>On Hold</option>
+                        </InputSelect>
+                    </div>
+                    <div class="form-row">
+                        <label>Priority</label>
+                        <InputSelect class="form-control" @bind-Value="newTask.Prioridad">
+                            <option value="">Select…</option>
+                            <option>Low</option>
+                            <option>Normal</option>
+                            <option>High</option>
+                            <option>Urgent</option>
+                        </InputSelect>
+                    </div>
+                </div>
+                <div class="grid-3">
+                    <div class="form-row">
+                        <label>Start</label>
+                        <InputDate class="form-control" @bind-Value="newTask.FechaInicio" />
+                    </div>
+                    <div class="form-row">
+                        <label>Due</label>
+                        <InputDate class="form-control" @bind-Value="newTask.FechaCompromiso" />
+                    </div>
+                    <div class="form-row">
+                        <label>Closed</label>
+                        <InputDate class="form-control" @bind-Value="newTask.FechaCierre" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" type="submit">Save Task</button>
+                <button class="btn btn-secondary" type="button" @onclick="CloseModal">Cancel</button>
+            </div>
+        </EditForm>
     </div>
 }
 
 @code {
     [Parameter] public int ExpedienteId { get; set; }
+
     private Expediente? expediente;
+    private List<HistorialExpediente>? historial;
+    private List<TareaTramite>? tasks;
+
+    private string activeTab = "info";
+
+    // Modal/task state
+    private bool showTaskModal = false;
+    private TareaTramite newTask = new();
 
     protected override async Task OnInitializedAsync()
     {
+        // Load Case File + related data
         expediente = await Db.Expedientes
             .Include(e => e.Propiedad)
-            .Include(e => e.Cliente)
+            .Include(e => e.Cliente).ThenInclude(c => c.Usuario)
+            .Include(e => e.Documentos)
             .FirstOrDefaultAsync(e => e.ExpedienteId == ExpedienteId);
+
+        historial = await Db.HistorialExpedientes
+            .Where(h => h.ExpedienteId == ExpedienteId)
+            .OrderByDescending(h => h.FechaModificacion)
+            .ToListAsync();
+
+        tasks = await Db.TareaTramites
+            .Where(t => t.ExpedienteId == ExpedienteId)
+            .OrderByDescending(t => t.FechaInicio)
+            .ToListAsync();
+    }
+
+    private void Activate(string tab) => activeTab = tab;
+
+    private string GetTabClass(string tab) => tab == activeTab ? "tab active" : "tab";
+
+    private string GetDownloadHref(string? fileName)
+        => string.IsNullOrWhiteSpace(fileName) ? "#" : $"/uploads/{Uri.EscapeDataString(fileName)}";
+
+    // --- Tasks modal helpers ---
+    private void ShowTaskModal(bool show)
+    {
+        newTask = new TareaTramite
+        {
+            ExpedienteId = ExpedienteId,
+            Estado = "Open",
+            Prioridad = "Normal",
+            FechaInicio = DateOnly.FromDateTime(DateTime.Now)
+        };
+        showTaskModal = show;
+    }
+
+    private void CloseModal()
+    {
+        showTaskModal = false;
+    }
+
+    private async Task SaveTaskAsync()
+    {
+        if (string.IsNullOrWhiteSpace(newTask.Titulo))
+            return;
+
+        // Persist task
+        Db.TareaTramites.Add(newTask);
+
+        // Also write to history (read-only for users elsewhere)
+        var h = new HistorialExpediente
+        {
+            ExpedienteId = ExpedienteId,
+            UsuarioId = 1, 
+            EstadoNuevo = expediente?.Estado ?? "N/A",
+            Descripcion = $"Task created: {newTask.Titulo} [{newTask.Estado}]",
+            FechaModificacion = DateTime.Now
+        };
+        Db.HistorialExpedientes.Add(h);
+
+        await Db.SaveChangesAsync();
+
+        // Refresh lists
+        tasks = await Db.TareaTramites.Where(t => t.ExpedienteId == ExpedienteId).OrderByDescending(t => t.FechaInicio).ToListAsync();
+        historial = await Db.HistorialExpedientes.Where(x => x.ExpedienteId == ExpedienteId).OrderByDescending(x => x.FechaModificacion).ToListAsync();
+
+        showTaskModal = false;
+        activeTab = "tasks";
+        StateHasChanged();
+    }
+
+    // UI helpers for badges (render as MarkupString to keep spans)
+    private MarkupString BadgeForStatus(string? status)
+    {
+        var cls = status switch
+        {
+            "Completed" => "badge-success",
+            "In Progress" => "badge-warning",
+            "On Hold" => "badge-muted",
+            _ => "badge"
+        };
+        return new MarkupString($"<span class=\"badge {cls}\">{status}</span>");
+    }
+
+    private MarkupString BadgeForPriority(string? p)
+    {
+        var cls = p switch
+        {
+            "Urgent" => "badge-danger",
+            "High" => "badge-warning",
+            "Low" => "badge-muted",
+            _ => "badge"
+        };
+        return new MarkupString($"<span class=\"badge {cls}\">{p}</span>");
     }
 }
-
 <style>
-    .card {
-        max-width: 700px;
-        margin: 20px auto;
-        border-radius: 8px;
-        background-color: #fff;
+    /* Layout & card */
+    .case-card {
+        max-width: 1100px;
+        margin: 24px auto;
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 8px 30px rgba(0,0,0,.08);
+        padding: 24px
     }
 
-    h3 {
-        color: #0d505a;
-        margin-bottom: 1rem;
+    .header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px
     }
 
-    p {
-        margin: 0.3rem 0;
-        font-size: 1rem;
+        .header-row h1 {
+            font-size: 28px;
+            color: #0e4950;
+            margin: 0
+        }
+
+    .header-actions {
+        display: flex;
+        gap: 8px
+    }
+
+    /* Tabs */
+    .tabs {
+        list-style: none;
+        display: flex;
+        gap: 12px;
+        margin: 12px 0 18px 0;
+        padding: 0;
+        border-bottom: 1px solid #e7ecef
+    }
+
+    .tab {
+        padding: .65rem 1rem;
+        border-radius: 10px 10px 0 0;
+        cursor: pointer;
+        color: #0e4950
+    }
+
+        .tab:hover {
+            background: #f2f7f8
+        }
+
+        .tab.active {
+            background: #0f4e56;
+            color: #fff
+        }
+
+    /* Panel content */
+    .panel {
+        padding: 10px 4px 4px
+    }
+
+    .kv {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px dashed #eef2f3
+    }
+
+    .k {
+        color: #6b7b85;
+        font-weight: 600
+    }
+
+    .v {
+        color: #22333b
+    }
+
+    .section-title {
+        margin: 0;
+        color: #0e4950
+    }
+
+    .row-between {
+        display: flex;
+        justify-content: space-between;
+        align-items: center
+    }
+
+    .mb16 {
+        margin-bottom: 16px
+    }
+
+    /* Grid table */
+    .grid {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 8px
+    }
+
+        .grid thead th {
+            text-align: left;
+            padding: 10px 14px;
+            color: #5f7383;
+            font-weight: 600
+        }
+
+        .grid tbody td {
+            background: #fafcfd;
+            padding: 16px 14px;
+            border-top: 1px solid #edf2f5;
+            border-bottom: 1px solid #edf2f5
+        }
+
+        .grid tbody tr td:first-child {
+            border-left: 1px solid #edf2f5;
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px
+        }
+
+        .grid tbody tr td:last-child {
+            border-right: 1px solid #edf2f5;
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px
+        }
+
+    .text-right {
+        text-align: right
+    }
+
+    /* Titles */
+    .title-cell .title {
+        font-weight: 600;
+        color: #122e35
+    }
+
+    .title-cell .sub {
+        font-size: .9rem;
+        color: #6f7d85;
+        margin-top: 2px
+    }
+
+    /* Badges & buttons */
+    .badge {
+        display: inline-block;
+        padding: .25rem .6rem;
+        border-radius: 999px;
+        background: #eaf3f4;
+        color: #0e4950;
+        font-size: .85rem
+    }
+
+    .badge-success {
+        background: #e7fbef;
+        color: #1f7a43
+    }
+
+    .badge-warning {
+        background: #fff4e5;
+        color: #a36100
+    }
+
+    .badge-danger {
+        background: #fde7ea;
+        color: #9b2138
+    }
+
+    .badge-muted {
+        background: #eef2f5;
+        color: #526370
+    }
+
+    .btn {
+        border: none;
+        border-radius: 10px;
+        padding: .65rem 1rem;
+        font-weight: 600;
+        cursor: pointer
+    }
+
+    .btn-primary {
+        background: #0f4e56;
+        color: #fff
+    }
+
+    .btn-secondary {
+        background: #6c7a83;
+        color: #fff
+    }
+
+    .btn-ghost {
+        background: #fff;
+        border: 1px solid #cfd9df;
+        border-radius: 10px;
+        padding: .45rem .8rem
+    }
+
+    /* Empty / loading */
+    .empty, .loading {
+        padding: 18px;
+        border: 1px dashed #dfe7ec;
+        border-radius: 12px;
+        background: #fbfdfe;
+        color: #6b7b85
+    }
+
+    /* Modal */
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.35);
+        backdrop-filter: blur(2px);
+        z-index: 998
+    }
+
+    .modal {
+        position: fixed;
+        z-index: 999;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%,-50%);
+        width: min(720px,95vw);
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 20px 60px rgba(0,0,0,.2);
+        overflow: hidden
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 18px;
+        border-bottom: 1px solid #eef2f5
+    }
+
+    .modal-body {
+        padding: 18px
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 12px 18px;
+        border-top: 1px solid #eef2f5
+    }
+
+    .icon-btn {
+        background: transparent;
+        border: none;
+        font-size: 20px;
+        cursor: pointer
+    }
+
+    .form-row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 12px
+    }
+
+    .form-control {
+        border: 1px solid #d9e4ea;
+        border-radius: 10px;
+        padding: .6rem .75rem
+    }
+
+    .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px
+    }
+
+    .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px
+    }
+
+    @@media (max-width:700px) {
+        .kv
+
+    {
+        grid-template-columns: 1fr
+    }
+
+    .grid-3, .grid-2 {
+        grid-template-columns: 1fr
+    }
+
     }
 </style>
