@@ -1,0 +1,62 @@
+@page "/expedientes/details/{ExpedienteId:int}"
+@using Luxprop.Data.Models
+@using Microsoft.EntityFrameworkCore
+@inject LuxpropContext Db
+@inject NavigationManager Navigation
+
+<PageTitle>Detalles del Expediente</PageTitle>
+
+@if (expediente == null)
+{
+    <div class="alert alert-info">Cargando expediente...</div>
+}
+else
+{
+    <div class="card p-4 shadow-sm">
+        <h3>📁 Expediente #@expediente.ExpedienteId</h3>
+
+        <p><strong>Propiedad:</strong> @expediente.Propiedad?.Titulo</p>
+        <p><strong>Cliente:</strong> @expediente.Cliente?.Usuario</p>
+        <p><strong>Estado:</strong> @expediente.Estado</p>
+        <p><strong>Tipo de Ocupación:</strong> @expediente.TipoOcupacion</p>
+        <p><strong>Fecha de Apertura:</strong> @expediente.FechaApertura?.ToString("yyyy-MM-dd")</p>
+        <p><strong>Fecha de Cierre:</strong> @(expediente.FechaCierre?.ToString("yyyy-MM-dd") ?? "En proceso")</p>
+
+        <div class="mt-3">
+            <a href="/expedientes" class="btn btn-secondary me-2">← Volver</a>
+            <a href="/expedientes/edit/@expediente.ExpedienteId" class="btn btn-primary">✏ Editar</a>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int ExpedienteId { get; set; }
+    private Expediente? expediente;
+
+    protected override async Task OnInitializedAsync()
+    {
+        expediente = await Db.Expedientes
+            .Include(e => e.Propiedad)
+            .Include(e => e.Cliente)
+            .FirstOrDefaultAsync(e => e.ExpedienteId == ExpedienteId);
+    }
+}
+
+<style>
+    .card {
+        max-width: 700px;
+        margin: 20px auto;
+        border-radius: 8px;
+        background-color: #fff;
+    }
+
+    h3 {
+        color: #0d505a;
+        margin-bottom: 1rem;
+    }
+
+    p {
+        margin: 0.3rem 0;
+        font-size: 1rem;
+    }
+</style>
