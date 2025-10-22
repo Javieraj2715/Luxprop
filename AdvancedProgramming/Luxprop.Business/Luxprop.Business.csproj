@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FirebaseAdmin" Version="3.4.0" />
+    <PackageReference Include="Google.Cloud.Storage.V1" Version="4.13.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Luxprop.Data\Luxprop.Data.csproj" />
     <ProjectReference Include="..\Luxprop.Global\Luxprop.Global.csproj" />
   </ItemGroup>
