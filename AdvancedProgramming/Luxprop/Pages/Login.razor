@@ -1,0 +1,251 @@
+﻿@page "/login"
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.JSInterop
+@using Luxprop.Data
+@using Luxprop.Data.Models
+@using Luxprop.Models
+@using Luxprop.Services
+@inject LuxpropContext Db
+@inject PasswordHelper PasswordHelper
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject SessionService SessionService
+
+
+<PageTitle>Login - Luxprop</PageTitle>
+
+<div class="login-page">
+    <header class="main-header">
+       
+    </header>
+
+    <main>
+        <section class="login-container">
+            <div class="login-header">
+                <img src="https://i.imgur.com/nmN7x14.png" alt="2CRRE Logo" class="logo" />
+                <span class="title">2CRRE Docs</span>
+            </div>
+
+            <h2>Admin Login</h2>
+
+            <EditForm Model="@loginModel" OnValidSubmit="@HandleLogin">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <InputText id="email" @bind-Value="loginModel.Email" class="form-control" placeholder="Enter your email" />
+                    <ValidationMessage For="@(() => loginModel.Email)" />
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <InputText id="password" type="password" @bind-Value="loginModel.Password" class="form-control" placeholder="Enter your password" />
+                    <ValidationMessage For="@(() => loginModel.Password)" />
+                </div>
+
+                <button type="submit" class="btn btn-primary" disabled="@isLoading">Login</button>
+                <button type="button" class="btn btn-secondary" @onclick="NavigateToCreateUser">Create User</button>
+
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <p class="error-message">@errorMessage</p>
+                }
+            </EditForm>
+        </section>
+
+    </main>
+</div>
+
+@code {
+    private LoginVM loginModel = new();
+    private bool isLoading = false;
+    private string errorMessage = string.Empty;
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(loginModel.Email) || string.IsNullOrWhiteSpace(loginModel.Password))
+            {
+                errorMessage = "Please enter your email and password.";
+                return;
+            }
+
+            //  Hashear la contraseña ingresada
+            string hashed = PasswordHelper.HashPassword(loginModel.Password);
+
+            //  Buscar usuario con su rol (importante incluir la relación)
+            var user = await Db.Usuarios
+                .Include(u => u.UsuarioRols)
+                    .ThenInclude(ur => ur.Rol)
+                .FirstOrDefaultAsync(u => u.Email == loginModel.Email && u.Password == hashed);
+
+            if (user != null)
+            {
+                //  Obtener el nombre del rol
+                var roleName = user.UsuarioRols.FirstOrDefault()?.Rol?.Nombre ?? "SinRol";
+
+                //  Guardar en la sesión del navegador
+                await SessionService.SetUserAsync(user.UsuarioId, user.Nombre, roleName);
+
+                //  Redirigir al Dashboard
+                Navigation.NavigateTo("/dashboard", forceLoad: true);
+            }
+            else
+            {
+                errorMessage = "Invalid credentials. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error during login: {ex.Message}");
+            errorMessage = "An error occurred during login.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+
+    private void NavigateToCreateUser()
+    {
+        Navigation.NavigateTo("/user/create", forceLoad: true);
+    }
+}
+
+<style>
+    .login-page {
+        margin: 0;
+        font-family: 'Montserrat', sans-serif;
+        background-color: #f5f5f5;
+        min-height: 100vh;
+    }
+
+    .login-header .title {
+        color: white;
+        font-size: 1.4rem;
+        font-weight: 600;
+    }
+
+    .login-header {
+        background-color: #0d505a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem 0;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        margin-bottom: 1.5rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+
+        .login-header .logo {
+            height: 55px;
+            margin-bottom: 0.3rem;
+        }
+    .main-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 2rem;
+        background-color: #0d505a;
+        color: white;
+    }
+
+    .logo-title {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+    }
+
+        .logo-title .logo {
+            height: 60px;
+            margin-bottom: 0.5rem;
+        }
+
+        .logo-title .title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #0d505a;
+        }
+    .login-container {
+        max-width: 400px;
+        margin: 5rem auto;
+        background-color: #fff;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        font-family: 'Montserrat', sans-serif;
+    }
+
+    .login-container h2 {
+        text-align: center;
+        margin-bottom: 2rem;
+        color: #0d505a;
+        font-weight: 600;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.3rem;
+        font-weight: 500;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.5rem;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        font-size: 1rem;
+        font-family: 'Montserrat', sans-serif;
+    }
+
+    .btn {
+        width: 100%;
+        background-color: #0d505a;
+        color: white;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 1rem;
+        font-family: 'Montserrat', sans-serif;
+    }
+
+    .btn:hover {
+        background-color: #093e47;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+    }
+
+    .btn-secondary:hover {
+        background-color: #545b62;
+    }
+
+    .error-message {
+        color: red;
+        font-size: 0.9rem;
+        margin-top: 1rem;
+        text-align: center;
+    }
+</style>
