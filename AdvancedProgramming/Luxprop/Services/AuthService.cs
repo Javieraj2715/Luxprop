@@ -1,5 +1,7 @@
 namespace Luxprop.Services
 {
+    // Test commit to fix login behavior
+
     public class AuthService
     {
         public bool IsAuthenticated { get; private set; }
