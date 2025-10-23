@@ -1,0 +1,345 @@
+body {
+    font-family: 'Montserrat', sans-serif;
+    margin: 0;
+    background-color: #ffffff;
+    color: #000;
+}
+
+.main-header {
+    background-color: #0d505a;
+    color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 10;
+}
+
+.logo-title {
+    display: flex;
+    align-items: center;
+}
+
+    .logo-title img,
+    .logo {
+        height: 60px;
+        margin-right: 1rem;
+    }
+
+    .logo-title .title {
+        font-size: 1.6rem;
+        font-weight: 600;
+    }
+
+.user-nav a {
+    color: white;
+    background: transparent;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.top-nav {
+    background-color: #ffffff;
+    padding: 0.75rem 2rem;
+    display: flex;
+    gap: 2rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+    .top-nav .nav-link {
+        text-decoration: none;
+        color: #0d505a;
+        font-weight: 500;
+    }
+
+        .top-nav .nav-link:hover {
+            text-decoration: underline;
+        }
+
+.sidebar {
+    background-color: #1e4d58;
+    padding: 1rem;
+    position: fixed;
+    top: 70px;
+    bottom: 0;
+    width: 200px;
+    color: white;
+}
+
+    .sidebar ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .sidebar a {
+        color: white;
+        text-decoration: none;
+        display: block;
+        padding: 0.5rem 0;
+    }
+
+.main-content,
+.form-wrapper,
+.expediente,
+.mapa,
+.chat {
+    margin-left: 220px;
+    padding: 2rem;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.card {
+    background-color: #f3f3f3;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 5px solid #7ab942;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+    .card h3 {
+        margin-top: 0;
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+        color: #0d505a;
+    }
+
+    .card p {
+        color: #555;
+        margin-bottom: 1rem;
+    }
+
+    .card a {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background-color: #0d505a;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+        .card a:hover {
+            background-color: #093e47;
+        }
+
+.user-login-style {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4rem 2rem;
+    background-color: #f9f9f9;
+}
+
+.form-card {
+    background-color: #fff;
+    padding: 2.5rem 2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    width: 100%;
+    max-width: 420px;
+}
+
+    .form-card h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        color: #0d505a;
+    }
+
+    .form-card label {
+        display: block;
+        font-weight: 500;
+        margin: 0.8rem 0 0.3rem;
+    }
+
+    .form-card input,
+    .form-card select {
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-card button {
+        width: 100%;
+        background-color: #0d505a;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 0.75rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+        .form-card button:hover {
+            background-color: #093e47;
+        }
+
+.user-dropdown {
+    position: absolute;
+    top: 100px;
+    right: 2rem;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    padding: 2rem;
+    width: 340px;
+    display: none;
+    z-index: 1000;
+}
+
+    .user-dropdown .form-card {
+        position: relative;
+    }
+
+    .user-dropdown .close-btn {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: #0d505a;
+        color: white;
+        font-weight: bold;
+        border: none;
+        border-radius: 50%;
+        width: 26px;
+        height: 26px;
+        cursor: pointer;
+        font-size: 1.2rem;
+        line-height: 1;
+    }
+
+    .user-dropdown label,
+    .user-dropdown input,
+    .user-dropdown select {
+        display: block;
+        width: 100%;
+        padding: 0.5rem;
+        margin-top: 0.25rem;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+    }
+
+    .user-dropdown button[type="submit"] {
+        margin-top: 1rem;
+        width: 100%;
+        background-color: #0d505a;
+        color: white;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+        .user-dropdown button[type="submit"]:hover {
+            background-color: #093e47;
+        }
+
+.tabs a {
+    margin-right: 1rem;
+    text-decoration: none;
+    color: #0d505a;
+}
+
+.cta {
+    background-color: #7ab942;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.25rem;
+    border-radius: 5px;
+    margin-top: 1rem;
+    cursor: pointer;
+}
+
+.chat-box {
+    margin-top: 1rem;
+    border: 1px solid #ccc;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+    .chat-box .message.bot {
+        background-color: #6f9096;
+        color: white;
+        padding: 0.5rem;
+        border-radius: 5px;
+        margin-bottom: 1rem;
+    }
+
+/* Botones */
+.btn-primary {
+    margin-top: 2px;
+    background-color: #0d505a;
+    color: white;
+    padding: 0.9rem 1.2rem;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+    margin-top: 1rem;
+}
+
+    .btn-primary:hover {
+        background-color: #093e47;
+        color: white;
+    }
+
+.btn-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: white;
+    border: none;
+    cursor: pointer;
+    margin: 0 0.2rem;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.btn-edit {
+    background-color: #0d505a;
+}
+
+    .btn-edit:hover {
+        background-color: #0d505a;
+    }
+
+.btn-details {
+    background-color: #0d505a;
+}
+
+    .btn-details:hover {
+        background-color: #5c636a;
+    }
+
+.btn-delete {
+    background-color: #0d505a;
+}
+
+    .btn-delete:hover {
+        background-color: #bb2d3b;
+    }
+
+

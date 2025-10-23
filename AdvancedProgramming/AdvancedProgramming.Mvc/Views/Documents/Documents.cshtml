@@ -1,0 +1,184 @@
+﻿@{
+    ViewData["Title"] = "Documents Tracking Panel";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    /* ===== Estilos locales de esta vista (puedes moverlos a styles.css si quieres) ===== */
+    .page-wrap {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 2rem;
+        font-family: 'Montserrat',sans-serif;
+    }
+
+    h2 {
+        color: #0d505a;
+        margin: 0 0 1rem;
+    }
+
+    .filters {
+        display: grid;
+        grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+        .filters select, .filters input {
+            padding: .5rem;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font: inherit
+        }
+
+    .export-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-bottom: 1rem
+    }
+
+        .export-buttons button {
+            background: #0d505a;
+            color: #fff;
+            border: none;
+            padding: .5rem 1rem;
+            font-weight: 600;
+            border-radius: 5px;
+            cursor: pointer
+        }
+
+            .export-buttons button:hover {
+                background: #093e47
+            }
+
+    table {
+        width: 100%;
+        background: #fff;
+        border-collapse: collapse;
+        box-shadow: 0 2px 8px rgba(0,0,0,.05)
+    }
+
+    th, td {
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+        text-align: left
+    }
+
+    th {
+        background: #f0f0f0
+    }
+
+    .status-critical {
+        color: #d33;
+        font-weight: 700
+    }
+
+    .status-warning {
+        color: #f7931a;
+        font-weight: 700
+    }
+
+    .btn-view {
+        background: #0d505a;
+        color: #fff;
+        border: none;
+        padding: .4rem .8rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: .9rem
+    }
+
+        .btn-view:hover {
+            background: #093e47
+        }
+</style>
+
+<section class="page-wrap">
+    <header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <div class="logo-title" style="display:flex;align-items:center;gap:12px">
+            <!-- Reemplaza el href html por Tag Helper hacia tu Dashboard -->
+            <a asp-controller="Agent" asp-action="Dashboard">
+                <img src="https://i.imgur.com/nmN7x14.png" alt="2CRRE Logo" style="height:50px" />
+            </a>
+            <h1 style="font-size:1.5rem;margin:0">Documents Tracking Panel</h1>
+        </div>
+    </header>
+
+    <!-- Filtros (si luego quieres, ata el form a un action GET y nombres de parámetros) -->
+    <form asp-controller="Agent" asp-action="Documents" method="get">
+        <div class="filters">
+            <select name="status">
+                <option value="">Filter by Status</option>
+                <option value="pending">Pending</option>
+                <option value="in-progress">In Progress</option>
+                <option value="closed">Closed</option>
+            </select>
+
+            <select name="agent">
+                <option value="">Filter by Agent</option>
+                <option value="ana">Ana Ramirez</option>
+                <option value="jose">Jose Lopez</option>
+            </select>
+
+            <select name="propertyType">
+                <option value="">Filter by Property Type</option>
+                <option value="house">House</option>
+                <option value="lot">Lot</option>
+                <option value="condo">Condo</option>
+            </select>
+
+            <input type="date" name="from" />
+            <input type="date" name="to" />
+        </div>
+    </form>
+
+    <div class="export-buttons">
+        <button type="button" id="btnPdf">Export to PDF</button>
+        <button type="button" id="btnExcel">Export to Excel</button>
+    </div>
+
+    <table aria-label="Documents table">
+        <thead>
+            <tr>
+                <th>Document</th>
+                <th>Status</th>
+                <th>Agent</th>
+                <th>Last Update</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Datos estáticos por ahora; cuando tengas modelo, reemplaza por un foreach -->
+            <tr>
+                <td>Offer Agreement #123</td>
+                <td class="status-critical">Expired</td>
+                <td>Ana Ramirez</td>
+                <td>2025-08-01</td>
+                <td><button class="btn-view" type="button">View</button></td>
+            </tr>
+            <tr>
+                <td>Escrow Form #456</td>
+                <td class="status-warning">Due Soon</td>
+                <td>Jose Lopez</td>
+                <td>2025-08-03</td>
+                <td><button class="btn-view" type="button">View</button></td>
+            </tr>
+            <tr>
+                <td>Contract Review #789</td>
+                <td>Completed</td>
+                <td>Ana Ramirez</td>
+                <td>2025-07-20</td>
+                <td><button class="btn-view" type="button">View</button></td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+@section Scripts{
+    <script>
+  // aquí puedes enganchar exportaciones o submit de filtros
+  document.getElementById('btnPdf')?.addEventListener('click', ()=> console.log('TODO: export PDF'));
+  document.getElementById('btnExcel')?.addEventListener('click', ()=> console.log('TODO: export Excel'));
+    </script>
+}

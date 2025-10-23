@@ -1,0 +1,149 @@
+﻿@using Newtonsoft.Json
+
+<style>
+  #chatLaunchBtn{position:fixed;right:24px;bottom:24px;z-index:1040;background:#0d505a;color:#fff;border:0;padding:.85rem 1.1rem;border-radius:999px;cursor:pointer;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.15);}
+  #chatPanel{position:fixed;right:24px;bottom:90px;z-index:1040;width:360px;max-height:70vh;display:none;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,.18);font-family:Montserrat,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+  .chat-header{display:flex;align-items:center;gap:.75rem;padding:.9rem 1rem;background:#0d505a;color:#fff;}
+  .chat-body{padding:1rem;background:#f5f5f5;}
+  .messages{height:320px;overflow-y:auto;padding:.75rem;border-radius:8px;background:#fafafa;display:flex;flex-direction:column;gap:.5rem;}
+  .bubble{max-width:75%;padding:.6rem .9rem;border-radius:14px;font-size:.95rem;line-height:1.35;white-space:pre-line;}
+  .client{align-self:flex-end;background:#0d505a;color:#fff;border-bottom-right-radius:4px;}
+  .agent{align-self:flex-start;background:#e1e1e1;color:#333;border-bottom-left-radius:4px;}
+  .chat-input{display:flex;gap:.5rem;margin-top:.75rem;}
+  .chat-input input{flex:1;padding:.7rem .9rem;border:1px solid #d6d6d6;border-radius:8px;font-size:1rem;background:#fff;}
+  .chat-input button{background:#0d505a;color:#fff;border:0;padding:.7rem 1rem;border-radius:8px;font-weight:600;cursor:pointer;}
+  @@media (max-width:420px){#chatPanel{right:12px;left:12px;width:auto;}}
+</style>
+
+<button id="chatLaunchBtn" aria-controls="chatPanel" aria-expanded="false">💬 Need help?</button>
+
+<div id="chatPanel" role="dialog" aria-labelledby="chatTitle" aria-modal="true">
+    <div class="chat-header">
+        <img src="https://i.imgur.com/nmN7x14.png" alt="logo" style="height:28px" />
+        <h2 id="chatTitle" style="margin:0;font-size:1rem;font-weight:700;">Marty LiveChat</h2>
+        <button class="chat-close" id="chatCloseBtn" title="Close" aria-label="Close" style="margin-left:auto;background:transparent;border:0;color:#fff;font-size:1.2rem;cursor:pointer;line-height:1;">×</button>
+    </div>
+
+    <div class="chat-body">
+        <div class="messages" id="chatMessages">
+            <div class="bubble agent">Hello! How can I help you today?</div>
+        </div>
+
+        <div class="chat-input">
+            <input type="text" id="chatInput" placeholder="Type your message..." autocomplete="off" />
+            <button id="chatSendBtn">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+  if (typeof window.jQuery === 'undefined') {
+    alert('jQuery is required before the chat widget.');
+    return;
+  }
+
+  var openUrl = '@Url.Action("OpenOrCreate","Chat")';
+  var sendUrl = '@Url.Action("Send","Chat")';
+  var histUrl = '@Url.Action("History","Chat")';
+  var pollUrl = '@Url.Action("Poll","Chat")';
+
+  var btn = document.getElementById('chatLaunchBtn');
+  var panel = document.getElementById('chatPanel');
+  var closeBtn = document.getElementById('chatCloseBtn');
+  var input = document.getElementById('chatInput');
+  var sendBtn = document.getElementById('chatSendBtn');
+  var box = document.getElementById('chatMessages');
+
+  var threadId = 0;
+  var lastId = 0;
+  var pollTimer = null;
+
+  var sessionName  = @Html.Raw(JsonConvert.SerializeObject(Session["UsuarioNombre"] ?? ""));
+  var sessionEmail = @Html.Raw(JsonConvert.SerializeObject(Session["UsuarioEmail"]  ?? ""));
+
+  var clientName  = sessionName  || 'Guest';
+  var clientEmail = sessionEmail || ('guest_' + Math.floor(Math.random()*100000) + '@@' + 'example.com');
+
+  function append(text, role){
+    var div = document.createElement('div');
+    div.className = 'bubble ' + role;
+    div.textContent = text;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function openPanel(){ panel.style.display='block'; btn.setAttribute('aria-expanded','true'); input.focus(); }
+  function closePanel(){ panel.style.display='none'; btn.setAttribute('aria-expanded','false'); }
+
+  btn.addEventListener('click', function(){
+    var opened = (panel.style.display==='block');
+    if (opened) { stopPolling(); closePanel(); }
+    else { openPanel(); ensureThread(startPolling); }
+  });
+  closeBtn.addEventListener('click', function(){ stopPolling(); closePanel(); });
+
+  function ensureThread(cb){
+    if (threadId > 0) { cb && cb(); return; }
+    $.post(openUrl, { clientName: clientName, clientEmail: clientEmail })
+      .done(function (res) {
+        if (res && res.ok) {
+          threadId = res.threadId;
+          loadHistory(cb);
+        } else {
+          alert('Cannot open chat thread.');
+        }
+      })
+      .fail(function (xhr){ alert('OpenOrCreate error: ' + (xhr.responseText || xhr.status)); });
+  }
+
+  function loadHistory(cb){
+    $.getJSON(histUrl, { id: threadId }, function(items){
+      box.innerHTML = '';
+      lastId = 0;
+      (items || []).forEach(function(m){
+        var role = (m.Sender === 'Client') ? 'client' : 'agent';
+        append(m.Text, role);
+        if (m.ChatMessageId && m.ChatMessageId > lastId) lastId = m.ChatMessageId;
+      });
+      cb && cb();
+    });
+  }
+
+  function startPolling(){
+    stopPolling();
+    pollTimer = setInterval(function(){
+      $.getJSON(pollUrl, { id: threadId, sinceId: lastId }, function(items){
+        if (!items || !items.length) return;
+        items.forEach(function(m){
+          var role = (m.Sender === 'Client') ? 'client' : 'agent';
+          append(m.Text, role);
+          if (m.ChatMessageId > lastId) lastId = m.ChatMessageId; 
+        });
+      });
+    }, 1500);
+  }
+  function stopPolling(){ if (pollTimer){ clearInterval(pollTimer); pollTimer = null; } }
+
+  function send(){
+    var msg = input.value.trim();
+    if (!msg || !threadId) return;
+
+    append(msg, 'client');
+    input.value = '';
+
+    $.post(sendUrl, { threadId: threadId, text: msg, sender: 'Client' })
+      .done(function (res) {
+        if (res && res.messageId) {
+          lastId = Math.max(lastId, res.messageId);
+        }
+      })
+      .fail(function (xhr) {
+        append('Message not sent: ' + (xhr.responseText || xhr.status), 'agent');
+      });
+  }
+
+  sendBtn.addEventListener('click', send);
+  input.addEventListener('keydown', function(e){ if (e.key === 'Enter') send(); });
+})();
+</script>
