@@ -47,12 +47,6 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 
-var uploadsPath = Path.Combine(app.Environment.WebRootPath, "uploads");
-if (!Directory.Exists(uploadsPath))
-{
-    Directory.CreateDirectory(uploadsPath);
-}
-
 app.UseRouting();
 
 app.MapBlazorHub();

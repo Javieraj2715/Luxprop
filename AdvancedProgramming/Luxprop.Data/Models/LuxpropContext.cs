@@ -44,11 +44,10 @@ public partial class LuxpropContext : DbContext
     public virtual DbSet<Usuario> Usuarios { get; set; }
 
     public virtual DbSet<UsuarioRol> UsuarioRols { get; set; }
-    public virtual DbSet<HistorialExpediente> HistorialExpedientes { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=MARIANA_MASIS\\SQLEXPRESS;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
+        => optionsBuilder.UseSqlServer("Server=MSI\\MSSQLSERVER01;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -332,39 +331,6 @@ public partial class LuxpropContext : DbContext
                 .HasForeignKey(d => d.UsuarioId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Usuario_R__Usuar__4F7CD00D");
-        });
-
-        modelBuilder.Entity<HistorialExpediente>(entity =>
-        {
-            entity.HasKey(e => e.HistorialId).HasName("PK__HistorialExpediente");
-            entity.ToTable("HistorialExpediente");
-            entity.Property(e => e.HistorialId).HasColumnName("Historial_ID");
-            entity.Property(e => e.ExpedienteId).HasColumnName("Expediente_ID");
-            entity.Property(e => e.UsuarioId).HasColumnName("Usuario_ID");
-
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnName("Fecha_Modificacion")
-                .HasColumnType("datetime")
-                .HasDefaultValueSql("GETDATE()");
-
-            entity.Property(e => e.EstadoNuevo)
-                .HasColumnName("EstadoNuevo")
-                .HasMaxLength(100);
-
-            entity.Property(e => e.Descripcion)
-                .HasColumnName("Descripcion")
-                .HasMaxLength(500);
-            entity.HasOne(d => d.Expediente)
-                .WithMany(p => p.HistorialExpedientes)
-                .HasForeignKey(d => d.ExpedienteId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_HistorialExpediente_Expediente");
-            entity.HasOne(d => d.Expediente)
-              .WithMany(p => p.HistorialExpedientes)
-              .HasForeignKey(d => d.ExpedienteId)
-              .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK_HistorialExpediente_Expediente");
-
         });
 
         OnModelCreatingPartial(modelBuilder);
