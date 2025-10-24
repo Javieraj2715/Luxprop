@@ -61,7 +61,7 @@
                                     </a>
                                 </div>
                             </td>
-
+                            <span class="badge @(GetBadgeClass(expediente.Estado))">@expediente.Estado</span>
                             </td>
                         </tr>
                     }
@@ -70,10 +70,19 @@
         </div>
     }
 </div>
-
+<td>
+    
+</td>
 @code {
     private List<Expediente>? expedientes;
 
+    private string GetBadgeClass(string estado) => estado switch
+    {
+        "Completado" => "bg-success",
+        "En revisión" => "bg-warning text-dark",
+        "Archivado" => "bg-secondary",
+        _ => "bg-info"
+    };
     protected override async Task OnInitializedAsync()
     {
         expedientes = await Db.Expedientes
