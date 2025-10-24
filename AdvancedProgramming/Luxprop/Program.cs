@@ -31,7 +31,7 @@ var app = builder.Build();
 //Credential = GoogleCredential.FromFile("../"),
 //});
 
-var credentialPath = @"C:\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
+var credentialPath = @"C:\Users\pepon\Documents\GitHub\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
 Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialPath);
 
 

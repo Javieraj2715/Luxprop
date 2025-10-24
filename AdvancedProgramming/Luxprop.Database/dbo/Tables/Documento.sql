@@ -6,6 +6,7 @@
     [Fecha_Carga]    DATETIME DEFAULT GETDATE(),
     [UrlArchivo]     NVARCHAR(500)  NULL,
     [Expediente_ID]  INT NULL,
+    [Etiquetas] NVARCHAR(255) NULL
     CONSTRAINT [PK_Documento] PRIMARY KEY CLUSTERED ([Documento_ID] ASC),
     CONSTRAINT [FK_Documento_Expediente]
         FOREIGN KEY ([Expediente_ID]) REFERENCES [dbo].[Expediente] ([Expediente_ID])
