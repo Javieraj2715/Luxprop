@@ -1,0 +1,56 @@
+@page "/expedientes/create/{PropiedadId:int}"
+@using Luxprop.Data.Models
+@inject LuxpropContext Db
+@inject NavigationManager Navigation
+
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="card shadow p-4">
+        <h3 class="mb-4 text-center">Create Case File</h3>
+
+        <EditForm Model="newCase" OnValidSubmit="SaveCase">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">Occupation Type</label>
+                <InputText class="form-control" @bind-Value="newCase.TipoOcupacion" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Status</label>
+                <InputSelect class="form-select" @bind-Value="newCase.Estado">
+                    <option value="Abierto">Open</option>
+                    <option value="En proceso">In Progress</option>
+                    <option value="Cerrado">Closed</option>
+                </InputSelect>
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">Back</button>
+                <button type="submit" class="btn btn-primary">Create</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int PropiedadId { get; set; }
+    private Expediente newCase = new();
+
+    protected override Task OnInitializedAsync()
+    {
+        newCase.PropiedadId = PropiedadId;
+        newCase.Estado = "Abierto"; 
+        newCase.FechaApertura = DateOnly.FromDateTime(DateTime.Now);
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveCase()
+    {
+        Db.Expedientes.Add(newCase);
+        await Db.SaveChangesAsync();
+        Navigation.NavigateTo($"/expedientes/details/{newCase.ExpedienteId}");
+    }
+
+    private void Cancel() => Navigation.NavigateTo("/properties");
+}
