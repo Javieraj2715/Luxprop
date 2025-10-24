@@ -28,8 +28,4 @@ public partial class Expediente
     public virtual Propiedad? Propiedad { get; set; }
 
     public virtual ICollection<TareaTramite> TareaTramites { get; set; } = new List<TareaTramite>();
-
-    public virtual ICollection<HistorialExpediente>? HistorialExpedientes { get; set; }
-
-
 }
