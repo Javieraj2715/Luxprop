@@ -1,8 +1,8 @@
-using Luxprop.Data;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
+using Luxprop.Business.Services;
 using Luxprop.Data.Models;
 using Luxprop.Services;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +14,8 @@ builder.Services.AddDbContext<LuxpropContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Luxprop")));
 builder.Services.AddScoped<Luxprop.Services.AuthService>();
 builder.Services.AddScoped<SessionService>();
+builder.Services.AddScoped<IDocumentoService, DocumentoService>();
+
 
 // Add Entity Framework
 builder.Services.AddDbContext<LuxpropContext>();
@@ -23,6 +25,15 @@ builder.Services.AddScoped<PasswordHelper>();
 builder.Services.AddScoped<AuditoriaService>();
 
 var app = builder.Build();
+
+//FirebaseApp.Create(new AppOptions()
+//{
+//Credential = GoogleCredential.FromFile("../"),
+//});
+
+var credentialPath = @"C:\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
+Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialPath);
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

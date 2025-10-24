@@ -16,6 +16,7 @@ public partial class Documento
     public DateOnly? FechaCarga { get; set; }
 
     public int? ExpedienteId { get; set; }
+    public string? UrlArchivo { get; set; }
 
     public virtual ICollection<AlertaVencimiento> AlertaVencimientos { get; set; } = new List<AlertaVencimiento>();
 
