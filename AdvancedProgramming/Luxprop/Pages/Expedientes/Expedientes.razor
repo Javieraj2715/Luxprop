@@ -1,0 +1,133 @@
+@page "/expedientes"
+@using Luxprop.Data.Models
+@using Microsoft.EntityFrameworkCore
+@inject LuxpropContext Db
+@inject NavigationManager Navigation
+
+<PageTitle>Expedientes - Luxprop</PageTitle>
+
+<div class="expedientes-page">
+    <div class="page-header">
+        <h1>Expedientes</h1>
+    </div>
+
+    @if (expedientes == null)
+    {
+        <div class="loading">Cargando expedientes...</div>
+    }
+    else if (!expedientes.Any())
+    {
+        <div class="no-data">No hay expedientes registrados.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Propiedad</th>
+                        <th>Cliente</th>
+                        <th>Estado</th>
+                        <th>Fecha Apertura</th>
+                        <th>Fecha Cierre</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var expediente in expedientes)
+                    {
+                        <tr>
+                            <td>@expediente.ExpedienteId</td>
+                            <td>@expediente.Propiedad?.Titulo</td>
+                            <td>@(expediente.Cliente != null ? expediente.Cliente.Usuario : "Sin cliente")</td>
+                            <td>
+                                <InputSelect @bind-Value="expediente.Estado" class="form-select" @onchange="async (_) => await CambiarEstado(expediente)">
+                                    <option value="Abierto">Abierto</option>
+                                    <option value="En proceso">En proceso</option>
+                                    <option value="Cerrado">Cerrado</option>
+                                </InputSelect>
+                            </td>
+                            <td>@expediente.FechaApertura</td>
+                            <td>@(expediente.FechaCierre?.ToString() ?? "-")</td>
+                            <td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="/expedientes/details/@expediente.ExpedienteId" class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-eye"></i> Ver
+                                    </a>
+                                    <a href="/expedientes/edit/@expediente.ExpedienteId" class="btn btn-sm btn-outline-warning">
+                                        <i class="bi bi-pencil-square"></i> Editar
+                                    </a>
+                                </div>
+                            </td>
+
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Expediente>? expedientes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        expedientes = await Db.Expedientes
+            .Include(e => e.Propiedad)
+            .Include(e => e.Cliente)
+            .ToListAsync();
+    }
+
+    private async Task CambiarEstado(Expediente expediente)
+    {
+        if (expediente.Estado == "Cerrado")
+        {
+            expediente.FechaCierre = DateOnly.FromDateTime(DateTime.Now);
+        }
+        else
+        {
+            expediente.FechaCierre = null;
+        }
+
+        Db.Expedientes.Update(expediente);
+        await Db.SaveChangesAsync();
+    }
+}
+
+<style>
+    .expedientes-page {
+        padding: 2rem;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .table {
+        background: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+        .table th {
+            background: #0d505a;
+            color: white;
+        }
+
+        .table td, .table th {
+            padding: 1rem;
+        }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+</style>
