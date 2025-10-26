@@ -1,0 +1,259 @@
+﻿@page "/documents"
+@using Luxprop.Business.Services
+@using Luxprop.Data.Models
+@inject LuxpropContext Db
+@inject IDocumentoService DocumentoService
+
+<PageTitle>Documents - Luxprop</PageTitle>
+
+<div class="documents-page">
+    <div class="page-header">
+        <h1>Documents</h1>
+        <div class="header-actions">
+            <InputFile OnChange="OnFileSelected" />
+            <button class="btn btn-primary" @onclick="UploadDocument" disabled="@(!canUpload)">Upload Document</button>
+        </div>
+    </div>
+
+    @if (documents == null)
+    {
+        <div class="loading">Loading documents...</div>
+    }
+    else if (!documents.Any())
+    {
+        <div class="no-data">No documents found.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Date Uploaded</th>
+                        <th>Expediente</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var doc in documents)
+                    {
+                        <tr>
+                            <td>@doc.Nombre</td>
+                            <td>@doc.TipoDocumento</td>
+                            <td>@doc.Estado</td>
+                            <td>@(doc.FechaCarga?.ToString("yyyy-MM-dd"))</td>
+                            <td>@doc.ExpedienteId</td>
+                            <td>
+                                <div class="action-buttons">
+                                    @if (!string.IsNullOrEmpty(doc.UrlArchivo))
+                                    {
+                                        <a href="@doc.UrlArchivo" target="_blank" class="btn btn-sm btn-outline-info">
+                                            <i class="bi bi-download"></i> Download
+                                        </a>
+                                    }
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteDocument(doc.DocumentoId)">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Documento>? documents;
+    private IBrowserFile? selectedFile;
+    private bool canUpload = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDocuments();
+    }
+
+    private async Task LoadDocuments()
+    {
+        try
+        {
+            documents = await Task.Run(() => Db.Documentos.ToList());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading documents: {ex.Message}");
+        }
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        canUpload = selectedFile != null;
+    }
+
+    private async Task UploadDocument()
+    {
+        if (selectedFile == null) return;
+
+        try
+        {
+            using var stream = selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // máx 10MB
+            var url = await DocumentoService.UploadFileAsync(stream, selectedFile.Name, selectedFile.ContentType);
+
+            var newDoc = new Documento
+                {
+                    Nombre = selectedFile.Name,
+                    TipoDocumento = selectedFile.ContentType,
+                    Estado = "Activo",
+                    FechaCarga = DateOnly.FromDateTime(DateTime.UtcNow),
+                    UrlArchivo = url
+                };
+
+            Db.Documentos.Add(newDoc);
+            await Db.SaveChangesAsync();
+
+            selectedFile = null;
+            canUpload = false;
+            await LoadDocuments();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error uploading document: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteDocument(int id)
+    {
+        try
+        {
+            var doc = Db.Documentos.Find(id);
+            if (doc != null)
+            {
+                if (!string.IsNullOrEmpty(doc.UrlArchivo))
+                    await DocumentoService.DeleteFileAsync(doc.UrlArchivo);
+
+                Db.Documentos.Remove(doc);
+                await Db.SaveChangesAsync();
+
+                await LoadDocuments();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting document: {ex.Message}");
+        }
+    }
+}
+
+<style>
+    .documents-page {
+        padding: 2rem;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .page-header h1 {
+        margin: 0;
+        color: #0d505a;
+    }
+
+    .loading, .no-data {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .table th {
+            background-color: #0d505a;
+            color: white;
+            font-weight: 600;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn {
+        padding: 0.375rem 0.75rem;
+        border-radius: 4px;
+        text-decoration: none;
+        border: 1px solid transparent;
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background-color: #0d505a;
+        color: white;
+        border-color: #0d505a;
+    }
+
+        .btn-primary:hover {
+            background-color: #093e47;
+            border-color: #093e47;
+        }
+
+    .btn-outline-info {
+        color: #17a2b8;
+        border-color: #17a2b8;
+        background-color: transparent;
+    }
+
+        .btn-outline-info:hover {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+    .btn-outline-danger {
+        color: #dc3545;
+        border-color: #dc3545;
+        background-color: transparent;
+    }
+
+        .btn-outline-danger:hover {
+            background-color: #dc3545;
+            color: white;
+        }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+</style>
