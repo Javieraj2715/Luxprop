@@ -11,7 +11,7 @@ namespace Luxprop.Data.Repositories
         Task<IEnumerable<ChatThread>> GetByStateAsync(string state);
         Task<ChatThread?> GetLatestOpenThreadByEmailAsync(string clientEmail);
     }
-    
+
     public class ChatThreadRepository : RepositoryBase<ChatThread>, IChatThreadRepository
     {
         public ChatThreadRepository()
@@ -23,6 +23,7 @@ namespace Luxprop.Data.Repositories
         {
             return await DbSet
                 .Include(ct => ct.ChatMessages)
+                .Include(ct => ct.UsuarioCreador)
                 .Where(ct => ct.State == "Open")
                 .OrderByDescending(ct => ct.CreatedUtc)
                 .ToListAsync();
@@ -32,6 +33,7 @@ namespace Luxprop.Data.Repositories
         {
             return await DbSet
                 .Include(ct => ct.ChatMessages)
+                .Include(ct => ct.UsuarioCreador)
                 .Where(ct => ct.State == "Open" && ct.NeedsAgent == true)
                 .OrderByDescending(ct => ct.CreatedUtc)
                 .ToListAsync();
@@ -41,6 +43,7 @@ namespace Luxprop.Data.Repositories
         {
             return await DbSet
                 .Include(ct => ct.ChatMessages)
+                .Include(ct => ct.UsuarioCreador)
                 .FirstOrDefaultAsync(ct => ct.ClientEmail == clientEmail);
         }
 
@@ -48,6 +51,7 @@ namespace Luxprop.Data.Repositories
         {
             return await DbSet
                 .Include(ct => ct.ChatMessages)
+                .Include(ct => ct.UsuarioCreador)
                 .Where(ct => ct.State == state)
                 .OrderByDescending(ct => ct.CreatedUtc)
                 .ToListAsync();
@@ -57,6 +61,7 @@ namespace Luxprop.Data.Repositories
         {
             return await DbSet
                 .Include(ct => ct.ChatMessages)
+                .Include(ct => ct.UsuarioCreador)
                 .Where(ct => ct.State == "Open" && ct.ClientEmail == clientEmail)
                 .OrderByDescending(ct => ct.CreatedUtc)
                 .FirstOrDefaultAsync();

@@ -1,19 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Luxprop.Data.Models;
-
-public partial class ChatMessage
+namespace Luxprop.Data.Models
 {
-    public int ChatMessageId { get; set; }
+    public partial class ChatMessage
+    {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int ChatMessageId { get; set; }
 
-    public int ChatThreadId { get; set; }
+        public int ChatThreadId { get; set; }
 
-    public string Sender { get; set; } = null!;
+        public string Sender { get; set; } = null!;
 
-    public string Text { get; set; } = null!;
+        public string Text { get; set; } = null!;
 
-    public DateTime SentUtc { get; set; }
+        public DateTime SentUtc { get; set; }
 
-    public virtual ChatThread ChatThread { get; set; } = null!;
+        public int? UsuarioId { get; set; }
+
+        [ForeignKey(nameof(UsuarioId))]
+        public virtual Usuario? Usuario { get; set; }
+
+        [ForeignKey(nameof(ChatThreadId))]
+        public virtual ChatThread ChatThread { get; set; } = null!;
+    }
 }
