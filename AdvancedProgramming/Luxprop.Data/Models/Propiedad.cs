@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
+
 namespace Luxprop.Data.Models;
 
 public partial class Propiedad

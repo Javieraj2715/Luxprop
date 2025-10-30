@@ -9,7 +9,7 @@ public partial class Expediente
 
     public string? TipoOcupacion { get; set; }
 
-    public string? Estado { get; set; }
+    public string? Estado { get; set; } = "Activo";
 
     public int? PropiedadId { get; set; }
 
