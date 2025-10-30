@@ -10,7 +10,7 @@ namespace Luxprop.Data.Repositories
         Task<IEnumerable<ChatMessage>> GetMessagesAfterIdAsync(int threadId, int messageId);
         Task<ChatMessage?> GetLatestMessageAsync(int threadId);
     }
-    
+
     public class ChatMessageRepository : RepositoryBase<ChatMessage>, IChatMessageRepository
     {
         public ChatMessageRepository()
@@ -22,6 +22,7 @@ namespace Luxprop.Data.Repositories
         {
             return await DbSet
                 .Include(cm => cm.ChatThread)
+                .Include(cm => cm.Usuario)
                 .Where(cm => cm.ChatThreadId == threadId)
                 .OrderBy(cm => cm.ChatMessageId)
                 .ToListAsync();
@@ -31,6 +32,7 @@ namespace Luxprop.Data.Repositories
         {
             return await DbSet
                 .Include(cm => cm.ChatThread)
+                .Include(cm => cm.Usuario)
                 .Where(cm => cm.Sender == sender)
                 .OrderByDescending(cm => cm.SentUtc)
                 .ToListAsync();
@@ -40,6 +42,7 @@ namespace Luxprop.Data.Repositories
         {
             return await DbSet
                 .Include(cm => cm.ChatThread)
+                .Include(cm => cm.Usuario)
                 .Where(cm => cm.ChatThreadId == threadId && cm.ChatMessageId > messageId)
                 .OrderBy(cm => cm.ChatMessageId)
                 .ToListAsync();
@@ -49,6 +52,7 @@ namespace Luxprop.Data.Repositories
         {
             return await DbSet
                 .Include(cm => cm.ChatThread)
+                .Include(cm => cm.Usuario)
                 .Where(cm => cm.ChatThreadId == threadId)
                 .OrderByDescending(cm => cm.ChatMessageId)
                 .FirstOrDefaultAsync();
