@@ -1,15 +1,18 @@
-@page "/dashboard"
+﻿@page "/dashboard"
 @using Luxprop.Data
 @using Luxprop.Data.Models
+@using Microsoft.AspNetCore.SignalR.Client
 @inject LuxpropContext Db
 @inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject Luxprop.Services.SessionService SessionService
+@implements IAsyncDisposable
 
 <PageTitle>Dashboard - Luxprop</PageTitle>
 
 <div class="dashboard-page">
     <div class="page-header">
         <h1>Dashboard</h1>
-
     </div>
 
     <div class="dashboard-grid">
@@ -112,6 +115,28 @@
                 </nav>
             </div>
         </div>
+
+        <!-- Chat Notifications -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3>Chat Notifications</h3>
+            </div>
+            <div class="card-content">
+                @if (chatNotifications.Count == 0)
+                {
+                    <div class="no-activity">No notifications yet</div>
+                }
+                else
+                {
+                    <ul class="activity-list">
+                        @foreach (var n in chatNotifications)
+                        {
+                            <li class="activity-item">@n</li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
     </div>
 </div>
 
@@ -120,16 +145,23 @@
     private int activeProperties = 0;
     private List<Propiedad>? recentProperties;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadDashboardData();
-    }
+    private HubConnection? hub;
+    private readonly List<string> chatNotifications = new();
+    private bool _loaded;
 
+    // ⚠️ No usamos OnInitializedAsync para llamadas JS: se hace en OnAfterRenderAsync
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && !_loaded)
         {
+            // Cargar usuario desde sessionStorage (JS interop seguro aquí)
+            await SessionService.LoadUserAsync();
+
+            await LoadDashboardData();
+            await InitializeChatHubAsync();
             await LoadUserName();
+
+            _loaded = true;
         }
     }
 
@@ -152,16 +184,59 @@
     {
         try
         {
-            var userName = await JSRuntime.InvokeAsync<string>("sessionStorage.getItem", "UsuarioNombre");
-            if (!string.IsNullOrEmpty(userName))
-            {
-                await JSRuntime.InvokeVoidAsync("document.getElementById", "userName", userName);
-            }
+            // Misma clave que guarda tu SessionService
+            var userName = await JSRuntime.InvokeAsync<string>("sessionStorage.getItem", "UserName");
+            // Si quisieras mostrarlo en la UI, guarda en un campo y úsalo en el markup.
+            // _currentUserName = userName;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading user name: {ex.Message}");
         }
+    }
+
+    private async Task InitializeChatHubAsync()
+    {
+        try
+        {
+            hub = new HubConnectionBuilder()
+                .WithUrl(NavigationManager.ToAbsoluteUri("/hubs/chat"))
+                .WithAutomaticReconnect()
+                .Build();
+
+            hub.On<object>("NewThread", payload =>
+            {
+                string text;
+                try
+                {
+                    dynamic d = payload!;
+                    text = $"New chat from {d.clientName} (Thread #{d.threadId})";
+                }
+                catch
+                {
+                    text = $"New chat started: {payload}";
+                }
+
+                chatNotifications.Insert(0, text);
+                InvokeAsync(StateHasChanged);
+            });
+
+            await hub.StartAsync();
+
+            // Únete al grupo del agente: "agent:{id}"
+            var agentId = (await SessionService.GetUserIdAsync()).ToString();
+            await hub.SendAsync("JoinAgent", agentId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing chat hub: {ex.Message}");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hub is not null)
+            await hub.DisposeAsync();
     }
 }
 

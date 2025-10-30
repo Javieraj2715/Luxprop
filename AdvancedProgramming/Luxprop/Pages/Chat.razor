@@ -3,6 +3,7 @@
 @using Luxprop.Data.Models
 @using Luxprop.Models.Chat
 @using System.Diagnostics
+@using Microsoft.AspNetCore.Components.Forms
 @inject LuxpropContext Db
 @inject IJSRuntime JSRuntime
 @inject NavigationManager Navigation
@@ -46,6 +47,7 @@
 
         <div class="chat-input">
             <EditForm Model="@newMessage" OnValidSubmit="@SendMessage" FormName="ChatMessageForm">
+                <DataAnnotationsValidator />
                 <div class="input-group">
                     <InputText @bind-Value="newMessage.Text" 
                                class="form-control" 
@@ -67,6 +69,7 @@
             <div class="init-form">
                 <h3>Start a New Chat</h3>
                 <EditForm Model="@chatInit" OnValidSubmit="@InitializeChat" FormName="ChatInitForm">
+                    <DataAnnotationsValidator />
                     <div class="form-group">
                         <label for="clientName">Your Name</label>
                         <InputText id="clientName" @bind-Value="chatInit.ClientName" class="form-control" />
@@ -247,6 +250,14 @@
             messages = Db.ChatMessages
                 .Where(m => m.ChatThreadId == currentThreadId)
                 .OrderBy(m => m.ChatMessageId)
+                .Select(m => new ChatMessage
+                {
+                    ChatMessageId = m.ChatMessageId,
+                    ChatThreadId  = m.ChatThreadId,
+                    Text          = m.Text ?? string.Empty,
+                    Sender        = m.Sender ?? "Client",
+                    SentUtc       = m.SentUtc
+                })
                 .ToList();
         }
         catch (Exception ex)
@@ -320,6 +331,14 @@
             var newMessages = Db.ChatMessages
                 .Where(m => m.ChatThreadId == currentThreadId && m.ChatMessageId > lastMessageId)
                 .OrderBy(m => m.ChatMessageId)
+                .Select(m => new ChatMessage
+                {
+                    ChatMessageId = m.ChatMessageId,
+                    ChatThreadId  = m.ChatThreadId,
+                    Text          = m.Text ?? string.Empty,
+                    Sender        = m.Sender ?? "Client",
+                    SentUtc       = m.SentUtc
+                })
                 .ToList();
 
             if (newMessages.Any())

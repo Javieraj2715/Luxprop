@@ -41,16 +41,23 @@
                             <td>@expediente.ExpedienteId</td>
                             <td>@expediente.Propiedad?.Titulo</td>
                             <td>@(expediente.Cliente != null ? expediente.Cliente.Usuario : "Sin cliente")</td>
+
+                            <!-- Columna Estado: badge + selector -->
                             <td>
-                                <InputSelect @bind-Value="expediente.Estado" class="form-select" @onchange="async (_) => await CambiarEstado(expediente)">
+                                <span class="badge @(GetBadgeClass(expediente.Estado))">@expediente.Estado</span>
+                                <InputSelect @bind-Value="expediente.Estado"
+                                             class="form-select mt-2"
+                                             @onchange="async (_) => await CambiarEstado(expediente)">
                                     <option value="Abierto">Abierto</option>
                                     <option value="En proceso">En proceso</option>
                                     <option value="Cerrado">Cerrado</option>
                                 </InputSelect>
                             </td>
+
                             <td>@expediente.FechaApertura</td>
                             <td>@(expediente.FechaCierre?.ToString() ?? "-")</td>
-                            <td>
+
+                            <!-- Acciones -->
                             <td>
                                 <div class="action-buttons">
                                     <a href="/expedientes/details/@expediente.ExpedienteId" class="btn btn-sm btn-outline-info">
@@ -61,8 +68,6 @@
                                     </a>
                                 </div>
                             </td>
-                            <span class="badge @(GetBadgeClass(expediente.Estado))">@expediente.Estado</span>
-                            </td>
                         </tr>
                     }
                 </tbody>
@@ -70,19 +75,19 @@
         </div>
     }
 </div>
-<td>
-    
-</td>
+
 @code {
     private List<Expediente>? expedientes;
 
+    // Mapea los 3 estados que usas en el selector
     private string GetBadgeClass(string estado) => estado switch
     {
-        "Completado" => "bg-success",
-        "En revisión" => "bg-warning text-dark",
-        "Archivado" => "bg-secondary",
-        _ => "bg-info"
+        "Abierto" => "bg-info",
+        "En proceso" => "bg-warning text-dark",
+        "Cerrado" => "bg-success",
+        _ => "bg-secondary"
     };
+
     protected override async Task OnInitializedAsync()
     {
         expedientes = await Db.Expedientes
@@ -93,17 +98,15 @@
 
     private async Task CambiarEstado(Expediente expediente)
     {
+        // Si lo cierran, se marca FechaCierre; si no, se limpia
         if (expediente.Estado == "Cerrado")
-        {
             expediente.FechaCierre = DateOnly.FromDateTime(DateTime.Now);
-        }
         else
-        {
             expediente.FechaCierre = null;
-        }
 
         Db.Expedientes.Update(expediente);
         await Db.SaveChangesAsync();
+        StateHasChanged();
     }
 }
 
@@ -133,10 +136,18 @@
 
         .table td, .table th {
             padding: 1rem;
+            vertical-align: middle;
         }
 
     .action-buttons {
         display: flex;
         gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .badge {
+        font-size: .85rem;
+        padding: .5rem .6rem;
+        border-radius: .5rem;
     }
 </style>
