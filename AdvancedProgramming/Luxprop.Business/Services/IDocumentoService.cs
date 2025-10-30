@@ -10,5 +10,8 @@ namespace Luxprop.Business.Services
     {
         Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType);
         Task DeleteFileAsync(string fileUrl);
+        Task<bool> UpdateDocumentStatusAsync(int documentoId, string newStatus);
+
+        Task UpdateExpedienteStatusAsync(int? expedienteId);
     }
 }

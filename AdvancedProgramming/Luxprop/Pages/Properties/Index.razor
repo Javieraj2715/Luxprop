@@ -1,0 +1,72 @@
+﻿
+@using Luxprop.Data.Models
+@using Microsoft.EntityFrameworkCore
+@using Luxprop.Services
+
+@inject LuxpropContext Db
+@inject SessionService Session
+
+<PageTitle>Propiedades</PageTitle>
+
+<h3>Propiedades</h3>
+
+@if (items is null)
+{
+    <p>Cargando…</p>
+}
+else if (items.Count == 0)
+{
+    <p>No hay propiedades para mostrar.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in items)
+            {
+                <tr>
+                    <td>@p.PropiedadId</td>
+                    <td>@p.Titulo</td>
+                    <td>@p.EstadoPublicacion</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Propiedad>? items;
+    private int? currentUserId;
+    private string? currentRole;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        currentUserId = await Session.GetUserIdAsync();
+        currentRole = await Session.GetUserRoleAsync();
+
+        await LoadAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadAsync()
+    {
+        IQueryable<Propiedad> q = Db.Propiedads;
+
+        // Filtra por agente si aplica en tu modelo (descomenta y ajusta la columna):
+        // if (!string.Equals(currentRole, "Admin", StringComparison.OrdinalIgnoreCase) && currentUserId.HasValue)
+        // {
+        //     q = q.Where(p => p.AgenteId == currentUserId.Value);
+        // }
+
+        items = await q.AsNoTracking().ToListAsync();
+    }
+}
