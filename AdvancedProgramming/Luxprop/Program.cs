@@ -15,7 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
-builder.Services.AddDbContext<LuxpropContext>(options =>
+builder.Services.AddDbContextFactory<LuxpropContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Luxprop")));
 
 builder.Services.AddScoped<AuthService>();
@@ -24,7 +24,7 @@ builder.Services.AddScoped<IDocumentoService, DocumentoService>();
 builder.Services.AddScoped<PasswordHelper>();
 builder.Services.AddScoped<AuditoriaService>();
 builder.Services.AddScoped<SecurityService>();
-
+builder.Services.AddScoped<IChatService, ChatService>();
 
 // SignalR
 builder.Services.AddSignalR();
