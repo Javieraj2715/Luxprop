@@ -7,7 +7,7 @@
 {
     <div class="layout-wrapper">
 
-        <!-- ✅ Barra superior con logo + nombre + usuario/logout -->
+        <!-- ✅ Barra superior -->
         <header class="top-bar">
             <div class="brand-left">
                 <img src="https://i.imgur.com/nmN7x14.png" class="brand-logo" />
@@ -20,12 +20,25 @@
             </div>
         </header>
 
-        <!-- ✅ Menú justo debajo como en la imagen -->
+        <!-- ✅ Menú principal -->
         <nav class="menu-bar">
             <NavLink href="/dashboard" class="menu-link" Match="NavLinkMatch.All">Dashboard</NavLink>
             <NavLink href="/documents" class="menu-link">Documents</NavLink>
             <NavLink href="/properties" class="menu-link">Properties</NavLink>
-            <NavLink href="/chat" class="menu-link">Chat</NavLink>
+
+            @* 🔹 Chat dinámico según rol *@
+            @if (userRole == "Administrador" || userRole == "Agente")
+            {
+                <NavLink href="/chatadmin" class="menu-link">
+                    <i class="bi bi-headset"></i> Chat Panel
+                </NavLink>
+            }
+            else
+            {
+                <NavLink href="/chat" class="menu-link">
+                    <i class="bi bi-chat-dots"></i> Chat
+                </NavLink>
+            }
 
             @if (userRole == "Administrador")
             {
@@ -33,7 +46,7 @@
             }
         </nav>
 
-        <!-- ✅ Contenido de la página -->
+        <!-- ✅ Contenido dinámico -->
         <main class="page-content">
             @Body
         </main>
