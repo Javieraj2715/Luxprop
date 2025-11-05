@@ -1,0 +1,130 @@
+﻿@page "/dashboardcomp"
+@using Luxprop.Data
+@using Luxprop.Data.Models
+@inject LuxpropContext Db
+@inject Luxprop.Services.SessionService Session
+@inject NavigationManager Nav
+
+<PageTitle>Comprador Dashboard</PageTitle>
+
+@if (!loaded)
+{
+    <p>Loading…</p>
+    ;
+}
+else if (!authorized)
+{
+
+    <p>Unauthorized</p>
+    ;
+}
+else
+{
+    <div class="dashboard-page">
+        <div class="page-header"><h1>Comprador Dashboard</h1></div>
+
+        <div class="dashboard-grid">
+            <!-- Acciones -->
+            <div class="dashboard-card">
+                <div class="card-header"><h3>Acciones rápidas</h3></div>
+                <div class="card-content">
+                    <a href="/properties" class="btn btn-primary">Explorar propiedades</a>
+                    <a href="/favorites" class="btn btn-secondary">Favoritos</a>
+                    <a href="/chat" class="btn btn-info">Hablar con un agente</a>
+                </div>
+            </div>
+
+            <!-- Vistas recientes / Sugerencias -->
+            <div class="dashboard-card">
+                <div class="card-header"><h3>Recientes</h3></div>
+                <div class="card-content">
+                    @if (recentProperties?.Any() == true)
+                    {
+                        <ul class="activity-list">
+                            @foreach (var p in recentProperties.Take(8))
+                            {
+                                <li class="activity-item">
+                                    <div class="activity-title">@p.Titulo</div>
+                                    <div class="activity-meta">@p.EstadoPublicacion</div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+
+                        <div class="no-activity">Sin actividad reciente</div>
+                        ;
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool loaded, authorized, firstPass;
+    private List<Propiedad> recentProperties = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || firstPass) return;
+        firstPass = true;
+
+        // 1) Cargar sesión DESPUÉS de render (JS interop seguro)
+        await Session.LoadUserAsync();
+
+        // 2) Leer y normalizar el rol (soporta español/inglés y espacios)
+        var roleRaw = await Session.GetUserRoleAsync();
+        var role = NormalizeRole(roleRaw);
+
+        // Si aún no hay rol en la 1ª pasada, intenta una vez más y no redirijas todavía
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            await Task.Delay(50);
+            role = NormalizeRole(await Session.GetUserRoleAsync());
+            if (string.IsNullOrWhiteSpace(role)) return; // se queda mostrando "Loading…"
+        }
+
+        // 3) Autorizar SOLO buyer
+        authorized = role == "buyer";
+        if (!authorized)
+        {
+            // Redirige al dashboard correcto si el rol es otro; si no hay rol válido, al login
+            var target = role switch
+            {
+                "admin" => "/dashboard",
+                "agent" => "/dashboardagent",
+                "seller" => "/dashboardvend",
+                _ => "/login"
+            };
+            Nav.NavigateTo(target, true);
+            return;
+        }
+
+        // 4) Cargar datos (placeholder)
+        recentProperties = Db.Propiedads
+            .OrderByDescending(p => p.PropiedadId)
+            .Take(20)
+            .ToList();
+
+        loaded = true;
+        StateHasChanged();
+    }
+
+    // Mismo helper que usamos en Login.razor
+    private static string NormalizeRole(string? name)
+    {
+        var n = name?.Trim().ToLowerInvariant();
+        return n switch
+        {
+            "administrador" or "admin" => "admin",
+            "agente" or "agent" => "agent",
+            "vendedor" or "seller" => "seller",
+            "comprador" or "buyer" or "cliente" => "buyer",
+            _ => string.Empty
+        };
+    }
+}
+
+

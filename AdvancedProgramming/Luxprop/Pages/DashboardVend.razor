@@ -1,0 +1,137 @@
+﻿@page "/dashboardvend"
+@using Luxprop.Data
+@using Luxprop.Data.Models
+@inject LuxpropContext Db
+@inject Luxprop.Services.SessionService Session
+@inject NavigationManager Nav
+
+<PageTitle>Vendedor Dashboard</PageTitle>
+
+@if (!loaded)
+{
+    <p>Loading…</p>
+    ;
+}
+else if (!authorized)
+{
+
+    <p>Unauthorized</p>
+    ;
+}
+else
+{
+    <div class="dashboard-page">
+        <div class="page-header"><h1>Vendedor Dashboard</h1></div>
+
+        <div class="dashboard-grid">
+            <!-- Resumen -->
+            <div class="dashboard-card">
+                <div class="card-header"><h3>Mis Propiedades</h3></div>
+                <div class="card-content">
+                    <div class="stat-item">
+                        <span class="stat-number">@totalProperties</span>
+                        <span class="stat-label">Total</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">@activeProperties</span>
+                        <span class="stat-label">Activas</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="dashboard-card">
+                <div class="card-header"><h3>Acciones rápidas</h3></div>
+                <div class="card-content">
+                    <a href="/properties/create" class="btn btn-primary">Agregar propiedad</a>
+                    <a href="/properties" class="btn btn-secondary">Ver propiedades</a>
+                </div>
+            </div>
+
+            <!-- Recientes -->
+            <div class="dashboard-card">
+                <div class="card-header"><h3>Recientes</h3></div>
+                <div class="card-content">
+                    @if (recentProperties?.Any() == true)
+                    {
+                        <ul class="activity-list">
+                            @foreach (var p in recentProperties.Take(5))
+                            {
+                                <li class="activity-item">
+                                    <div class="activity-title">@p.Titulo</div>
+                                    <div class="activity-meta">@p.EstadoPublicacion</div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+
+                        <div class="no-activity">Sin actividad reciente</div>
+                        ;
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool loaded, authorized, firstPass;
+    private int totalProperties, activeProperties;
+    private List<Propiedad> recentProperties = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || firstPass) return;
+        firstPass = true;
+
+        await Session.LoadUserAsync();
+        var role = NormalizeRole(await Session.GetUserRoleAsync());
+
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            await Task.Delay(50);
+            role = NormalizeRole(await Session.GetUserRoleAsync());
+            if (string.IsNullOrWhiteSpace(role)) return;
+        }
+
+        authorized = role == "seller";
+        if (!authorized)
+        {
+            var target = role switch
+            {
+                "admin" => "/dashboard",
+                "agent" => "/dashboardagent",
+                "buyer" => "/dashboardcomp",
+                _ => "/login"
+            };
+            Nav.NavigateTo(target, true);
+            return;
+        }
+
+        var all = Db.Propiedads.OrderByDescending(p => p.PropiedadId).ToList();
+        totalProperties = all.Count;
+        activeProperties = all.Count(p => p.EstadoPublicacion == "Active");
+        recentProperties = all;
+
+        loaded = true;
+        StateHasChanged();
+    }
+
+    private static string NormalizeRole(string? name)
+    {
+        var n = name?.Trim().ToLowerInvariant();
+        return n switch
+        {
+            "administrador" or "admin" => "admin",
+            "agente" or "agent" => "agent",
+            "vendedor" or "seller" => "seller",
+            "comprador" or "buyer" or "cliente" => "buyer",
+            _ => string.Empty
+        };
+    }
+}
+
+
+

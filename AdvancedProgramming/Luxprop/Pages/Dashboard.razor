@@ -147,22 +147,47 @@
 
     private HubConnection? hub;
     private readonly List<string> chatNotifications = new();
-    private bool _loaded;
+    private bool _loaded, authorized, firstPass;
 
-    // ⚠️ No usamos OnInitializedAsync para llamadas JS: se hace en OnAfterRenderAsync
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !_loaded)
+        if (!firstRender || firstPass) return;
+        firstPass = true;
+
+        // 1️⃣ Cargar sesión de manera segura
+        await SessionService.LoadUserAsync();
+        var role = NormalizeRole(await SessionService.GetUserRoleAsync());
+
+        // 2️⃣ Intento doble en caso de que el JS interop tarde
+        if (string.IsNullOrWhiteSpace(role))
         {
-            // Cargar usuario desde sessionStorage (JS interop seguro aquí)
-            await SessionService.LoadUserAsync();
-
-            await LoadDashboardData();
-            await InitializeChatHubAsync();
-            await LoadUserName();
-
-            _loaded = true;
+            await Task.Delay(50);
+            role = NormalizeRole(await SessionService.GetUserRoleAsync());
+            if (string.IsNullOrWhiteSpace(role)) return;
         }
+
+        // 3️⃣ Autorizar solo agentes
+        authorized = role == "agent";
+        if (!authorized)
+        {
+            var target = role switch
+            {
+                "admin" => "/dashboard",
+                "seller" => "/dashboardvend",
+                "buyer" => "/dashboardcomp",
+                _ => "/login"
+            };
+            NavigationManager.NavigateTo(target, true);
+            return;
+        }
+
+        // 4️⃣ Si el rol es correcto, continuar con tu carga de datos y chat
+        await LoadDashboardData();
+        await InitializeChatHubAsync();
+        await LoadUserName();
+
+        _loaded = true;
+        StateHasChanged();
     }
 
     private async Task LoadDashboardData()
@@ -184,10 +209,8 @@
     {
         try
         {
-            // Misma clave que guarda tu SessionService
             var userName = await JSRuntime.InvokeAsync<string>("sessionStorage.getItem", "UserName");
-            // Si quisieras mostrarlo en la UI, guarda en un campo y úsalo en el markup.
-            // _currentUserName = userName;
+            // Si quisieras mostrarlo, podrías guardarlo en un campo _currentUserName
         }
         catch (Exception ex)
         {
@@ -223,7 +246,6 @@
 
             await hub.StartAsync();
 
-            // Únete al grupo del agente: "agent:{id}"
             var agentId = (await SessionService.GetUserIdAsync()).ToString();
             await hub.SendAsync("JoinAgent", agentId);
         }
@@ -238,7 +260,22 @@
         if (hub is not null)
             await hub.DisposeAsync();
     }
+
+    // 🧩 Mismo helper universal
+    private static string NormalizeRole(string? name)
+    {
+        var n = name?.Trim().ToLowerInvariant();
+        return n switch
+        {
+            "administrador" or "admin" => "admin",
+            "agente" or "agent" => "agent",
+            "vendedor" or "seller" => "seller",
+            "comprador" or "buyer" or "cliente" => "buyer",
+            _ => string.Empty
+        };
+    }
 }
+
 
 <style>
     .dashboard-page {
