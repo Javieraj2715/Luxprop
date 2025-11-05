@@ -50,6 +50,8 @@ public partial class LuxpropContext : DbContext
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseSqlServer("Server=MSI\\MSSQLSERVER01;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
 
+
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Agente>(entity =>
@@ -107,33 +109,36 @@ public partial class LuxpropContext : DbContext
                 .HasConstraintName("FK__Auditoria__Usuar__5FB337D6");
         });
 
-        modelBuilder.Entity<ChatMessage>(entity =>
-        {
-            entity.HasKey(e => e.ChatMessageId).HasName("PK__ChatMess__9AB61035A2910B89");
-
-            entity.Property(e => e.Sender).HasMaxLength(20);
-            entity.Property(e => e.SentUtc)
-                .HasDefaultValueSql("(getutcdate())")
-                .HasColumnType("datetime");
-
-            entity.HasOne(d => d.ChatThread).WithMany(p => p.ChatMessages)
-                .HasForeignKey(d => d.ChatThreadId)
-                .HasConstraintName("FK_ChatMessages_ChatThreads");
-        });
-
         modelBuilder.Entity<ChatThread>(entity =>
         {
             entity.HasKey(e => e.ChatThreadId).HasName("PK__ChatThre__32405D65C01B4339");
-
             entity.Property(e => e.ClientEmail).HasMaxLength(200);
             entity.Property(e => e.ClientName).HasMaxLength(150);
             entity.Property(e => e.ClosedUtc).HasColumnType("datetime");
-            entity.Property(e => e.CreatedUtc)
-                .HasDefaultValueSql("(getutcdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.State)
-                .HasMaxLength(20)
-                .HasDefaultValue("Open");
+            entity.Property(e => e.CreatedUtc).HasDefaultValueSql("(getutcdate())").HasColumnType("datetime");
+            entity.Property(e => e.State).HasMaxLength(20).HasDefaultValue("Open");
+
+            entity.HasOne(d => d.UsuarioCreador)
+                .WithMany(p => p.ChatThreadsCreados)
+                .HasForeignKey(d => d.CreatedByUserId)
+                .HasConstraintName("FK_ChatThread_Usuario");
+        });
+
+        modelBuilder.Entity<ChatMessage>(entity =>
+        {
+            entity.HasKey(e => e.ChatMessageId).HasName("PK__ChatMess__9AB61035A2910B89");
+            entity.Property(e => e.Sender).HasMaxLength(20);
+            entity.Property(e => e.SentUtc).HasDefaultValueSql("(getutcdate())").HasColumnType("datetime");
+
+            entity.HasOne(d => d.ChatThread)
+                .WithMany(p => p.ChatMessages)
+                .HasForeignKey(d => d.ChatThreadId)
+                .HasConstraintName("FK_ChatMessages_ChatThreads");
+
+            entity.HasOne(d => d.Usuario)
+                .WithMany(p => p.ChatMessages)
+                .HasForeignKey(d => d.UsuarioId)
+                .HasConstraintName("FK_ChatMessages_Usuario");
         });
 
         modelBuilder.Entity<Citum>(entity =>

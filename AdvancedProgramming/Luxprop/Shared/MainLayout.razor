@@ -3,79 +3,84 @@
 @inject SessionService SessionService
 @inject NavigationManager Navigation
 
+@if (isAuthenticated)
+{
+    <div class="layout-wrapper">
 
-
-    @if (isAuthenticated)
-    {
-    <div class="layout-container">
-        
-        <div class="sidebar">
-            <nav>
-                <a href="/dashboard">Dashboard</a>
-                <a href="/properties">Properties</a>
-                <a href="/documents">Documents</a>
-
-                @if(userRole == "Administrador")
-                {
-                   
-                    <a href="/users">Manage Users</a>
-                }
-                
-                <a href="/chat">Chat Support</a>
-            </nav>
-        </div>
-
-        <div class="main-content">
-            <header class="header-bar">
-                <div class="user-info">
-                    <span>@userName</span>
-                    <button class="logout-btn" @onclick="Logout">Logout</button>
-                </div>
-            </header>
-
-            <div class="content-body">
-                @Body
+        <!-- ✅ Barra superior -->
+        <header class="top-bar">
+            <div class="brand-left">
+                <img src="https://i.imgur.com/nmN7x14.png" class="brand-logo" />
+                <span class="brand-title">2CRRE Docs</span>
             </div>
-        </div>
 
-        </div>
-    }
-    else
-    {
-        <div>
+            <div class="brand-right">
+                <span class="user-name">@userName</span>
+                <button class="logout-btn" @onclick="Logout">Logout</button>
+            </div>
+        </header>
+
+        <!-- ✅ Menú principal -->
+        <nav class="menu-bar">
+            <NavLink href="/dashboard" class="menu-link" Match="NavLinkMatch.All">Dashboard</NavLink>
+            <NavLink href="/documents" class="menu-link">Documents</NavLink>
+            <NavLink href="/properties" class="menu-link">Properties</NavLink>
+
+            @* 🔹 Chat dinámico según rol *@
+            @if (userRole == "Administrador" || userRole == "Agente")
+            {
+                <NavLink href="/chatadmin" class="menu-link">
+                    <i class="bi bi-headset"></i> Chat Panel
+                </NavLink>
+            }
+            else
+            {
+                <NavLink href="/chat" class="menu-link">
+                    <i class="bi bi-chat-dots"></i> Chat
+                </NavLink>
+            }
+
+            @if (userRole == "Administrador")
+            {
+                <NavLink href="/users" class="menu-link">Manage Users</NavLink>
+            }
+        </nav>
+
+        <!-- ✅ Contenido dinámico -->
+        <main class="page-content">
             @Body
-        </div>
-    }
-
+        </main>
+    </div>
+}
+else
+{
+    @Body
+}
 
 @code {
     private bool isAuthenticated = false;
     private string? userName;
-    private bool hasInitialized = false;
     private string? userRole;
+    private bool hasInitialized = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !hasInitialized)
         {
             hasInitialized = true;
-            userRole = await SessionService.GetUserRoleAsync();
-            StateHasChanged(); // actualiza la UI después de cargar el rol
 
+            userRole = await SessionService.GetUserRoleAsync();
             userName = await SessionService.GetUserNameAsync();
             isAuthenticated = !string.IsNullOrEmpty(userName);
 
             if (!isAuthenticated)
             {
                 var currentUri = Navigation.Uri.ToLower();
-
-                // Permitir acceso solo a /login y /user/create
                 if (!currentUri.EndsWith("/login") && !currentUri.EndsWith("/user/create"))
                 {
-                    Navigation.NavigateTo("/login", forceLoad: true);
+                    Navigation.NavigateTo("/login", true);
                 }
             }
-
 
             StateHasChanged();
         }
@@ -84,70 +89,6 @@
     private async Task Logout()
     {
         await SessionService.LogoutAsync();
-        Navigation.NavigateTo("/login", forceLoad: true);
+        Navigation.NavigateTo("/login", true);
     }
 }
-
-<style>
-.layout-container {
-    display: flex;
-    height: 100vh;
-}
-
-.sidebar {
-    width: 220px;
-    background: #0d505a;
-    color: white;
-    padding: 1rem;
-}
-
-.sidebar nav a {
-    display: block;
-    color: white;
-    text-decoration: none;
-    margin: 10px 0;
-    font-weight: 500;
-}
-
-.sidebar nav a:hover {
-    color: #ccc;
-}
-
-.main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.header-bar {
-    background: #f5f5f5;
-    padding: 0.75rem 1rem;
-    display: flex;
-    justify-content: flex-end;
-    border-bottom: 1px solid #ddd;
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    font-weight: 600;
-}
-
-.logout-btn {
-    background: #0d505a;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 0.4rem 0.8rem;
-    cursor: pointer;
-}
-
-.logout-btn:hover {
-    background: #093e47;
-}
-
-.content-body {
-    padding: 1rem;
-}
-</style>

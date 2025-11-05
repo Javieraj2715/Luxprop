@@ -3,62 +3,58 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Luxprop.Data.Repositories
 {
-    public interface IChatThreadRepository : IRepositoryBase<ChatThread>
+    public interface IChatMessageRepository : IRepositoryBase<ChatMessage>
     {
-        Task<IEnumerable<ChatThread>> GetOpenThreadsAsync();
-        Task<IEnumerable<ChatThread>> GetThreadsNeedingAgentAsync();
-        Task<ChatThread?> GetByClientEmailAsync(string clientEmail);
-        Task<IEnumerable<ChatThread>> GetByStateAsync(string state);
-        Task<ChatThread?> GetLatestOpenThreadByEmailAsync(string clientEmail);
+        Task<IEnumerable<ChatMessage>> GetByThreadIdAsync(int threadId);
+        Task<IEnumerable<ChatMessage>> GetBySenderAsync(string sender);
+        Task<IEnumerable<ChatMessage>> GetMessagesAfterIdAsync(int threadId, int messageId);
+        Task<ChatMessage?> GetLatestMessageAsync(int threadId);
     }
-    
-    public class ChatThreadRepository : RepositoryBase<ChatThread>, IChatThreadRepository
+
+    public class ChatMessageRepository : RepositoryBase<ChatMessage>, IChatMessageRepository
     {
-        public ChatThreadRepository()
+        public ChatMessageRepository()
         {
-            DbSet = DbContext.Set<ChatThread>();
+            DbSet = DbContext.Set<ChatMessage>();
         }
 
-        public async Task<IEnumerable<ChatThread>> GetOpenThreadsAsync()
+        public async Task<IEnumerable<ChatMessage>> GetByThreadIdAsync(int threadId)
         {
             return await DbSet
-                .Include(ct => ct.ChatMessages)
-                .Where(ct => ct.State == "Open")
-                .OrderByDescending(ct => ct.CreatedUtc)
+                .Include(cm => cm.ChatThread)
+                .Include(cm => cm.Usuario)
+                .Where(cm => cm.ChatThreadId == threadId)
+                .OrderBy(cm => cm.ChatMessageId)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<ChatThread>> GetThreadsNeedingAgentAsync()
+        public async Task<IEnumerable<ChatMessage>> GetBySenderAsync(string sender)
         {
             return await DbSet
-                .Include(ct => ct.ChatMessages)
-                .Where(ct => ct.State == "Open" && ct.NeedsAgent == true)
-                .OrderByDescending(ct => ct.CreatedUtc)
+                .Include(cm => cm.ChatThread)
+                .Include(cm => cm.Usuario)
+                .Where(cm => cm.Sender == sender)
+                .OrderByDescending(cm => cm.SentUtc)
                 .ToListAsync();
         }
 
-        public async Task<ChatThread?> GetByClientEmailAsync(string clientEmail)
+        public async Task<IEnumerable<ChatMessage>> GetMessagesAfterIdAsync(int threadId, int messageId)
         {
             return await DbSet
-                .Include(ct => ct.ChatMessages)
-                .FirstOrDefaultAsync(ct => ct.ClientEmail == clientEmail);
-        }
-
-        public async Task<IEnumerable<ChatThread>> GetByStateAsync(string state)
-        {
-            return await DbSet
-                .Include(ct => ct.ChatMessages)
-                .Where(ct => ct.State == state)
-                .OrderByDescending(ct => ct.CreatedUtc)
+                .Include(cm => cm.ChatThread)
+                .Include(cm => cm.Usuario)
+                .Where(cm => cm.ChatThreadId == threadId && cm.ChatMessageId > messageId)
+                .OrderBy(cm => cm.ChatMessageId)
                 .ToListAsync();
         }
 
-        public async Task<ChatThread?> GetLatestOpenThreadByEmailAsync(string clientEmail)
+        public async Task<ChatMessage?> GetLatestMessageAsync(int threadId)
         {
             return await DbSet
-                .Include(ct => ct.ChatMessages)
-                .Where(ct => ct.State == "Open" && ct.ClientEmail == clientEmail)
-                .OrderByDescending(ct => ct.CreatedUtc)
+                .Include(cm => cm.ChatThread)
+                .Include(cm => cm.Usuario)
+                .Where(cm => cm.ChatThreadId == threadId)
+                .OrderByDescending(cm => cm.ChatMessageId)
                 .FirstOrDefaultAsync();
         }
     }

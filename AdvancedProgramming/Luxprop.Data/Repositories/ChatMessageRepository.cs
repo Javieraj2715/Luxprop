@@ -3,54 +3,67 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Luxprop.Data.Repositories
 {
-    public interface IChatMessageRepository : IRepositoryBase<ChatMessage>
+    public interface IChatThreadRepository : IRepositoryBase<ChatThread>
     {
-        Task<IEnumerable<ChatMessage>> GetByThreadIdAsync(int threadId);
-        Task<IEnumerable<ChatMessage>> GetBySenderAsync(string sender);
-        Task<IEnumerable<ChatMessage>> GetMessagesAfterIdAsync(int threadId, int messageId);
-        Task<ChatMessage?> GetLatestMessageAsync(int threadId);
+        Task<IEnumerable<ChatThread>> GetOpenThreadsAsync();
+        Task<IEnumerable<ChatThread>> GetThreadsNeedingAgentAsync();
+        Task<ChatThread?> GetByClientEmailAsync(string clientEmail);
+        Task<IEnumerable<ChatThread>> GetByStateAsync(string state);
+        Task<ChatThread?> GetLatestOpenThreadByEmailAsync(string clientEmail);
     }
-    
-    public class ChatMessageRepository : RepositoryBase<ChatMessage>, IChatMessageRepository
+
+    public class ChatThreadRepository : RepositoryBase<ChatThread>, IChatThreadRepository
     {
-        public ChatMessageRepository()
+        public ChatThreadRepository()
         {
-            DbSet = DbContext.Set<ChatMessage>();
+            DbSet = DbContext.Set<ChatThread>();
         }
 
-        public async Task<IEnumerable<ChatMessage>> GetByThreadIdAsync(int threadId)
+        public async Task<IEnumerable<ChatThread>> GetOpenThreadsAsync()
         {
             return await DbSet
-                .Include(cm => cm.ChatThread)
-                .Where(cm => cm.ChatThreadId == threadId)
-                .OrderBy(cm => cm.ChatMessageId)
+                .Include(ct => ct.ChatMessages)
+                .Include(ct => ct.UsuarioCreador)
+                .Where(ct => ct.State == "Open")
+                .OrderByDescending(ct => ct.CreatedUtc)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<ChatMessage>> GetBySenderAsync(string sender)
+        public async Task<IEnumerable<ChatThread>> GetThreadsNeedingAgentAsync()
         {
             return await DbSet
-                .Include(cm => cm.ChatThread)
-                .Where(cm => cm.Sender == sender)
-                .OrderByDescending(cm => cm.SentUtc)
+                .Include(ct => ct.ChatMessages)
+                .Include(ct => ct.UsuarioCreador)
+                .Where(ct => ct.State == "Open" && ct.NeedsAgent == true)
+                .OrderByDescending(ct => ct.CreatedUtc)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<ChatMessage>> GetMessagesAfterIdAsync(int threadId, int messageId)
+        public async Task<ChatThread?> GetByClientEmailAsync(string clientEmail)
         {
             return await DbSet
-                .Include(cm => cm.ChatThread)
-                .Where(cm => cm.ChatThreadId == threadId && cm.ChatMessageId > messageId)
-                .OrderBy(cm => cm.ChatMessageId)
+                .Include(ct => ct.ChatMessages)
+                .Include(ct => ct.UsuarioCreador)
+                .FirstOrDefaultAsync(ct => ct.ClientEmail == clientEmail);
+        }
+
+        public async Task<IEnumerable<ChatThread>> GetByStateAsync(string state)
+        {
+            return await DbSet
+                .Include(ct => ct.ChatMessages)
+                .Include(ct => ct.UsuarioCreador)
+                .Where(ct => ct.State == state)
+                .OrderByDescending(ct => ct.CreatedUtc)
                 .ToListAsync();
         }
 
-        public async Task<ChatMessage?> GetLatestMessageAsync(int threadId)
+        public async Task<ChatThread?> GetLatestOpenThreadByEmailAsync(string clientEmail)
         {
             return await DbSet
-                .Include(cm => cm.ChatThread)
-                .Where(cm => cm.ChatThreadId == threadId)
-                .OrderByDescending(cm => cm.ChatMessageId)
+                .Include(ct => ct.ChatMessages)
+                .Include(ct => ct.UsuarioCreador)
+                .Where(ct => ct.State == "Open" && ct.ClientEmail == clientEmail)
+                .OrderByDescending(ct => ct.CreatedUtc)
                 .FirstOrDefaultAsync();
         }
     }

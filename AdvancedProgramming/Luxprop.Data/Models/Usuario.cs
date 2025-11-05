@@ -28,4 +28,7 @@ public partial class Usuario
     public virtual ICollection<Propiedad> Propiedads { get; set; } = new List<Propiedad>();
 
     public virtual ICollection<UsuarioRol> UsuarioRols { get; set; } = new List<UsuarioRol>();
+
+    public virtual ICollection<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
+    public virtual ICollection<ChatThread> ChatThreadsCreados { get; set; } = new List<ChatThread>();
 }
