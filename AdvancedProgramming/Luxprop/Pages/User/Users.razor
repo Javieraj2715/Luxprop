@@ -148,14 +148,22 @@ else
     private bool isAdmin = false;
     private bool isAuthorized = false;
     private CreateUserVM? selectedUser;
+    private bool firstPass;
 
-    protected override async Task OnInitializedAsync()
+    // Usar OnAfterRenderAsync para leer sesión (JS interop seguro)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!firstRender || firstPass) return;
+        firstPass = true;
+
         try
         {
-            var role = await SessionService.GetUserRoleAsync();
+            await SessionService.LoadUserAsync();
+            var roleRaw = await SessionService.GetUserRoleAsync();
+            var role = NormalizeRole(roleRaw);
+
             isAuthorized = true;
-            isAdmin = (role == "Administrador");
+            isAdmin = role == "admin";
 
             if (!isAdmin)
             {
@@ -164,6 +172,7 @@ else
             }
 
             await LoadUsers();
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -174,30 +183,23 @@ else
 
     private async Task LoadUsers()
     {
-        try
-        {
-            roles = await Db.Rols.ToListAsync();
+        roles = await Db.Rols.OrderBy(r => r.Nombre).ToListAsync();
 
-            users = await (
-                from u in Db.Usuarios
-                join ur in Db.UsuarioRols on u.UsuarioId equals ur.UsuarioId
-                join r in Db.Rols on ur.RolId equals r.RolId
-                select new CreateUserVM
-                {
-                    UsuarioID = u.UsuarioId,
-                    Nombre = u.Nombre,
-                    Apellido = u.Apellido,
-                    Email = u.Email,
-                    Telefono = u.Telefono,
-                    RolId = r.RolId,
-                    Activo = u.Activo ?? false
-                }
-            ).OrderBy(u => u.Nombre).ToListAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading users: {ex.Message}");
-        }
+        users = await (
+            from u in Db.Usuarios
+            join ur in Db.UsuarioRols on u.UsuarioId equals ur.UsuarioId
+            join r in Db.Rols on ur.RolId equals r.RolId
+            select new CreateUserVM
+            {
+                UsuarioID = u.UsuarioId,
+                Nombre = u.Nombre,
+                Apellido = u.Apellido,
+                Email = u.Email,
+                Telefono = u.Telefono,
+                RolId = r.RolId,
+                Activo = u.Activo ?? false
+            }
+        ).OrderBy(u => u.Nombre).ThenBy(u => u.Apellido).ToListAsync();
     }
 
     private void OpenModal(CreateUserVM user)
@@ -221,14 +223,14 @@ else
     {
         try
         {
-            if (selectedUser == null)
+            if (selectedUser is null)
             {
                 errorMessage = "No user selected for editing.";
                 return;
             }
 
             var usuario = await Db.Usuarios.FindAsync(selectedUser.UsuarioID);
-            if (usuario == null)
+            if (usuario is null)
             {
                 errorMessage = $"User with ID {selectedUser.UsuarioID} not found.";
                 return;
@@ -240,7 +242,7 @@ else
             usuario.Activo = selectedUser.Activo;
 
             var userRol = Db.UsuarioRols.FirstOrDefault(ur => ur.UsuarioId == usuario.UsuarioId);
-            if (userRol == null)
+            if (userRol is null)
                 Db.UsuarioRols.Add(new UsuarioRol { UsuarioId = usuario.UsuarioId, RolId = selectedUser.RolId });
             else
                 userRol.RolId = selectedUser.RolId;
@@ -269,12 +271,13 @@ else
             if (int.TryParse(roleId, out int rolId))
             {
                 var userRol = Db.UsuarioRols.FirstOrDefault(ur => ur.UsuarioId == userId);
-                if (userRol != null)
-                {
+                if (userRol is null)
+                    Db.UsuarioRols.Add(new UsuarioRol { UsuarioId = userId, RolId = rolId });
+                else
                     userRol.RolId = rolId;
-                    await Db.SaveChangesAsync();
-                    successMessage = "Role updated successfully.";
-                }
+
+                await Db.SaveChangesAsync();
+                successMessage = "Role updated successfully.";
             }
         }
         catch (Exception ex)
@@ -288,7 +291,7 @@ else
         try
         {
             var user = Db.Usuarios.FirstOrDefault(u => u.UsuarioId == userId);
-            if (user != null)
+            if (user is not null)
             {
                 user.Activo = isActive;
                 await Db.SaveChangesAsync();
@@ -300,7 +303,36 @@ else
             errorMessage = $"Error updating status: {ex.Message}";
         }
     }
+
+    // --- helpers ---
+    private static string NormalizeRole(string? name)
+    {
+        var n = name?.Trim().ToLowerInvariant();
+        return n switch
+        {
+            "administrador" or "admin" => "admin",
+            "agente" or "agent" => "agent",
+            "vendedor" or "seller" => "seller",
+            "comprador" or "buyer" or "cliente" => "buyer",
+            _ => string.Empty
+        };
+    }
+
+    // etiqueta en inglés para mostrar en UI
+    private static string RoleLabelEn(string nombreEs)
+    {
+        return (nombreEs?.Trim().ToLowerInvariant()) switch
+        {
+            "administrador" => "Admin",
+            "agente" => "Agent",
+            "vendedor" => "Seller",
+            "comprador" => "Buyer",
+            _ => nombreEs
+        };
+    }
 }
+
+    
 
 <style>
     .users-page {
