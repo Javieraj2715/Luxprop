@@ -147,22 +147,37 @@
 
     private HubConnection? hub;
     private readonly List<string> chatNotifications = new();
-    private bool _loaded;
 
-    // ⚠️ No usamos OnInitializedAsync para llamadas JS: se hace en OnAfterRenderAsync
+    private bool _initialized;
+    private bool _authorized;
+    private string _role = "";
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !_loaded)
+        if (!firstRender || _initialized) return;
+        _initialized = true;
+
+        var roleRaw = await SessionService.GetUserRoleAsync();
+        _role = NormalizeRole(roleRaw);
+
+        _authorized = _role == "admin";
+        if (!_authorized)
         {
-            // Cargar usuario desde sessionStorage (JS interop seguro aquí)
-            await SessionService.LoadUserAsync();
-
-            await LoadDashboardData();
-            await InitializeChatHubAsync();
-            await LoadUserName();
-
-            _loaded = true;
+            var target = _role switch
+            {
+                "agent" => "/dashboardagent",
+                "seller" => "/dashboardvend",
+                "buyer" => "/dashboardcomp",
+                _ => "/login"
+            };
+            NavigationManager.NavigateTo(target);
+            return;
         }
+
+        await LoadDashboardData();
+        await InitializeChatHubAsync();
+        await LoadUserName();
+        StateHasChanged();
     }
 
     private async Task LoadDashboardData()
@@ -186,8 +201,6 @@
         {
             // Misma clave que guarda tu SessionService
             var userName = await JSRuntime.InvokeAsync<string>("sessionStorage.getItem", "UserName");
-            // Si quisieras mostrarlo en la UI, guarda en un campo y úsalo en el markup.
-            // _currentUserName = userName;
         }
         catch (Exception ex)
         {
@@ -223,9 +236,11 @@
 
             await hub.StartAsync();
 
-            // Únete al grupo del agente: "agent:{id}"
-            var agentId = (await SessionService.GetUserIdAsync()).ToString();
-            await hub.SendAsync("JoinAgent", agentId);
+            if (_role == "agent")
+            {
+                var agentId = (await SessionService.GetUserIdAsync()).ToString();
+                await hub.SendAsync("JoinAgent", agentId);
+            }
         }
         catch (Exception ex)
         {
@@ -238,7 +253,24 @@
         if (hub is not null)
             await hub.DisposeAsync();
     }
+
+    private static string NormalizeRole(string? name)
+    {
+        var n = name?.Trim().ToLowerInvariant();
+        return n switch
+        {
+            "administrador" or "admin" => "admin",
+            "agente" or "agent" => "agent",
+            "vendedor" or "seller" => "seller",
+            "comprador" or "buyer" or "cliente" => "buyer",
+            _ => string.Empty
+        };
+    }
 }
+
+
+
+
 
 <style>
     .dashboard-page {
