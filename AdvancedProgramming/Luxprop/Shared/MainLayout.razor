@@ -6,8 +6,7 @@
 @if (isAuthenticated)
 {
     <div class="layout-wrapper">
-
-        <!-- ✅ Barra superior -->
+        <!-- Top bar -->
         <header class="top-bar">
             <div class="brand-left">
                 <img src="https://i.imgur.com/nmN7x14.png" class="brand-logo" />
@@ -20,33 +19,28 @@
             </div>
         </header>
 
-        <!-- ✅ Menú principal -->
+        <!-- Main menu -->
         <nav class="menu-bar">
-            <NavLink href="/dashboard" class="menu-link" Match="NavLinkMatch.All">Dashboard</NavLink>
+            <NavLink href="@dashboardHref" class="menu-link">Dashboard</NavLink>
             <NavLink href="/documents" class="menu-link">Documents</NavLink>
             <NavLink href="/properties" class="menu-link">Properties</NavLink>
 
-            @* 🔹 Chat dinámico según rol *@
-            @if (userRole == "Administrador" || userRole == "Agente")
+            @if (role == "admin" || role == "agent")
             {
-                <NavLink href="/chatadmin" class="menu-link">
-                    <i class="bi bi-headset"></i> Chat Panel
-                </NavLink>
+                <NavLink href="/chatadmin" class="menu-link"><i class="bi bi-headset"></i> Chat Panel</NavLink>
             }
             else
             {
-                <NavLink href="/chat" class="menu-link">
-                    <i class="bi bi-chat-dots"></i> Chat
-                </NavLink>
+                <NavLink href="/chat" class="menu-link"><i class="bi bi-chat-dots"></i> Chat</NavLink>
             }
 
-            @if (userRole == "Administrador")
+            @* Solo admin *@
+            @if (role == "admin")
             {
                 <NavLink href="/users" class="menu-link">Manage Users</NavLink>
             }
         </nav>
 
-        <!-- ✅ Contenido dinámico -->
         <main class="page-content">
             @Body
         </main>
@@ -58,37 +52,65 @@ else
 }
 
 @code {
-    private bool isAuthenticated = false;
+    private bool isAuthenticated;
     private string? userName;
-    private string? userRole;
-    private bool hasInitialized = false;
+    private string? roleRaw;            // rol como viene de la BD (es/en)
+    private string role = "";           // rol normalizado: admin|agent|seller|buyer
+    private string dashboardHref = "/dashboard";
+    private bool initialized;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !hasInitialized)
+        if (!firstRender || initialized) return;
+        initialized = true;
+
+        // Cargar sesión antes de leer
+        await SessionService.LoadUserAsync();
+
+        userName = await SessionService.GetUserNameAsync();
+        roleRaw = await SessionService.GetUserRoleAsync();
+        role = NormalizeRole(roleRaw);
+
+        isAuthenticated = !string.IsNullOrWhiteSpace(userName);
+
+        // Dashboard dinámico por rol
+        dashboardHref = role switch
         {
-            hasInitialized = true;
+            "admin" => "/dashboard",
+            "agent" => "/dashboardagent",
+            "seller" => "/dashboardvend",
+            "buyer" => "/dashboardcomp",
+            _ => "/dashboard"
+        };
 
-            userRole = await SessionService.GetUserRoleAsync();
-            userName = await SessionService.GetUserNameAsync();
-            isAuthenticated = !string.IsNullOrEmpty(userName);
-
-            if (!isAuthenticated)
-            {
-                var currentUri = Navigation.Uri.ToLower();
-                if (!currentUri.EndsWith("/login") && !currentUri.EndsWith("/user/create"))
-                {
-                    Navigation.NavigateTo("/login", true);
-                }
-            }
-
-            StateHasChanged();
+        // Si no hay sesión y no es ruta pública → login
+        if (!isAuthenticated)
+        {
+            var uri = Navigation.Uri.ToLowerInvariant();
+            var isPublic = uri.EndsWith("/login") || uri.EndsWith("/user/create");
+            if (!isPublic) Navigation.NavigateTo("/login", true);
         }
+
+        StateHasChanged();
     }
 
     private async Task Logout()
     {
         await SessionService.LogoutAsync();
         Navigation.NavigateTo("/login", true);
+    }
+
+    // Normaliza nombres es/en a un valor canónico
+    private static string NormalizeRole(string? name)
+    {
+        var n = name?.Trim().ToLowerInvariant();
+        return n switch
+        {
+            "administrador" or "admin" => "admin",
+            "agente" or "agent" => "agent",
+            "vendedor" or "seller" => "seller",
+            "comprador" or "buyer" or "cliente" => "buyer",
+            _ => string.Empty
+        };
     }
 }
