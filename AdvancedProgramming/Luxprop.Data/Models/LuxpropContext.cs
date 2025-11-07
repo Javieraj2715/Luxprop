@@ -46,9 +46,10 @@ public partial class LuxpropContext : DbContext
     public virtual DbSet<UsuarioRol> UsuarioRols { get; set; }
     public virtual DbSet<HistorialExpediente> HistorialExpedientes { get; set; }
 
+    public DbSet<Recordatorio> Recordatorios { get; set; } = default!;
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=localhost\\SQLEXPRESS;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
+
+        => optionsBuilder.UseSqlServer("Server=MSI\\MSSQLSERVER01;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
 
 
 
@@ -254,6 +255,34 @@ public partial class LuxpropContext : DbContext
             entity.HasOne(d => d.Ubicacion).WithMany(p => p.Propiedads)
                 .HasForeignKey(d => d.UbicacionId)
                 .HasConstraintName("FK__Propiedad__Ubica__693CA210");
+        });
+
+
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Recordatorio>(entity =>
+        {
+            entity.ToTable("Recordatorio");
+
+            entity.HasKey(e => e.RecordatorioId);
+            entity.Property(e => e.Titulo).HasMaxLength(150).IsRequired();
+            entity.Property(e => e.Descripcion).HasMaxLength(500);
+            entity.Property(e => e.Tipo).HasMaxLength(20);
+            entity.Property(e => e.Estado).HasMaxLength(20);
+            entity.Property(e => e.Prioridad).HasMaxLength(10);
+            entity.Property(e => e.ReglaRecurrencia).HasMaxLength(200);
+
+            // ✅ Solo queda esta relación con Usuario
+            entity.HasOne(d => d.Usuario)
+                .WithMany()
+                .HasForeignKey(d => d.UsuarioId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Recordatorio_Usuario");
+
+            entity.HasOne(d => d.Propiedad)
+                .WithMany()
+                .HasForeignKey(d => d.PropiedadId)
+                .HasConstraintName("FK_Recordatorio_Propiedad");
         });
 
         modelBuilder.Entity<Rol>(entity =>
