@@ -1,0 +1,117 @@
+﻿@page "/reminders/create"
+@using Luxprop.Data.Models
+@using Microsoft.EntityFrameworkCore
+@inject IReminderService ReminderSvc
+@inject NavigationManager Nav
+@inject LuxpropContext Db
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthStateProvider
+
+<h3>Crear Recordatorio</h3>
+
+<EditForm Model="recordatorio" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group mb-3">
+        <label>Título</label>
+        <InputText class="form-control" @bind-Value="recordatorio.Titulo" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Descripción</label>
+        <InputTextArea class="form-control" @bind-Value="recordatorio.Descripcion" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Tipo</label>
+        <InputSelect class="form-select" @bind-Value="recordatorio.Tipo">
+            <option value="">Seleccione un tipo</option>
+            <option>Cita</option>
+            <option>Vencimiento</option>
+            <option>Seguimiento</option>
+        </InputSelect>
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Fecha y hora de inicio</label>
+
+        <!-- Fecha -->
+        <InputDate class="form-control" @bind-Value="fechaInicio" />
+
+        <!-- Hora -->
+        <input type="time" class="form-control mt-2"
+               value="@horaInicio.ToString(@"hh\:mm")"
+               @onchange="OnHoraChanged" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Estado</label>
+        <InputSelect class="form-select" @bind-Value="recordatorio.Estado">
+            <option>Pendiente</option>
+            <option>Completado</option>
+            <option>Incumplido</option>
+        </InputSelect>
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Propiedad</label>
+        <InputSelect class="form-select" @bind-Value="recordatorio.PropiedadId">
+            <option value="">Seleccione una propiedad</option>
+            @foreach (var p in propiedades)
+            {
+                <option value="@p.PropiedadId">@p.Titulo</option>
+            }
+        </InputSelect>
+    </div>
+
+    <button type="submit" class="btn btn-success">Guardar</button>
+    <button type="button" class="btn btn-secondary ms-2" @onclick="Cancelar">Cancelar</button>
+</EditForm>
+
+@code {
+    private Recordatorio recordatorio = new();
+    private List<Propiedad> propiedades = new();
+    private DateTime fechaInicio = DateTime.Today;
+    private TimeSpan horaInicio = new(9, 0, 0);
+
+    protected override async Task OnInitializedAsync()
+    {
+        propiedades = await Db.Propiedads.ToListAsync();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            var email = user.Identity.Name;
+            var usuario = await Db.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (usuario != null)
+            {
+                // 👇 Asigna ambos campos según tu estructura de tabla
+                
+                recordatorio.UsuarioId = usuario.UsuarioId;    // Usuario asignado (puede cambiarse luego si hay roles)
+            }
+        }
+
+        // ✅ Rellena campos adicionales
+        recordatorio.Inicio = fechaInicio.Date.Add(horaInicio);
+        recordatorio.CreadoEn = DateTime.Now;
+        recordatorio.Estado ??= "Pendiente";
+
+        await ReminderSvc.AddAsync(recordatorio);
+        Nav.NavigateTo("/reminders");
+    }
+
+    private void Cancelar() => Nav.NavigateTo("/reminders");
+
+    private void OnHoraChanged(ChangeEventArgs e)
+    {
+        if (TimeSpan.TryParse(e.Value?.ToString(), out var time))
+            horaInicio = time;
+    }
+}
