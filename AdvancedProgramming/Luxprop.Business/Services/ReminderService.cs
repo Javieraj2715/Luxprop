@@ -1,10 +1,16 @@
 ﻿using Luxprop.Data.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 
-public class ReminderService : IReminderService
+
+public class ReminderService(LuxpropContext db, IEmailService emailSvc, IConfiguration cfg, IHttpContextAccessor httpContextAccessor) : IReminderService
 {
-    private readonly LuxpropContext _db;
-    public ReminderService(LuxpropContext db) => _db = db;
+    private readonly LuxpropContext _db = db;
+    private readonly IEmailService _emailSvc = emailSvc;
+    private readonly IConfiguration _cfg = cfg;
+    private readonly IHttpContextAccessor _http = httpContextAccessor;
 
     public async Task<Recordatorio> CreateAsync(Recordatorio r, CancellationToken ct = default)
     {
@@ -58,15 +64,28 @@ public class ReminderService : IReminderService
     // 🔥 NUEVO: CREAR un recordatorio
     public async Task AddAsync(Recordatorio recordatorio)
     {
-        // Asegurar valores por defecto
+        // Si no hay UsuarioId, tratar de obtenerlo desde el contexto HTTP
+        if (recordatorio.UsuarioId == 0)
+        {
+            var email = _http.HttpContext?.User?.FindFirst(ClaimTypes.Email)?.Value
+                        ?? _http.HttpContext?.User?.FindFirst("email")?.Value
+                        ?? _http.HttpContext?.User?.Identity?.Name;
+
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
+                if (usuario != null)
+                    recordatorio.UsuarioId = usuario.UsuarioId;
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(recordatorio.Estado))
             recordatorio.Estado = "Pendiente";
 
-        // por si viene hora local, lo podemos guardar UTC (tu decides si quieres esto)
-        // recordatorio.Inicio = recordatorio.Inicio.ToUniversalTime();
-
         _db.Recordatorios.Add(recordatorio);
         await _db.SaveChangesAsync();
+
+        await SendNotificationEmail(recordatorio);
     }
 
     // 🔥 NUEVO: OBTENER uno por ID (para la vista de edición)
@@ -95,5 +114,40 @@ public class ReminderService : IReminderService
         existing.PropiedadId = recordatorio.PropiedadId;
 
         await _db.SaveChangesAsync();
+    }
+
+    private async Task SendNotificationEmail(Recordatorio recordatorio)
+    {
+        try
+        {
+            var usuario = await _db.Usuarios.FindAsync(recordatorio.UsuarioId);
+            if (usuario == null || string.IsNullOrEmpty(usuario.Email))
+                return;
+
+            var subject = $"📅 Nuevo recordatorio creado: {recordatorio.Titulo}";
+            var body = $@"
+                <h2>Nuevo Recordatorio</h2>
+                <p><strong>Título:</strong> {recordatorio.Titulo}</p>
+                <p><strong>Descripción:</strong> {recordatorio.Descripcion}</p>
+                <p><strong>Tipo:</strong> {recordatorio.Tipo}</p>
+                <p><strong>Fecha:</strong> {recordatorio.Inicio:yyyy-MM-dd HH:mm}</p>
+                <hr>
+                <p>Este recordatorio fue registrado correctamente en el sistema <b>Luxprop</b>.</p>
+            ";
+
+            await _emailSvc.SendAsync(usuario.Email, subject, body);
+
+            // (Opcional) enviar copia a administradores si aplica
+            var admins = _cfg["Smtp:Admins"]?.Split(';', StringSplitOptions.RemoveEmptyEntries);
+            if (admins != null)
+            {
+                foreach (var admin in admins)
+                    await _emailSvc.SendAsync(admin, subject, body);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Error enviando correo: {ex.Message}");
+        }
     }
 }

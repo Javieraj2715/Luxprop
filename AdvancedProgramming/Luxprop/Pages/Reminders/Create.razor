@@ -6,6 +6,9 @@
 @inject LuxpropContext Db
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider AuthStateProvider
+@using System.Security.Claims;
+@inject Luxprop.Services.SessionService SessionSvc
+
 
 <h3>Crear Recordatorio</h3>
 
@@ -82,25 +85,25 @@
 
     private async Task HandleValidSubmit()
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
+        // 🔹 Cargar sesión por si no está en memoria todavía
+        await SessionSvc.LoadUserAsync();
 
-        if (user.Identity != null && user.Identity.IsAuthenticated)
+        // 🔹 Obtener el ID del usuario activo
+        var userId = await SessionSvc.GetUserIdAsync();
+        var userEmail = await SessionSvc.GetUserEmailAsync();
+
+        if (userId == 0)
         {
-            var email = user.Identity.Name;
-            var usuario = await Db.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
-
-            if (usuario != null)
-            {
-                // 👇 Asigna ambos campos según tu estructura de tabla
-                
-                recordatorio.UsuarioId = usuario.UsuarioId;    // Usuario asignado (puede cambiarse luego si hay roles)
-            }
+            Console.WriteLine("⚠️ No hay sesión activa. No se pudo asignar UsuarioId.");
+            return;
         }
 
-        // ✅ Rellena campos adicionales
+        // 🔹 Asignar el usuario actual al recordatorio
+        recordatorio.UsuarioId = userId;
+        Console.WriteLine($"✅ Recordatorio asignado al usuario ID: {userId}, Email: {userEmail}");
+
+        // 🔹 Completar los demás campos
         recordatorio.Inicio = fechaInicio.Date.Add(horaInicio);
-        recordatorio.CreadoEn = DateTime.Now;
         recordatorio.Estado ??= "Pendiente";
 
         await ReminderSvc.AddAsync(recordatorio);
