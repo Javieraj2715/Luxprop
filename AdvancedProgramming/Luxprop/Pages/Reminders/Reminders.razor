@@ -1,0 +1,358 @@
+﻿@page "/reminders"
+@using Luxprop.Data.Models
+@inject IReminderService ReminderSvc
+@inject LuxpropContext Db
+@inject NavigationManager Nav
+@inject IEmailService EmailService
+
+
+<h1>Reminders</h1>
+
+<div class="filters">
+    <input type="date" @bind="fromDate" />
+    <input type="date" @bind="toDate" />
+    <select @bind="filterEstado">
+        <option value="">-- Estado --</option>
+        <option>Pendiente</option>
+        <option>Completado</option>
+        <option>Incumplido</option>
+    </select>
+    <button class="btn btn-primary" @onclick="Load">Apply</button>
+    <button class="btn btn-success" @onclick="NewReminder">New</button>
+</div>
+
+@if (items is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table-reminders">
+        <thead>
+            <tr>
+                <th>Inicio</th>
+                <th>Título</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>Propiedad</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in items)
+            {
+                <tr>
+                    <td>@r.Inicio.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@r.Titulo</td>
+                    <td>@r.Tipo</td>
+                    <td>@r.Estado</td>
+                    <td>@r.PropiedadId</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-success" @onclick='() => SetEstado(r.RecordatorioId, "Completado")'>Done</button>
+                        <button class="btn btn-sm btn-primary" @onclick="() => Edit(r.RecordatorioId)">Editar</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(r.RecordatorioId)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="calendar-container mt-4 p-4 rounded shadow-sm">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <button class="btn btn-outline-info btn-sm fw-bold" @onclick="PrevMonth">«</button>
+            <h3 class="text-center m-0 text-info fw-bold">
+                <i class="bi bi-calendar3 me-2"></i>
+                Calendario del mes (@currentMonth.ToString("MMMM yyyy"))
+            </h3>
+            <button class="btn btn-outline-info btn-sm fw-bold" @onclick="NextMonth">»</button>
+        </div>
+
+        @if (monthItems.Any())
+        {
+            @foreach (var group in Days())
+            {
+                <div class="card mb-3 border-0 shadow-sm calendar-card">
+                    <div class="card-header bg-info text-white fw-semibold">
+                        @group.Key.ToString("dddd, dd MMMM")
+                    </div>
+                    <div class="card-body bg-light">
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var item in group)
+                            {
+                                <li class="mb-1">
+                                    <i class="bi bi-check-circle-fill text-info me-1"></i>
+                                    <span class="fw-semibold">@item.Titulo</span>
+                                    <small class="text-muted">(@item.Inicio.ToLocalTime().ToString("HH:mm"))</small>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-info text-center mt-3">
+                <i class="bi bi-info-circle"></i> No hay eventos registrados en este mes.
+            </div>
+        }
+    </div>
+
+}
+
+
+
+@code {
+    private List<Recordatorio>? items;
+    private DateTime? fromDate = DateTime.Today.AddDays(-7);
+    private DateTime? toDate = DateTime.Today.AddDays(21);
+    private string? filterEstado;
+
+    // Mes actual para el calendario
+    DateTime currentMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    List<Recordatorio> monthItems = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+        await LoadMonth(); // 👈 NECESARIO para que se vea el calendario
+    }
+
+    private async Task EnviarPrueba()
+    {
+        await EmailService.SendAsync(
+          "javieraj2715@gmail.com",
+          "✅ Prueba de correo desde Luxprop",
+          "<h3>¡Funciona!</h3><p>Tu integración SMTP con Gmail está correcta.</p>");
+    }
+
+    private async Task LoadMonth()
+    {
+        var start = currentMonth;
+        var end = start.AddMonths(1).AddTicks(-1);
+        // si guardás en UTC, mantener ToUniversalTime()
+        monthItems = await ReminderSvc.ListAsync(
+            usuarioId: null,        // 👈 nombre correcto del parámetro
+            from: start.ToUniversalTime(),
+            to: end.ToUniversalTime());
+    }
+
+    private IEnumerable<IGrouping<DateTime, Recordatorio>> Days()
+      => monthItems
+           .OrderBy(r => r.Inicio)
+           .GroupBy(r => r.Inicio.ToLocalTime().Date) // 👈 agrupar por día local
+           .OrderBy(g => g.Key);
+
+    private async Task Load()
+    {
+        items = await ReminderSvc.ListAsync(
+          usuarioId: null,                              // 👈 corregido
+          from: fromDate?.ToUniversalTime(),
+          to: toDate?.ToUniversalTime());
+
+        if (!string.IsNullOrEmpty(filterEstado))
+            items = items!.Where(x => x.Estado == filterEstado).ToList();
+
+        await LoadMonth(); // 👈 si querés que Apply refresque también el calendario
+    }
+
+    private Task SetEstado(int id, string estado)
+      => ReminderSvc.SetEstadoAsync(id, estado).ContinueWith(_ => Load());
+
+    private Task Delete(int id)
+      => ReminderSvc.DeleteAsync(id).ContinueWith(_ => Load());
+
+    private void NewReminder() => Nav.NavigateTo("/reminders/create");
+    private void Edit(int id) => Nav.NavigateTo($"/reminders/edit/{id}");
+
+    // Navegación de meses
+    private async Task PrevMonth()
+    {
+        currentMonth = currentMonth.AddMonths(-1);
+        await LoadMonth();
+        StateHasChanged();
+    }
+
+    private async Task NextMonth()
+    {
+        currentMonth = currentMonth.AddMonths(1);
+        await LoadMonth();
+        StateHasChanged();
+    }
+
+}
+
+<style>
+    /* 🌊 Estilo Luxprop Calendar con color institucional #084c61 */
+    .calendar-container {
+        background-color: #f9fdfd;
+        border-left: 6px solid #084c61;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .calendar-card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
+    }
+
+        .calendar-card:hover {
+            transform: scale(1.015);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        /* Encabezado del día */
+        .calendar-card .card-header {
+            background-color: #084c61 !important;
+            color: #ffffff !important;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        /* Cuerpo del recordatorio */
+        .calendar-card .card-body {
+            background-color: #ffffff;
+        }
+
+    /* Título del calendario */
+    .calendar-container h3 {
+        color: #084c61 !important;
+        font-weight: 700;
+    }
+
+    /* Íconos, acentos y botones */
+    .text-info, .bi-check-circle-fill {
+        color: #0b6b82 !important;
+    }
+
+    .btn-outline-info {
+        border-color: #084c61 !important;
+        color: #084c61 !important;
+    }
+
+        .btn-outline-info:hover {
+            background-color: #084c61 !important;
+            color: #ffffff !important;
+        }
+
+    /* Días del calendario */
+    .calendar-day h5 {
+        color: #084c61;
+        font-weight: 600;
+    }
+
+    /* Alertas */
+    .alert-info {
+        background-color: #e8f5f8;
+        border-color: #084c61;
+        color: #084c61;
+    }
+
+
+    .table-reminders {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+        /* Encabezado */
+        .table-reminders thead {
+            background-color: #084c61;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+            .table-reminders thead th {
+                padding: 12px 15px;
+                text-align: left;
+                vertical-align: middle;
+            }
+
+        /* Filas */
+        .table-reminders tbody tr {
+            background-color: #ffffff;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+            .table-reminders tbody tr:hover {
+                background-color: #f1f7f8;
+            }
+
+        /* Celdas */
+        .table-reminders td {
+            padding: 12px 15px;
+            vertical-align: middle;
+            color: #333;
+            border-bottom: 1px solid #e6ecef;
+        }
+
+            /* Estado */
+            .table-reminders td:nth-child(4) {
+                font-weight: 600;
+            }
+
+    /* Badges de estado */
+    .badge-status {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .badge-pendiente {
+        background-color: #b0b0b0;
+    }
+
+    .badge-completado {
+        background-color: #4caf50;
+    }
+
+    .badge-incumplido {
+        background-color: #e74c3c;
+    }
+
+    /* Botones */
+    .table-reminders .btn {
+        font-size: 0.8rem;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-weight: 500;
+    }
+
+    .table-reminders .btn-outline-success {
+        color: #4caf50;
+        border-color: #4caf50;
+    }
+
+        .table-reminders .btn-outline-success:hover {
+            background-color: #4caf50;
+            color: white;
+        }
+
+    .table-reminders .btn-outline-danger {
+        color: #e74c3c;
+        border-color: #e74c3c;
+    }
+
+        .table-reminders .btn-outline-danger:hover {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+    .table-reminders .btn-primary {
+        background-color: #084c61;
+        border-color: #084c61;
+    }
+
+        .table-reminders .btn-primary:hover {
+            background-color: #0b607a;
+            border-color: #0b607a;
+        }
+</style>
+

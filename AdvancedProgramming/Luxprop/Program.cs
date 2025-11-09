@@ -25,6 +25,13 @@ builder.Services.AddScoped<PasswordHelper>();
 builder.Services.AddScoped<AuditoriaService>();
 builder.Services.AddScoped<SecurityService>();
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<IReminderService, ReminderService>();
+builder.Services.AddHostedService<ReminderNotifier>();
+builder.Services.AddSingleton<IEmailService, SmtpEmailService>();
+builder.Services.AddHttpContextAccessor();
+
+
+
 
 // SignalR
 builder.Services.AddSignalR();
