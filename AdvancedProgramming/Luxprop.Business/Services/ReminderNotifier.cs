@@ -86,12 +86,20 @@ public class ReminderNotifier : BackgroundService
                             if (!string.IsNullOrWhiteSpace(admin))
                             {
                                 await mail.SendAsync(
-                                    admin.Trim(),
-                                    $"[Luxprop] Evento incumplido: {r.Titulo}",
-                                    $"<p>Usuario: {usuario?.Email ?? "Desconocido"}</p>" +
-                                    $"<p>Evento: {r.Titulo}</p>" +
-                                    $"<p>Inicio: {r.Inicio:yyyy-MM-dd HH:mm}</p>"
-                                );
+                                        usuario.Email,
+                                        $"[Luxprop] Recordatorio: {r.Titulo}",
+                                        $@"
+                                        <div style='font-family:Arial,sans-serif; background:#f9fafb; padding:20px; border-radius:8px;'>
+                                            <h2 style='color:#007bff;'>🔔 Recordatorio Luxprop</h2>
+                                            <p><strong>Evento:</strong> {r.Titulo}</p>
+                                            <p><strong>Inicio:</strong> {r.Inicio:yyyy-MM-dd HH:mm}</p>
+                                            <p><strong>Descripción:</strong> {r.Descripcion}</p>
+                                            <p><strong>Tipo:</strong> {r.Tipo}</p>
+                                            <hr />
+                                            <p style='font-size:13px; color:#555;'>Este recordatorio fue generado automáticamente por el sistema <b>Luxprop</b>.</p>
+                                        </div>"
+                                    );
+
                             }
                         }
                     }
