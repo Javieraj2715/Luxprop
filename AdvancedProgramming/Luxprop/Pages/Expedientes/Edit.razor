@@ -168,7 +168,7 @@ else
                     @foreach (var h in historial)
                     {
                         <tr>
-                            <td>@h.FechaModificacion.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@h.FechaModificacion</td>
                             <td>@h.EstadoNuevo</td>
                             <td>@h.Descripcion</td>
                         </tr>
@@ -259,7 +259,7 @@ else
     private async Task AgregarTarea()
     {
         nuevaTarea.ExpedienteId = ExpedienteId;
-        nuevaTarea.FechaInicio = DateOnly.FromDateTime(DateTime.Now);
+        nuevaTarea.FechaInicio = DateTime.Now;
 
         Db.TareaTramites.Add(nuevaTarea);
         await Db.SaveChangesAsync();

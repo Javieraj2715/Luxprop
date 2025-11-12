@@ -1,4 +1,4 @@
-using Luxprop.Data.Models;
+﻿using Luxprop.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Luxprop.Data.Repositories
@@ -11,8 +11,13 @@ namespace Luxprop.Data.Repositories
         Task<IEnumerable<Expediente>> GetByTipoOcupacionAsync(string tipoOcupacion);
         Task<IEnumerable<Expediente>> GetOpenExpedientesAsync();
         Task<IEnumerable<Expediente>> GetExpedientesWithDocumentsAsync();
+
+        Task<IEnumerable<Expediente>> GetByAgenteIdAsync(int agenteId);
+        Task<IEnumerable<Expediente>> GetByPrioridadAsync(string prioridad);
+        Task<IEnumerable<Expediente>> GetByCategoriaAsync(string categoria);
+        Task<Expediente?> GetByCodigoAsync(string codigo);
     }
-    
+
     public class ExpedienteRepository : RepositoryBase<Expediente>, IExpedienteRepository
     {
         public ExpedienteRepository()
@@ -20,82 +25,95 @@ namespace Luxprop.Data.Repositories
             DbSet = DbContext.Set<Expediente>();
         }
 
-        public async Task<IEnumerable<Expediente>> GetByPropiedadIdAsync(int propiedadId)
+        private IQueryable<Expediente> IncludeAll()
         {
-            return await DbSet
+            return DbSet
                 .Include(e => e.Propiedad)
                 .Include(e => e.Cliente)
                 .Include(e => e.Documentos)
                 .Include(e => e.Cita)
                 .Include(e => e.TareaTramites)
+                .Include(e => e.HistorialExpedientes)
+                .Include(e => e.Agente)
+                .Include(e => e.CreadoPor)
+                .Include(e => e.ModificadoPor);
+        }
+
+        public async Task<IEnumerable<Expediente>> GetByPropiedadIdAsync(int propiedadId)
+        {
+            return await IncludeAll()
                 .Where(e => e.PropiedadId == propiedadId)
-                .OrderBy(e => e.FechaApertura)
+                .OrderByDescending(e => e.FechaApertura)
                 .ToListAsync();
         }
 
         public async Task<IEnumerable<Expediente>> GetByClienteIdAsync(int clienteId)
         {
-            return await DbSet
-                .Include(e => e.Propiedad)
-                .Include(e => e.Cliente)
-                .Include(e => e.Documentos)
-                .Include(e => e.Cita)
-                .Include(e => e.TareaTramites)
+            return await IncludeAll()
                 .Where(e => e.ClienteId == clienteId)
-                .OrderBy(e => e.FechaApertura)
+                .OrderByDescending(e => e.FechaApertura)
                 .ToListAsync();
         }
 
         public async Task<IEnumerable<Expediente>> GetByEstadoAsync(string estado)
         {
-            return await DbSet
-                .Include(e => e.Propiedad)
-                .Include(e => e.Cliente)
-                .Include(e => e.Documentos)
-                .Include(e => e.Cita)
-                .Include(e => e.TareaTramites)
+            return await IncludeAll()
                 .Where(e => e.Estado == estado)
-                .OrderBy(e => e.FechaApertura)
+                .OrderByDescending(e => e.FechaApertura)
                 .ToListAsync();
         }
 
         public async Task<IEnumerable<Expediente>> GetByTipoOcupacionAsync(string tipoOcupacion)
         {
-            return await DbSet
-                .Include(e => e.Propiedad)
-                .Include(e => e.Cliente)
-                .Include(e => e.Documentos)
-                .Include(e => e.Cita)
-                .Include(e => e.TareaTramites)
+            return await IncludeAll()
                 .Where(e => e.TipoOcupacion == tipoOcupacion)
-                .OrderBy(e => e.FechaApertura)
+                .OrderByDescending(e => e.FechaApertura)
                 .ToListAsync();
         }
 
         public async Task<IEnumerable<Expediente>> GetOpenExpedientesAsync()
         {
-            return await DbSet
-                .Include(e => e.Propiedad)
-                .Include(e => e.Cliente)
-                .Include(e => e.Documentos)
-                .Include(e => e.Cita)
-                .Include(e => e.TareaTramites)
-                .Where(e => e.Estado != "Closed" && e.FechaCierre == null)
-                .OrderBy(e => e.FechaApertura)
+            return await IncludeAll()
+                .Where(e => e.Estado != "Cerrado" && e.FechaCierre == null)
+                .OrderByDescending(e => e.FechaApertura)
                 .ToListAsync();
         }
 
         public async Task<IEnumerable<Expediente>> GetExpedientesWithDocumentsAsync()
         {
-            return await DbSet
-                .Include(e => e.Propiedad)
-                .Include(e => e.Cliente)
-                .Include(e => e.Documentos)
-                .Include(e => e.Cita)
-                .Include(e => e.TareaTramites)
+            return await IncludeAll()
                 .Where(e => e.Documentos.Any())
-                .OrderBy(e => e.FechaApertura)
+                .OrderByDescending(e => e.FechaApertura)
                 .ToListAsync();
+        }
+        public async Task<IEnumerable<Expediente>> GetByAgenteIdAsync(int agenteId)
+        {
+            return await IncludeAll()
+                .Where(e => e.AgenteId == agenteId)
+                .OrderByDescending(e => e.FechaApertura)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Expediente>> GetByPrioridadAsync(string prioridad)
+        {
+            return await IncludeAll()
+                .Where(e => e.Prioridad == prioridad)
+                .OrderByDescending(e => e.FechaApertura)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Expediente>> GetByCategoriaAsync(string categoria)
+        {
+            return await IncludeAll()
+                .Where(e => e.Categoria == categoria)
+                .OrderByDescending(e => e.FechaApertura)
+                .ToListAsync();
+        }
+
+        public async Task<Expediente?> GetByCodigoAsync(string codigo)
+        {
+            return await IncludeAll()
+                .FirstOrDefaultAsync(e => e.Codigo == codigo);
         }
     }
 }

@@ -2,10 +2,10 @@
 using Google.Apis.Auth.OAuth2;
 using Luxprop.Business.Services;
 using Luxprop.Data.Models;
+using Luxprop.Data.Repositories;
+using Luxprop.Hubs;
 using Luxprop.Services;
 using Microsoft.EntityFrameworkCore;
-using Luxprop.Hubs;
-
 // Alias explícito al hub correcto
 using ChatHubType = Luxprop.Hubs.ChatHub;
 
@@ -25,6 +25,14 @@ builder.Services.AddScoped<PasswordHelper>();
 builder.Services.AddScoped<AuditoriaService>();
 builder.Services.AddScoped<SecurityService>();
 builder.Services.AddScoped<IChatService, ChatService>();
+
+// 🔹 Repositorios base
+builder.Services.AddScoped<IExpedienteRepository, ExpedienteRepository>();
+builder.Services.AddScoped<IHistorialExpedienteRepository, HistorialExpedienteRepository>();
+
+
+builder.Services.AddScoped<IHistorialExpedienteService, HistorialExpedienteService>();
+builder.Services.AddScoped<IExpedienteService, ExpedienteService>();
 
 // SignalR
 builder.Services.AddSignalR();

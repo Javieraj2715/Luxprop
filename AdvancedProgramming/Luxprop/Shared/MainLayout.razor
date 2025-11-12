@@ -20,13 +20,17 @@
             </div>
         </header>
 
-        <!-- ✅ Menú principal -->
+        <!-- Menú principal -->
         <nav class="menu-bar">
             <NavLink href="/dashboard" class="menu-link" Match="NavLinkMatch.All">Dashboard</NavLink>
             <NavLink href="/documents" class="menu-link">Documents</NavLink>
             <NavLink href="/properties" class="menu-link">Properties</NavLink>
 
-            @* 🔹 Chat dinámico según rol *@
+            <NavLink href="/expedientes" class="menu-link">
+                <i class="bi bi-folder2-open"></i> Expedientes
+            </NavLink>
+
+            @* Chat dinámico según rol *@
             @if (userRole == "Administrador" || userRole == "Agente")
             {
                 <NavLink href="/chatadmin" class="menu-link">
