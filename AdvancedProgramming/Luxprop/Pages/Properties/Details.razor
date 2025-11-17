@@ -1,0 +1,88 @@
+﻿@page "/properties/details/{id:int}"
+
+@using Luxprop.Data.Models
+@using Microsoft.EntityFrameworkCore
+@inject LuxpropContext Db
+@inject NavigationManager Navigation
+
+<PageTitle>Property Details</PageTitle>
+
+@if (property == null)
+{
+    <div class="loading">Loading property...</div>
+}
+else
+{
+    <div class="property-details-page">
+
+        <h1>@property.Titulo</h1>
+        <p>@property.Descripcion</p>
+
+        <ul>
+            <li><strong>Price:</strong> @property.Precio?.ToString("C")</li>
+            <li><strong>Construction Area:</strong> @property.AreaConstruccion m²</li>
+            <li><strong>Land Area:</strong> @property.AreaTerreno m²</li>
+            <li><strong>Status:</strong> @property.EstadoPublicacion</li>
+            <li><strong>Location:</strong> @property.Ubicacion?.Provincia</li>
+        </ul>
+
+        <hr />
+
+        <!-- 👇 Recorrido 360 -->
+        @if (property.Recorrido360Url is not null && property.Recorrido360Url.Trim() != "")
+        {
+            <h2>Recorrido 360°</h2>
+
+            <iframe src="@property.Recorrido360Url"
+                    style="width:100%; height:500px; border:0;"
+                    allowfullscreen
+                    loading="lazy">
+            </iframe>
+
+            <div style="margin-top:1rem">
+                <button class="btn btn-warning" @onclick="EditTour">Edit 360° Tour</button>
+                <button class="btn btn-danger" @onclick="DeleteTour">Delete</button>
+            </div>
+        }
+        else
+        {
+            <h3>No 360° tour available</h3>
+            <button class="btn btn-primary" @onclick="AddTour">Add 360° Tour</button>
+        }
+
+        <hr />
+
+        <a href="/properties" class="btn btn-secondary">Back to List</a>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+
+    private Propiedad? property;
+
+    protected override async Task OnInitializedAsync()
+    {
+        property = await Db.Propiedads
+            .Include(p => p.Ubicacion)
+            .FirstOrDefaultAsync(p => p.PropiedadId == id);
+    }
+
+    private void AddTour()
+    {
+        Navigation.NavigateTo($"/properties/{id}/tour360/edit");
+    }
+
+    private void EditTour()
+    {
+        Navigation.NavigateTo($"/properties/{id}/tour360/edit");
+    }
+
+    private async Task DeleteTour()
+    {
+        property.Recorrido360Url = null;
+        await Db.SaveChangesAsync();
+        StateHasChanged();
+    }
+}

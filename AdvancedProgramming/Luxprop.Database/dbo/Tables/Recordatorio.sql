@@ -19,9 +19,10 @@
     [UsuarioId]        INT            NULL,
     PRIMARY KEY CLUSTERED ([RecordatorioId] ASC),
     CONSTRAINT [FK_Recordatorio_Expediente] FOREIGN KEY ([ExpedienteId]) REFERENCES [dbo].[Expediente] ([Expediente_ID]),
-    CONSTRAINT [FK_Recordatorio_Propiedad] FOREIGN KEY ([PropiedadId]) REFERENCES [dbo].[Propiedad] ([Propiedad_ID]),
     CONSTRAINT [FK_Recordatorio_Usuario] FOREIGN KEY ([UsuarioId]) REFERENCES [dbo].[Usuario] ([Usuario_ID])
 );
+
+
 
 
 
