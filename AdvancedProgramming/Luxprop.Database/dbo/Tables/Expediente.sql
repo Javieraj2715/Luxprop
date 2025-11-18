@@ -7,7 +7,6 @@
     [Fecha_Apertura] DATE          NULL,
     [Fecha_Cierre]   DATE          NULL,
     PRIMARY KEY CLUSTERED ([Expediente_ID] ASC),
-    FOREIGN KEY ([Cliente_ID]) REFERENCES [dbo].[Cliente] ([Cliente_ID]),
-    FOREIGN KEY ([Propiedad_ID]) REFERENCES [dbo].[Propiedad] ([Propiedad_ID])
+    FOREIGN KEY ([Cliente_ID]) REFERENCES [dbo].[Cliente] ([Cliente_ID])
 );
 

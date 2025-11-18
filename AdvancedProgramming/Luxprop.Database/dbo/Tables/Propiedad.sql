@@ -8,8 +8,7 @@
     [Estado_Publicacion] NVARCHAR (50)   NULL,
     [Agente_ID]          INT             NULL,
     [Ubicacion_ID]       INT             NULL,
-    PRIMARY KEY CLUSTERED ([Propiedad_ID] ASC),
-    FOREIGN KEY ([Agente_ID]) REFERENCES [dbo].[Usuario] ([Usuario_ID]),
-    FOREIGN KEY ([Ubicacion_ID]) REFERENCES [dbo].[Ubicacion] ([Ubicacion_ID])
+    [Recorrido360Url]    NVARCHAR (2048) NULL,
+    PRIMARY KEY CLUSTERED ([Propiedad_ID] ASC)
 );
 
