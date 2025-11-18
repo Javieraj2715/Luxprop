@@ -33,6 +33,7 @@ public partial class LuxpropContext : DbContext
 
     public virtual DbSet<Expediente> Expedientes { get; set; }
 
+    public DbSet<PropertyTour360> PropertyTours360 { get; set; }
     public virtual DbSet<Propiedad> Propiedads { get; set; }
 
     public virtual DbSet<Rol> Rols { get; set; }
@@ -225,6 +226,17 @@ public partial class LuxpropContext : DbContext
             entity.HasOne(d => d.Propiedad).WithMany(p => p.Expedientes)
                 .HasForeignKey(d => d.PropiedadId)
                 .HasConstraintName("FK__Expedient__Propi__59063A47");
+        });
+
+        modelBuilder.Entity<PropertyTour360>(entity =>
+        {
+            entity.ToTable("PropertyTour360");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Property)
+                  .WithOne(p => p.Tour360)      // si solo permitís 1 recorrido por propiedad
+                  .HasForeignKey<PropertyTour360>(e => e.PropertyId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Propiedad>(entity =>

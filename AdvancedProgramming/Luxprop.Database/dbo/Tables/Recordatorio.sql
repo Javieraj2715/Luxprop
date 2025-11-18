@@ -10,7 +10,6 @@
     [TodoElDia]        BIT            DEFAULT ((0)) NOT NULL,
     [PropiedadId]      INT            NULL,
     [ExpedienteId]     INT            NULL,
-    [CreadoPorId]      INT            NOT NULL,
     [NotificarCorreo]  BIT            DEFAULT ((1)) NOT NULL,
     [MinutosAntes]     INT            DEFAULT ((60)) NOT NULL,
     [ReglaRecurrencia] NVARCHAR (200) NULL,
@@ -19,11 +18,13 @@
     [ActualizadoEn]    DATETIME2 (0)  DEFAULT (sysutcdatetime()) NOT NULL,
     [UsuarioId]        INT            NULL,
     PRIMARY KEY CLUSTERED ([RecordatorioId] ASC),
-    CONSTRAINT [FK_Recordatorio_CreadoPor] FOREIGN KEY ([CreadoPorId]) REFERENCES [dbo].[Usuario] ([Usuario_ID]),
     CONSTRAINT [FK_Recordatorio_Expediente] FOREIGN KEY ([ExpedienteId]) REFERENCES [dbo].[Expediente] ([Expediente_ID]),
-    CONSTRAINT [FK_Recordatorio_Propiedad] FOREIGN KEY ([PropiedadId]) REFERENCES [dbo].[Propiedad] ([Propiedad_ID]),
     CONSTRAINT [FK_Recordatorio_Usuario] FOREIGN KEY ([UsuarioId]) REFERENCES [dbo].[Usuario] ([Usuario_ID])
 );
+
+
+
+
 
 
 
