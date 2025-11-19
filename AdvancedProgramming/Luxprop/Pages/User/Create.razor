@@ -64,27 +64,17 @@
             <div class="form-group">
                 <label for="rolId">Role</label>
 
-                @if (isAuthenticated)
-                {
-                    <!-- MODO ADMIN: puede elegir cualquier rol -->
-                    <InputSelect id="rolId" @bind-Value="userModel.RolId" class="form-control">
-                        <option value="">Select Role</option>
-                        @foreach (var role in roles)
-                        {
-                            <option value="@role.RolId">@role.Nombre</option>
-                        }
-                    </InputSelect>
-                }
-                else
-                {
-                    <!-- MODO PÚBLICO (desde Login): solo Cliente -->
-                    <InputSelect id="rolId" @bind-Value="userModel.RolId" class="form-control" disabled>
-                        <option value="3">Cliente</option>
-                    </InputSelect>
-                }
+                <InputSelect id="rolId" @bind-Value="userModel.RolId" class="form-control">
+                    <option value="">Select Role</option>
+                    @foreach (var role in allowedRoles)
+                    {
+                        <option value="@role.RolId">@role.Nombre</option>
+                    }
+                </InputSelect>
 
                 <ValidationMessage For="@(() => userModel.RolId)" />
             </div>
+
 
 
             <div class="form-group">
@@ -124,37 +114,55 @@
 @code {
     private CreateUserVM userModel = new();
     private List<Rol> roles = new();
+    private List<Rol> allowedRoles = new();   // <- lista que verás en el select
+    private int? adminRoleId;                 // <- id del rol admin si existe
     private bool isLoading = false;
     private string errorMessage = string.Empty;
     private string successMessage = string.Empty;
     private bool isAuthenticated = false;
+    private bool isAdmin = false;
+
+    private static bool IsAdminName(string? name)
+        => !string.IsNullOrWhiteSpace(name) &&
+           (name.Trim().Equals("admin", StringComparison.OrdinalIgnoreCase) ||
+            name.Trim().Equals("administrador", StringComparison.OrdinalIgnoreCase));
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (!firstRender) return;
+
+        await LoadRoles(); // carga todos los roles desde BD
+
+        try
         {
-            await LoadRoles();
+            // Sesión desde JS (seguro aquí)
+            var userName = await SessionService.GetUserNameAsync();
+            var userRole = (await SessionService.GetUserRoleAsync())?.Trim().ToLowerInvariant();
 
-            try
+            isAuthenticated = !string.IsNullOrEmpty(userName);
+            isAdmin = IsAdminName(userRole);
+
+            // Identificar el rol Admin (por nombre)
+            adminRoleId = roles.FirstOrDefault(r => IsAdminName(r.Nombre))?.RolId;
+
+            // Qué roles se pueden elegir
+            if (isAuthenticated && isAdmin)
             {
-                var userName = await SessionService.GetUserNameAsync();
-                var userRole = await SessionService.GetUserRoleAsync();
-                isAuthenticated = !string.IsNullOrEmpty(userName);
-
-                //  Si está logueado pero no es administrador, redirigir
-                if (isAuthenticated && userRole != "Administrador")
-                {
-                    Navigation.NavigateTo("/dashboard", forceLoad: true);
-                    return;
-                }
-
-                StateHasChanged();
+                allowedRoles = roles.OrderBy(r => r.Nombre).ToList();
             }
-            catch
+            else
             {
-                // Si ocurre error (sin contexto JS), ignorar
-                isAuthenticated = false;
+                allowedRoles = roles.Where(r => !IsAdminName(r.Nombre)).OrderBy(r => r.Nombre).ToList();
             }
+
+            StateHasChanged();
+        }
+        catch
+        {
+            isAuthenticated = false;
+            isAdmin = false;
+            allowedRoles = roles.Where(r => !IsAdminName(r.Nombre)).OrderBy(r => r.Nombre).ToList();
+            StateHasChanged();
         }
     }
 
@@ -164,13 +172,49 @@
         try
         {
             roles = Db.Rols.ToList();
+
+            // If empty, seed in English
+            if (roles.Count == 0)
+            {
+                Db.Rols.AddRange(
+                    new Rol { Nombre = "admin" },
+                    new Rol { Nombre = "Agent" },
+                    new Rol { Nombre = "Seller" },
+                    new Rol { Nombre = "Buyer" }
+                );
+                await Db.SaveChangesAsync();
+                roles = Db.Rols.ToList();
+            }
+
+            // If you previously had Spanish names, normalize them to English once:
+            bool changed = false;
+            foreach (var r in roles)
+            {
+                var n = r.Nombre.Trim().ToLowerInvariant();
+                string? en = n switch
+                {
+                    "administrador" => "admin",
+                    "agente" => "agent",
+                    "vendedor" => "seller",
+                    "comprador" => "buyer",
+                    _ => null
+                };
+                if (en != null && en != r.Nombre)
+                {
+                    r.Nombre = en; changed = true;
+                }
+            }
+            if (changed) { await Db.SaveChangesAsync(); roles = Db.Rols.ToList(); }
         }
         catch (Exception ex)
         {
             errorMessage = "Error loading roles.";
             Console.WriteLine($"Error loading roles: {ex.Message}");
+            roles = new List<Rol>();
         }
     }
+
+
 
     private async Task HandleSubmit()
     {
@@ -180,6 +224,40 @@
 
         try
         {
+            // Validaciones básicas
+            if (string.IsNullOrWhiteSpace(userModel.Email) ||
+                string.IsNullOrWhiteSpace(userModel.Password) ||
+                string.IsNullOrWhiteSpace(userModel.Nombre) ||
+                string.IsNullOrWhiteSpace(userModel.Apellido) ||
+                userModel.RolId == 0)
+            {
+                errorMessage = "Please complete all required fields.";
+                return;
+            }
+
+            // Email único
+            var exists = Db.Usuarios.Any(u => u.Email == userModel.Email);
+            if (exists)
+            {
+                errorMessage = "This email is already in use.";
+                return;
+            }
+
+            // Proteger creación de Admin desde login público
+            if (!isAuthenticated && adminRoleId.HasValue && userModel.RolId == adminRoleId.Value)
+            {
+                errorMessage = "You cannot create an Admin from this page.";
+                return;
+            }
+
+            // Validar que el rol esté permitido
+            if (!allowedRoles.Any(r => r.RolId == userModel.RolId))
+            {
+                errorMessage = "Selected role is not allowed.";
+                return;
+            }
+
+            // Crear usuario
             var usuario = new Usuario
             {
                 Nombre = userModel.Nombre,
@@ -193,18 +271,12 @@
             Db.Usuarios.Add(usuario);
             await Db.SaveChangesAsync();
 
-            if (!isAuthenticated)
-            {
-                userModel.RolId = 3;
-            }
-
-            var ur = new UsuarioRol
+            // Asignar rol
+            Db.UsuarioRols.Add(new UsuarioRol
             {
                 UsuarioId = usuario.UsuarioId,
                 RolId = userModel.RolId
-            };
-
-            Db.UsuarioRols.Add(ur);
+            });
             await Db.SaveChangesAsync();
 
             var rol = Db.Rols.Find(userModel.RolId);
@@ -215,10 +287,9 @@
                 $"Usuario creado {usuario.Nombre} {usuario.Apellido} con el rol {rol?.Nombre}"
             );
 
-            successMessage = "Usuario creado y rol asignado.";
-
-            // Reset form after successful creation
+            successMessage = "User created and role assigned.";
             userModel = new CreateUserVM();
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -230,6 +301,7 @@
             isLoading = false;
         }
     }
+
 
     private void GoBack()
     {

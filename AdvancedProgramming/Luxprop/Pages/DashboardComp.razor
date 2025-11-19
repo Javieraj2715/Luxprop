@@ -1,0 +1,180 @@
+﻿@page "/dashboardcomp"
+@using Luxprop.Data
+@using Luxprop.Data.Models
+@inject LuxpropContext Db
+@inject Luxprop.Services.SessionService Session
+@inject NavigationManager Nav
+
+<PageTitle>Buyer Dashboard</PageTitle>
+
+@if (!loaded)
+{
+    <div class="container py-5 text-center text-muted">
+        <div class="spinner-border mb-3" role="status"></div>
+        <p>Loading your dashboard…</p>
+    </div>
+}
+else if (!authorized)
+{
+    <div class="container py-5 text-center text-danger">
+        <h2 class="h4">Unauthorized</h2>
+        <p>You don't have access to this area.</p>
+    </div>
+}
+else
+{
+    <div class="dashboard-page container py-4">
+
+        <!-- HERO -->
+        <div class="rounded-4 p-4 mb-4 text-white"
+             style="background: linear-gradient(135deg,#0f4e56,#159d7f); box-shadow:0 18px 35px rgba(0,0,0,.25);">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h1 class="h3 mb-1">Welcome back</h1>
+                    <p class="mb-0 text-opacity-75">
+                        Discover new opportunities, revisit recent listings and keep your favorites close.
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="/properties" class="btn btn-light btn-sm px-3">
+                        <i class="bi bi-search me-1"></i> Explore Properties
+                    </a>
+                    <a href="/favorites" class="btn btn-outline-light btn-sm px-3">
+                        <i class="bi bi-heart me-1"></i> View Favorites
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- GRID -->
+        <div class="row g-4">
+            <!-- Quick actions -->
+            <div class="col-lg-4">
+                <div class="dashboard-card h-100">
+                    <div class="card-header">
+                        <h3 class="h5 mb-0">Quick actions</h3>
+                    </div>
+                    <div class="card-content d-grid gap-2">
+                        <a href="/properties" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-1"></i> Explore properties
+                        </a>
+                        <a href="/favorites" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-heart me-1"></i> Favorites
+                        </a>
+                        <a href="/chat" class="btn btn-outline-info w-100">
+                            <i class="bi bi-chat-dots me-1"></i> Talk to an agent
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent properties -->
+            <div class="col-lg-8">
+                <div class="dashboard-card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="h5 mb-0">Recently added properties</h3>
+                        <span class="badge rounded-pill bg-light text-muted">
+                            @recentProperties.Count found
+                        </span>
+                    </div>
+                    <div class="card-content">
+                        @if (recentProperties?.Any() == true)
+                        {
+                            <ul class="activity-list list-unstyled mb-0">
+                                @foreach (var p in recentProperties.Take(8))
+                                {
+                                    <li class="activity-item py-2 border-bottom small">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="activity-title fw-semibold">@p.Titulo</div>
+                                                <div class="activity-meta text-muted">
+                                                    ID: @p.PropiedadId
+                                                </div>
+                                            </div>
+                                            <span class="badge @GetPropertyStatusBadge(p.EstadoPublicacion)">
+                                                @p.EstadoPublicacion
+                                            </span>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <div class="no-activity text-muted">
+                                No recent activity yet.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+}
+
+@code {
+    private bool loaded, authorized, firstPass;
+    private List<Propiedad> recentProperties = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || firstPass) return;
+        firstPass = true;
+
+        await Session.LoadUserAsync();
+
+        var roleRaw = await Session.GetUserRoleAsync();
+        var role = NormalizeRole(roleRaw);
+
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            await Task.Delay(50);
+            role = NormalizeRole(await Session.GetUserRoleAsync());
+            if (string.IsNullOrWhiteSpace(role)) return;
+        }
+
+        authorized = role == "buyer";
+        if (!authorized)
+        {
+            var target = role switch
+            {
+                "admin" => "/dashboard",
+                "agent" => "/dashboardagent",
+                "seller" => "/dashboardvend",
+                _ => "/login"
+            };
+            Nav.NavigateTo(target, true);
+            return;
+        }
+
+        recentProperties = Db.Propiedads
+            .OrderByDescending(p => p.PropiedadId)
+            .Take(20)
+            .ToList();
+
+        loaded = true;
+        StateHasChanged();
+    }
+
+    private static string NormalizeRole(string? name)
+    {
+        var n = name?.Trim().ToLowerInvariant();
+        return n switch
+        {
+            "administrador" or "admin" => "admin",
+            "agente" or "agent" => "agent",
+            "vendedor" or "seller" => "seller",
+            "comprador" or "buyer" or "cliente" => "buyer",
+            _ => string.Empty
+        };
+    }
+
+    private static string GetPropertyStatusBadge(string? status) =>
+        status?.ToLowerInvariant() switch
+        {
+            "active" or "activo" => "bg-success text-white",
+            "pending" or "pendiente" => "bg-warning text-dark",
+            _ => "bg-secondary text-white"
+        };
+}

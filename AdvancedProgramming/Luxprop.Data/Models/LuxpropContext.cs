@@ -33,6 +33,7 @@ public partial class LuxpropContext : DbContext
 
     public virtual DbSet<Expediente> Expedientes { get; set; }
 
+    public DbSet<PropertyTour360> PropertyTours360 { get; set; }
     public virtual DbSet<Propiedad> Propiedads { get; set; }
 
     public virtual DbSet<Rol> Rols { get; set; }
@@ -48,6 +49,8 @@ public partial class LuxpropContext : DbContext
 
     public DbSet<Recordatorio> Recordatorios { get; set; } = default!;
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    => optionsBuilder.UseSqlServer(
+        "Server=localhost\\SQLEXPRESS;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
 
         => optionsBuilder.UseSqlServer("Server=MARIANA_MASIS\\SQLEXPRESS;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
 
@@ -287,6 +290,16 @@ public partial class LuxpropContext : DbContext
                 .HasConstraintName("FK_HistorialExpediente_Usuario");
         });
 
+        modelBuilder.Entity<PropertyTour360>(entity =>
+        {
+            entity.ToTable("PropertyTour360");
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Property)
+                  .WithOne(p => p.Tour360)      // si solo permitís 1 recorrido por propiedad
+                  .HasForeignKey<PropertyTour360>(e => e.PropertyId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
 
         modelBuilder.Entity<Propiedad>(entity =>
         {

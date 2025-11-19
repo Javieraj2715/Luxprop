@@ -199,7 +199,6 @@
     {
         try
         {
-            // Misma clave que guarda tu SessionService
             var userName = await JSRuntime.InvokeAsync<string>("sessionStorage.getItem", "UserName");
         }
         catch (Exception ex)

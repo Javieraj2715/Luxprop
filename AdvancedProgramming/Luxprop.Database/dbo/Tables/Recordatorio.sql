@@ -28,6 +28,10 @@
 
 
 
+
+
+
+
 GO
 CREATE NONCLUSTERED INDEX [IX_Recordatorio_Prop_Exp]
     ON [dbo].[Recordatorio]([PropiedadId] ASC, [ExpedienteId] ASC);

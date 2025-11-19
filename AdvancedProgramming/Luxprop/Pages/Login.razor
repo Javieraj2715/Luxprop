@@ -19,7 +19,6 @@
 
 <div class="login-page">
     <header class="main-header">
-       
     </header>
 
     <main>
@@ -79,34 +78,43 @@
                 return;
             }
 
-            //  Hashear la contraseña ingresada
-            string hashed = PasswordHelper.HashPassword(loginModel.Password);
+            var hashed = PasswordHelper.HashPassword(loginModel.Password);
 
-            //  Buscar usuario con su rol (importante incluir la relación)
             var user = await Db.Usuarios
                 .Include(u => u.UsuarioRols)
                     .ThenInclude(ur => ur.Rol)
                 .FirstOrDefaultAsync(u => u.Email == loginModel.Email && u.Password == hashed);
 
-            if (user != null)
-            {
-                //  Obtener el nombre del rol
-                var roleName = user.UsuarioRols.FirstOrDefault()?.Rol?.Nombre ?? "SinRol";
-
-                //  Guardar en la sesión del navegador
-                await SessionService.SetUserAsync(user.UsuarioId, user.Nombre, roleName);
-
-                //  Redirigir al Dashboard
-                Navigation.NavigateTo("/dashboard", forceLoad: true);
-            }
-            else
+            if (user is null)
             {
                 errorMessage = "Invalid credentials. Please try again.";
+                return;
+            }
+
+            // Rol tal como viene de BD (puede venir en español)
+            var roleNameRaw = user.UsuarioRols
+                .Select(ur => ur.Rol?.Nombre)
+                .FirstOrDefault() ?? string.Empty;
+
+            // Normalizamos a: admin | agent | seller | buyer
+            var role = NormalizeRole(roleNameRaw);
+
+            // Guardamos en sesión (guarda el raw para mostrar y el normalizado lo usamos para rutas)
+            await SessionService.SetUserAsync(user.UsuarioId, user.Nombre, roleNameRaw, user.Email);
+
+            // Redirección según rol normalizado
+            switch (role)
+            {
+                case "admin": Navigation.NavigateTo("/dashboard", true); break;
+                case "agent": Navigation.NavigateTo("/dashboardagent", true); break;
+                case "seller": Navigation.NavigateTo("/dashboardvend", true); break;
+                case "buyer": Navigation.NavigateTo("/dashboardcomp", true); break;
+                default: Navigation.NavigateTo("/dashboard", true); break;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Error during login: {ex.Message}");
+            Console.WriteLine($"Login error: {ex.Message}");
             errorMessage = "An error occurred during login.";
         }
         finally
@@ -114,6 +122,21 @@
             isLoading = false;
         }
     }
+
+    // Helper: mapea español/inglés a un valor canónico
+    private static string NormalizeRole(string? name)
+    {
+        var n = name?.Trim().ToLowerInvariant();
+        return n switch
+        {
+            "administrador" or "admin" => "admin",
+            "agente" or "agent" => "agent",
+            "vendedor" or "seller" => "seller",
+            "comprador" or "buyer" or "cliente" => "buyer",
+            _ => string.Empty
+        };
+    }
+
 
 
     private void NavigateToCreateUser()
@@ -155,6 +178,7 @@
             height: 55px;
             margin-bottom: 0.3rem;
         }
+
     .main-header {
         display: flex;
         align-items: center;
@@ -182,6 +206,7 @@
             font-weight: 600;
             color: #0d505a;
         }
+
     .login-container {
         max-width: 400px;
         margin: 5rem auto;
@@ -192,22 +217,22 @@
         font-family: 'Montserrat', sans-serif;
     }
 
-    .login-container h2 {
-        text-align: center;
-        margin-bottom: 2rem;
-        color: #0d505a;
-        font-weight: 600;
-    }
+        .login-container h2 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #0d505a;
+            font-weight: 600;
+        }
 
     .form-group {
         margin-bottom: 1rem;
     }
 
-    .form-group label {
-        display: block;
-        margin-bottom: 0.3rem;
-        font-weight: 500;
-    }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.3rem;
+            font-weight: 500;
+        }
 
     .form-control {
         width: 100%;
@@ -231,17 +256,17 @@
         font-family: 'Montserrat', sans-serif;
     }
 
-    .btn:hover {
-        background-color: #093e47;
-    }
+        .btn:hover {
+            background-color: #093e47;
+        }
 
     .btn-secondary {
         background-color: #6c757d;
     }
 
-    .btn-secondary:hover {
-        background-color: #545b62;
-    }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
 
     .error-message {
         color: red;

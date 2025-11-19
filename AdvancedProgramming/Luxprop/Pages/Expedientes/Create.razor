@@ -81,7 +81,7 @@
     {
         newCase.PropiedadId = PropiedadId;
         newCase.Estado = "Abierto";
-        newCase.FechaApertura = DateTime.Now;
+        newCase.FechaApertura = DateOnly.FromDateTime(DateTime.Now);
         newCase.Prioridad = "Normal";
         return Task.CompletedTask;
     }

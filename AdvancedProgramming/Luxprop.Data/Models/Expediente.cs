@@ -32,8 +32,9 @@ namespace Luxprop.Data.Models
         public string? Observaciones { get; set; }
 
         // Fechas
-        public DateTime? FechaApertura { get; set; }
-        public DateTime? FechaCierre { get; set; }
+        public DateOnly? FechaApertura { get; set; }
+
+        public DateOnly? FechaCierre { get; set; }
         public DateTime? UltimaActualizacion { get; set; }
 
         // Auditoría
