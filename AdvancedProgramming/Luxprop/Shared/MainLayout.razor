@@ -1,4 +1,4 @@
-﻿@using Luxprop.Services
+﻿﻿@using Luxprop.Services
 @inherits LayoutComponentBase
 @inject SessionService SessionService
 @inject NavigationManager Navigation
@@ -25,12 +25,7 @@
             <NavLink href="/documents" class="menu-link">Documents</NavLink>
             <NavLink href="/properties" class="menu-link">Properties</NavLink>
 
-            <NavLink href="/expedientes" class="menu-link">
-                <i class="bi bi-folder2-open"></i> Expedientes
-            </NavLink>
-
-            @* Chat dinámico según rol *@
-            @if (userRole == "Administrador" || userRole == "Agente")
+            @if (role == "admin" || role == "agent")
             {
                 <NavLink href="/chatadmin" class="menu-link"><i class="bi bi-headset"></i> Chat Panel</NavLink>
             }
@@ -66,9 +61,8 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !hasInitialized)
-        {
-            hasInitialized = true;
+        if (!firstRender || initialized) return;
+        initialized = true;
 
         // Cargar sesión antes de leer
         await SessionService.LoadUserAsync();
@@ -89,14 +83,13 @@ else
             _ => "/dashboard"
         };
 
-            if (!isAuthenticated)
-            {
-                var currentUri = Navigation.Uri.ToLower();
-                if (!currentUri.EndsWith("/login") && !currentUri.EndsWith("/user/create"))
-                {
-                    Navigation.NavigateTo("/login", true);
-                }
-            }
+        // Si no hay sesión y no es ruta pública → login
+        if (!isAuthenticated)
+        {
+            var uri = Navigation.Uri.ToLowerInvariant();
+            var isPublic = uri.EndsWith("/login") || uri.EndsWith("/user/create");
+            if (!isPublic) Navigation.NavigateTo("/login", true);
+        }
 
         StateHasChanged();
     }

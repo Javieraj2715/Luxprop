@@ -54,7 +54,7 @@ namespace Luxprop.Business.Services
         // ✅ Crea un expediente y registra historial
         public async Task CreateAsync(Expediente expediente, int usuarioId, string ip)
         {
-            expediente.FechaApertura = DateTime.Now;
+            expediente.FechaApertura = DateOnly.FromDateTime(DateTime.Now);
             expediente.Estado = "Abierto";
             expediente.UltimaActualizacion = DateTime.Now;
 
@@ -106,7 +106,7 @@ namespace Luxprop.Business.Services
 
             var estadoAnterior = expediente.Estado;
             expediente.Estado = "Cerrado";
-            expediente.FechaCierre = DateTime.Now;
+            expediente.FechaCierre = DateOnly.FromDateTime(DateTime.Now);
             expediente.UltimaActualizacion = DateTime.Now;
 
             await _expedienteRepo.UpdateAsync(expediente);
