@@ -35,6 +35,12 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IReminderService, ReminderService>();
 builder.Services.AddHostedService<ReminderNotifier>();
 builder.Services.AddSingleton<IEmailService, SmtpEmailService>();
+builder.Services.AddHostedService<DocumentExpirationJob>();
+
+builder.Services.AddScoped<IAlertasDocumentoRepository, AlertasDocumentoRepository>();
+builder.Services.AddScoped<IAlertasDocumentoService, AlertasDocumentoService>();
+
+
 builder.Services.AddHttpContextAccessor();
 
 // Autorización por roles reales (ya la usas en componentes Blazor)
@@ -66,6 +72,7 @@ builder.Services.AddScoped<IDocService, DocService>();
 builder.Services.AddSignalR();
 
 // (Opcional) Firebase credencial por variable de entorno
+//var credentialPath = @"C:\ProyectoFinalGrupal\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
 var credentialPath = @"C:\Users\Usuario\source\repos\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
 Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialPath);
 
