@@ -20,9 +20,12 @@ public partial class Propiedad
 
     public string? EstadoPublicacion { get; set; }
 
+    public string? Recorrido360Url { get; set; }
+
     public int? AgenteId { get; set; }
 
     public int? UbicacionId { get; set; }
+    public PropertyTour360? Tour360 { get; set; }
 
     public virtual Usuario? Agente { get; set; }
 

@@ -1,0 +1,334 @@
+﻿@page "/dashboardagent"
+@using Luxprop.Data
+@using Luxprop.Data.Models
+@inject LuxpropContext Db
+@inject Luxprop.Services.SessionService Session
+@inject NavigationManager Nav
+
+<PageTitle>Agent Dashboard</PageTitle>
+
+@if (!loaded)
+{
+    <div class="container py-5 text-center text-muted">
+        <div class="spinner-border mb-3" role="status"></div>
+        <p>Loading your dashboard…</p>
+    </div>
+}
+else if (!authorized)
+{
+    <div class="container py-5 text-center text-danger">
+        <h2 class="h4">Unauthorized</h2>
+        <p>You don't have access to this area.</p>
+    </div>
+}
+else
+{
+    <div class="dashboard-page container py-4">
+
+        <!-- HERO HEADER -->
+        <div class="rounded-4 p-4 mb-4 text-white"
+             style="background: radial-gradient(circle at top left,#0f4e56,#0b2730); box-shadow:0 18px 35px rgba(0,0,0,.28);">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h1 class="h3 mb-2">Agent overview</h1>
+                    <p class="mb-0 text-opacity-75">
+                        Snapshot of your portfolio, active listings, and case files.
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-light btn-sm px-3"
+                            @onclick="@(() => Nav.NavigateTo("/properties"))">
+                        <i class="bi bi-buildings me-1"></i> Manage Properties
+                    </button>
+                    <button class="btn btn-light btn-sm px-3"
+                            @onclick="@(() => Nav.NavigateTo("/records"))">
+                        <i class="bi bi-journal-text me-1"></i> View Case Records
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI ROW -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-lg-3">
+                <div class="dashboard-card h-100">
+                    <div class="card-header border-0 pb-0">
+                        <span class="text-uppercase text-muted small">Properties</span>
+                    </div>
+                    <div class="card-content d-flex align-items-end justify-content-between pt-2">
+                        <div>
+                            <div class="stat-number h3 mb-0">@totalProperties</div>
+                            <div class="stat-label text-muted">Total in your portfolio</div>
+                        </div>
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-2">
+                            <i class="bi bi-buildings fs-4 text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-lg-3">
+                <div class="dashboard-card h-100">
+                    <div class="card-header border-0 pb-0">
+                        <span class="text-uppercase text-muted small">Active listings</span>
+                    </div>
+                    <div class="card-content pt-2">
+                        <div class="d-flex align-items-end justify-content-between">
+                            <div>
+                                <div class="stat-number h3 mb-0">@activeProperties</div>
+                                <div class="stat-label text-muted">Currently published</div>
+                            </div>
+                            <div class="rounded-circle bg-success bg-opacity-10 p-2">
+                                <i class="bi bi-lightning-charge fs-4 text-success"></i>
+                            </div>
+                        </div>
+                        @if (totalProperties > 0)
+                        {
+                            var pct = (int)(activeProperties * 100.0 / totalProperties);
+                            <div class="mt-2">
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span>Activation rate</span>
+                                    <span>@pct%</span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-success" style="width:@pct%"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-lg-3">
+                <div class="dashboard-card h-100">
+                    <div class="card-header border-0 pb-0">
+                        <span class="text-uppercase text-muted small">Case files</span>
+                    </div>
+                    <div class="card-content pt-2">
+                        <div class="d-flex align-items-end justify-content-between">
+                            <div>
+                                <div class="stat-number h3 mb-0">@totalCases</div>
+                                <div class="stat-label text-muted">Total records</div>
+                            </div>
+                            <div class="rounded-circle bg-info bg-opacity-10 p-2">
+                                <i class="bi bi-folder2-open fs-4 text-info"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-lg-3">
+                <div class="dashboard-card h-100">
+                    <div class="card-header border-0 pb-0">
+                        <span class="text-uppercase text-muted small">In progress</span>
+                    </div>
+                    <div class="card-content pt-2">
+                        @{
+                            var closedCases = totalCases - activeCases;
+                            var progressPct = totalCases > 0
+                            ? (int)(closedCases * 100.0 / totalCases)
+                            : 0;
+                        }
+                        <div class="d-flex align-items-end justify-content-between">
+                            <div>
+                                <div class="stat-number h3 mb-0">@activeCases</div>
+                                <div class="stat-label text-muted">Active case files</div>
+                            </div>
+                            <div class="rounded-circle bg-warning bg-opacity-10 p-2">
+                                <i class="bi bi-activity fs-4 text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <div class="d-flex justify-content-between small text-muted mb-1">
+                                <span>Overall progress</span>
+                                <span>@progressPct%</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-primary" style="width:@progressPct%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="row g-4">
+            <!-- Recent Properties -->
+            <div class="col-lg-6">
+                <div class="dashboard-card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="h5 mb-0">Recent properties</h3>
+                        <span class="badge rounded-pill bg-light text-muted">
+                            @recentProperties.Count total
+                        </span>
+                    </div>
+                    <div class="card-content">
+                        @if (recentProperties?.Any() == true)
+                        {
+                            <ul class="activity-list list-unstyled mb-0">
+                                @foreach (var p in recentProperties.Take(6))
+                                {
+                                    <li class="activity-item py-2 border-bottom small">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="activity-title fw-semibold">@p.Titulo</div>
+                                                <div class="activity-meta text-muted">
+                                                    ID: @p.PropiedadId
+                                                </div>
+                                            </div>
+                                            <span class="badge @GetPropertyStatusBadge(p.EstadoPublicacion)">
+                                                @p.EstadoPublicacion
+                                            </span>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <div class="no-activity text-muted">
+                                No recent properties found.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Case Files -->
+            <div class="col-lg-6">
+                <div class="dashboard-card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="h5 mb-0">Recent case files</h3>
+                        <button class="btn btn-sm btn-outline-primary"
+                                @onclick="@(() => Nav.NavigateTo("/records"))">
+                            View full report
+                        </button>
+                    </div>
+                    <div class="card-content">
+                        @if (recentCases?.Any() == true)
+                        {
+                            <ul class="activity-list list-unstyled mb-0">
+                                @foreach (var c in recentCases.Take(6))
+                                {
+                                    <li class="activity-item py-2 border-bottom small">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="activity-title fw-semibold">
+                                                    Case #@c.ExpedienteId
+                                                </div>
+                                                <div class="activity-meta text-muted">
+                                                    Opened: @(c.FechaApertura?.ToString("yyyy-MM-dd") ?? "-")
+                                                </div>
+                                            </div>
+                                            <span class="badge @GetCaseStatusBadge(c.Estado)">
+                                                @c.Estado
+                                            </span>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <div class="no-activity text-muted">
+                                No case files found.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+}
+
+@code {
+    private bool loaded, authorized, firstPass;
+    private int totalProperties, activeProperties;
+    private List<Propiedad> recentProperties = new();
+
+    private int totalCases, activeCases;
+    private List<Expediente> recentCases = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || firstPass) return;
+        firstPass = true;
+
+        await Session.LoadUserAsync();
+        var role = NormalizeRole(await Session.GetUserRoleAsync());
+
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            await Task.Delay(50);
+            role = NormalizeRole(await Session.GetUserRoleAsync());
+            if (string.IsNullOrWhiteSpace(role)) return;
+        }
+
+        authorized = role == "agent";
+        if (!authorized)
+        {
+            var target = role switch
+            {
+                "admin" => "/dashboard",
+                "seller" => "/dashboardvend",
+                "buyer" => "/dashboardcomp",
+                _ => "/login"
+            };
+            Nav.NavigateTo(target, true);
+            return;
+        }
+
+        // TODO: filter by current agent when you map properties/cases to the logged-in user.
+        var allProps = Db.Propiedads
+            .OrderByDescending(p => p.PropiedadId)
+            .ToList();
+
+        totalProperties = allProps.Count;
+        activeProperties = allProps.Count(p => p.EstadoPublicacion == "Active");
+        recentProperties = allProps;
+
+        var allCases = Db.Expedientes
+            .OrderByDescending(e => e.ExpedienteId)
+            .ToList();
+
+        totalCases = allCases.Count;
+        activeCases = allCases.Count(e => e.Estado == "Activo" || e.Estado == "En proceso");
+        recentCases = allCases;
+
+        loaded = true;
+        StateHasChanged();
+    }
+
+    private static string NormalizeRole(string? name)
+    {
+        var n = name?.Trim().ToLowerInvariant();
+        return n switch
+        {
+            "administrador" or "admin" => "admin",
+            "agente" or "agent" => "agent",
+            "vendedor" or "seller" => "seller",
+            "comprador" or "buyer" or "cliente" => "buyer",
+            _ => string.Empty
+        };
+    }
+
+    private static string GetPropertyStatusBadge(string? status) =>
+        status?.ToLowerInvariant() switch
+        {
+            "active" or "activo" => "bg-success text-white",
+            "pending" or "pendiente" => "bg-warning text-dark",
+            _ => "bg-secondary text-white"
+        };
+
+    private static string GetCaseStatusBadge(string? status) =>
+        status?.ToLowerInvariant() switch
+        {
+            "abierto" or "open" => "bg-primary",
+            "en proceso" or "in progress" => "bg-warning text-dark",
+            "cerrado" or "closed" => "bg-success",
+            _ => "bg-secondary"
+        };
+}

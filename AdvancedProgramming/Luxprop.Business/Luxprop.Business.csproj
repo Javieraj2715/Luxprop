@@ -18,4 +18,8 @@
     <ProjectReference Include="..\Luxprop.Global\Luxprop.Global.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\Reports\" />
+  </ItemGroup>
+
 </Project>

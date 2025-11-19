@@ -66,8 +66,9 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || initialized) return;
-        initialized = true;
+        if (firstRender && !hasInitialized)
+        {
+            hasInitialized = true;
 
         // Cargar sesión antes de leer
         await SessionService.LoadUserAsync();
@@ -88,13 +89,14 @@ else
             _ => "/dashboard"
         };
 
-        // Si no hay sesión y no es ruta pública → login
-        if (!isAuthenticated)
-        {
-            var uri = Navigation.Uri.ToLowerInvariant();
-            var isPublic = uri.EndsWith("/login") || uri.EndsWith("/user/create");
-            if (!isPublic) Navigation.NavigateTo("/login", true);
-        }
+            if (!isAuthenticated)
+            {
+                var currentUri = Navigation.Uri.ToLower();
+                if (!currentUri.EndsWith("/login") && !currentUri.EndsWith("/user/create"))
+                {
+                    Navigation.NavigateTo("/login", true);
+                }
+            }
 
         StateHasChanged();
     }
