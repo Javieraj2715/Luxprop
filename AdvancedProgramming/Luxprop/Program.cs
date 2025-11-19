@@ -28,6 +28,12 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IReminderService, ReminderService>();
 builder.Services.AddHostedService<ReminderNotifier>();
 builder.Services.AddSingleton<IEmailService, SmtpEmailService>();
+builder.Services.AddHostedService<DocumentExpirationJob>();
+
+builder.Services.AddScoped<IAlertasDocumentoRepository, AlertasDocumentoRepository>();
+builder.Services.AddScoped<IAlertasDocumentoService, AlertasDocumentoService>();
+
+
 builder.Services.AddHttpContextAccessor();
 
 
@@ -45,7 +51,7 @@ builder.Services.AddScoped<IExpedienteService, ExpedienteService>();
 builder.Services.AddSignalR();
 
 // (Opcional) Firebase credencial por variable de entorno
-var credentialPath = @"C:\Users\pepon\Documents\GitHub\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
+var credentialPath = @"C:\ProyectoFinalGrupal\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
 Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialPath);
 
 // 2) Construcción de la app (después de registrar servicios)

@@ -18,9 +18,12 @@ public partial class Documento
     public int? ExpedienteId { get; set; }
     public string? UrlArchivo { get; set; }
 
-    public string? Etiquetas { get; set; } 
+    public string? Etiquetas { get; set; }
 
-    public virtual ICollection<AlertaVencimiento> AlertaVencimientos { get; set; } = new List<AlertaVencimiento>();
+    public DateTime? FechaVencimiento { get; set; }
 
     public virtual Expediente? Expediente { get; set; }
+
+    public virtual ICollection<AlertasDocumento> AlertasDocumentos { get; set; } = new List<AlertasDocumento>();
+
 }

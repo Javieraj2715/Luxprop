@@ -1,0 +1,175 @@
+﻿@page "/documentsVencidos"
+@using Luxprop.Data.Models
+@using Microsoft.EntityFrameworkCore
+@inject LuxpropContext Db
+
+<PageTitle>Expired Documents</PageTitle>
+
+<div class="documents-page">
+    <div class="page-header">
+        <h1>Expired Documents</h1>
+    </div>
+
+    @if (documentsVencidos.Any())
+    {
+        <div class="alert-summary">
+            <h5>Total expired: @documentsVencidos.Count</h5>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">There are no expired documents.</div>
+    }
+
+    @if (!documentsVencidos.Any())
+    {
+        <div class="no-data">No documents found.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Date Uploaded</th>
+                        <th>Expiration</th>
+                        <th>Expediente</th>
+                        <th>Tags</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var doc in documentsVencidos)
+                    {
+                        <tr class="vencido">
+                            <td>@doc.Nombre</td>
+
+                            <td>@GetFriendlyTypeName(doc.TipoDocumento)</td>
+
+                            <td>
+                                <select class="form-select form-select-sm"
+                                        @onchange="async (e) => await ChangeStatus(doc.DocumentoId, e.Value.ToString())">
+                                    @foreach (var estado in estadosDisponibles)
+                                    {
+                                        <option value="@estado" selected="@(estado == doc.Estado)">
+                                            @estado
+                                        </option>
+                                    }
+                                </select>
+                            </td>
+
+                            <td>@(doc.FechaCarga?.ToString("yyyy-MM-dd"))</td>
+                            <td>@(doc.FechaVencimiento?.ToString("yyyy-MM-dd"))</td>
+                            <td>@doc.ExpedienteId</td>
+
+                            <td>
+                                @if (!string.IsNullOrEmpty(doc.Etiquetas))
+                                {
+                                    var tags = doc.Etiquetas.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                                    foreach (var tag in tags)
+                                    {
+                                        <span class="badge bg-secondary me-1">@tag.Trim()</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        @onclick="() => DeleteDocument(doc.DocumentoId)">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Documento> documentsVencidos = new();
+    private List<string> estadosDisponibles = new()
+    {
+        "Activo", "En revisión", "Completado", "Archivado", "Vencido"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDocuments();
+    }
+
+    private async Task LoadDocuments()
+    {
+        var hoy = DateTime.Today;
+
+        documentsVencidos = await Db.Documentos
+            .Where(d => d.FechaVencimiento != null && d.FechaVencimiento < hoy)
+            .OrderBy(d => d.FechaVencimiento)
+            .ToListAsync();
+    }
+
+    private async Task DeleteDocument(int id)
+    {
+        var doc = await Db.Documentos.FindAsync(id);
+
+        if (doc != null)
+        {
+            Db.Documentos.Remove(doc);
+            await Db.SaveChangesAsync();
+            await LoadDocuments();
+        }
+    }
+
+    private async Task ChangeStatus(int documentoId, string newStatus)
+    {
+        var doc = await Db.Documentos.FindAsync(documentoId);
+
+        if (doc != null)
+        {
+            doc.Estado = newStatus;
+            await Db.SaveChangesAsync();
+            await LoadDocuments();
+        }
+    }
+
+    private string GetFriendlyTypeName(string mimeType)
+    {
+        return mimeType switch
+        {
+            "application/pdf" => "PDF",
+            "application/msword" => "Word (.doc)",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => "Word (.docx)",
+            "application/vnd.ms-excel" => "Excel (.xls)",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => "Excel (.xlsx)",
+            "image/jpeg" => "Imagen (.jpg)",
+            "image/png" => "Imagen (.png)",
+            "text/plain" => "Texto (.txt)",
+            "application/zip" => "ZIP",
+            _ => mimeType
+        };
+    }
+}
+
+<style>
+    .documents-page {
+        padding: 2rem;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .vencido {
+        background-color: #f8d7da !important;
+        color: #721c24 !important;
+    }
+</style>

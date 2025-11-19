@@ -17,9 +17,9 @@ public partial class LuxpropContext : DbContext
 
     public virtual DbSet<Agente> Agentes { get; set; }
 
-    public virtual DbSet<AlertaVencimiento> AlertaVencimientos { get; set; }
-
     public virtual DbSet<Auditorium> Auditoria { get; set; }
+
+    public virtual DbSet<AlertasDocumento> AlertasDocumentos { get; set; }
 
     public virtual DbSet<ChatMessage> ChatMessages { get; set; }
 
@@ -49,7 +49,7 @@ public partial class LuxpropContext : DbContext
     public DbSet<Recordatorio> Recordatorios { get; set; } = default!;
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 
-        => optionsBuilder.UseSqlServer("Server=MSI\\MSSQLSERVER01;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
+        => optionsBuilder.UseSqlServer("Server=MARIANA_MASIS\\SQLEXPRESS;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
 
 
 
@@ -75,24 +75,6 @@ public partial class LuxpropContext : DbContext
                 .HasConstraintName("FK__Agente__Usuario___6C190EBB");
         });
 
-        modelBuilder.Entity<AlertaVencimiento>(entity =>
-        {
-            entity.HasKey(e => e.AlertaId).HasName("PK__AlertaVe__35E6F6438D9753F4");
-
-            entity.ToTable("AlertaVencimiento");
-
-            entity.Property(e => e.AlertaId).HasColumnName("Alerta_ID");
-            entity.Property(e => e.DocumentoId).HasColumnName("Documento_ID");
-            entity.Property(e => e.Estado).HasMaxLength(50);
-            entity.Property(e => e.FechaProgramada).HasColumnName("Fecha_Programada");
-            entity.Property(e => e.Tipo).HasMaxLength(50);
-
-            entity.HasOne(d => d.Documento).WithMany(p => p.AlertaVencimientos)
-                .HasForeignKey(d => d.DocumentoId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__AlertaVen__Docum__6EF57B66");
-        });
-
         modelBuilder.Entity<Auditorium>(entity =>
         {
             entity.HasKey(e => e.AuditoriaId).HasName("PK__Auditori__D7259D32A4BD9ADB");
@@ -110,6 +92,27 @@ public partial class LuxpropContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Auditoria__Usuar__5FB337D6");
         });
+
+
+        modelBuilder.Entity<AlertasDocumento>(entity =>
+        {
+            entity.HasKey(e => e.AlertaId);
+
+            entity.ToTable("AlertasDocumento");
+
+            entity.Property(e => e.AlertaId).HasColumnName("Alerta_ID");
+            entity.Property(e => e.DocumentoId).HasColumnName("Documento_ID");
+            entity.Property(e => e.FechaRegistro).HasColumnName("Fecha_Registro");
+            entity.Property(e => e.Tipo).HasMaxLength(50);
+            entity.Property(e => e.Estado).HasMaxLength(30);
+
+            entity.HasOne(d => d.Documento)
+                .WithMany(p => p.AlertasDocumentos)
+                .HasForeignKey(d => d.DocumentoId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Alerta_Documento");
+        });
+
 
         modelBuilder.Entity<ChatThread>(entity =>
         {
@@ -194,8 +197,9 @@ public partial class LuxpropContext : DbContext
             entity.Property(e => e.FechaCarga).HasColumnName("Fecha_Carga");
             entity.Property(e => e.Nombre).HasMaxLength(150);
             entity.Property(e => e.TipoDocumento)
-                .HasMaxLength(100)
+             .HasMaxLength(100)
                 .HasColumnName("Tipo_Documento");
+            entity.Property(e => e.FechaVencimiento).HasColumnName("Fecha_Vencimiento");
 
             entity.HasOne(d => d.Expediente).WithMany(p => p.Documentos)
                 .HasForeignKey(d => d.ExpedienteId)
