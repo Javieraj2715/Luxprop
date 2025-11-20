@@ -1,22 +1,33 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Luxprop.Data.Models
 {
-    public class HistorialExpediente
+    public partial class HistorialExpediente
     {
         public int HistorialId { get; set; }
+
+        // Relaciones principales
         public int ExpedienteId { get; set; }
         public int? UsuarioId { get; set; }
-        public DateTime FechaModificacion { get; set; } = DateTime.Now;
-        public string? EstadoNuevo { get; set; }
-        public string? Descripcion { get; set; }
-        public virtual Expediente? Expediente { get; set; }
-        public virtual Usuario? Usuario { get; set; }
-        
 
+        [ForeignKey(nameof(ExpedienteId))]
+        public virtual Expediente Expediente { get; set; } = null!;
+
+        [ForeignKey(nameof(UsuarioId))]
+        public virtual Usuario? Usuario { get; set; }
+
+        // Fechas y acciones
+        public DateTime? FechaModificacion { get; set; } = DateTime.Now;
+
+        // Detalles del cambio
+        public string? EstadoAnterior { get; set; }
+        public string? EstadoNuevo { get; set; }
+        public string? TipoAccion { get; set; }
+        public string? Descripcion { get; set; }
+        public string? Observacion { get; set; }
+
+        // Información adicional
+        public string? IPRegistro { get; set; }
     }
 }

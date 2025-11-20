@@ -17,9 +17,9 @@ public partial class LuxpropContext : DbContext
 
     public virtual DbSet<Agente> Agentes { get; set; }
 
-    public virtual DbSet<AlertaVencimiento> AlertaVencimientos { get; set; }
-
     public virtual DbSet<Auditorium> Auditoria { get; set; }
+
+    public virtual DbSet<AlertasDocumento> AlertasDocumentos { get; set; }
 
     public virtual DbSet<ChatMessage> ChatMessages { get; set; }
 
@@ -49,10 +49,10 @@ public partial class LuxpropContext : DbContext
 
     public DbSet<Recordatorio> Recordatorios { get; set; } = default!;
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    => optionsBuilder.UseSqlServer(
+        "Server=localhost\\SQLEXPRESS;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
 
-=> optionsBuilder.UseSqlServer(
-    "Server=localhost\\SQLEXPRESS;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
-
+        => optionsBuilder.UseSqlServer("Server=MARIANA_MASIS\\SQLEXPRESS;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
 
 
 
@@ -78,24 +78,6 @@ public partial class LuxpropContext : DbContext
                 .HasConstraintName("FK__Agente__Usuario___6C190EBB");
         });
 
-        modelBuilder.Entity<AlertaVencimiento>(entity =>
-        {
-            entity.HasKey(e => e.AlertaId).HasName("PK__AlertaVe__35E6F6438D9753F4");
-
-            entity.ToTable("AlertaVencimiento");
-
-            entity.Property(e => e.AlertaId).HasColumnName("Alerta_ID");
-            entity.Property(e => e.DocumentoId).HasColumnName("Documento_ID");
-            entity.Property(e => e.Estado).HasMaxLength(50);
-            entity.Property(e => e.FechaProgramada).HasColumnName("Fecha_Programada");
-            entity.Property(e => e.Tipo).HasMaxLength(50);
-
-            entity.HasOne(d => d.Documento).WithMany(p => p.AlertaVencimientos)
-                .HasForeignKey(d => d.DocumentoId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__AlertaVen__Docum__6EF57B66");
-        });
-
         modelBuilder.Entity<Auditorium>(entity =>
         {
             entity.HasKey(e => e.AuditoriaId).HasName("PK__Auditori__D7259D32A4BD9ADB");
@@ -113,6 +95,27 @@ public partial class LuxpropContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Auditoria__Usuar__5FB337D6");
         });
+
+
+        modelBuilder.Entity<AlertasDocumento>(entity =>
+        {
+            entity.HasKey(e => e.AlertaId);
+
+            entity.ToTable("AlertasDocumento");
+
+            entity.Property(e => e.AlertaId).HasColumnName("Alerta_ID");
+            entity.Property(e => e.DocumentoId).HasColumnName("Documento_ID");
+            entity.Property(e => e.FechaRegistro).HasColumnName("Fecha_Registro");
+            entity.Property(e => e.Tipo).HasMaxLength(50);
+            entity.Property(e => e.Estado).HasMaxLength(30);
+
+            entity.HasOne(d => d.Documento)
+                .WithMany(p => p.AlertasDocumentos)
+                .HasForeignKey(d => d.DocumentoId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Alerta_Documento");
+        });
+
 
         modelBuilder.Entity<ChatThread>(entity =>
         {
@@ -197,8 +200,9 @@ public partial class LuxpropContext : DbContext
             entity.Property(e => e.FechaCarga).HasColumnName("Fecha_Carga");
             entity.Property(e => e.Nombre).HasMaxLength(150);
             entity.Property(e => e.TipoDocumento)
-                .HasMaxLength(100)
+             .HasMaxLength(100)
                 .HasColumnName("Tipo_Documento");
+            entity.Property(e => e.FechaVencimiento).HasColumnName("Fecha_Vencimiento");
 
             entity.HasOne(d => d.Expediente).WithMany(p => p.Documentos)
                 .HasForeignKey(d => d.ExpedienteId)
@@ -208,26 +212,82 @@ public partial class LuxpropContext : DbContext
         modelBuilder.Entity<Expediente>(entity =>
         {
             entity.HasKey(e => e.ExpedienteId).HasName("PK__Expedien__0AAD7FACCB26AD20");
-
             entity.ToTable("Expediente");
 
             entity.Property(e => e.ExpedienteId).HasColumnName("Expediente_ID");
+            entity.Property(e => e.PropiedadId).HasColumnName("Propiedad_ID");
             entity.Property(e => e.ClienteId).HasColumnName("Cliente_ID");
+            entity.Property(e => e.AgenteId).HasColumnName("Agente_ID");
+            entity.Property(e => e.TipoOcupacion).HasMaxLength(50).HasColumnName("Tipo_Ocupacion");
             entity.Property(e => e.Estado).HasMaxLength(50);
+            entity.Property(e => e.Codigo).HasMaxLength(50);
+            entity.Property(e => e.Prioridad).HasMaxLength(30);
+            entity.Property(e => e.Categoria).HasMaxLength(50);
+            entity.Property(e => e.Descripcion).HasMaxLength(255);
+            entity.Property(e => e.Observaciones).HasColumnType("nvarchar(max)");
             entity.Property(e => e.FechaApertura).HasColumnName("Fecha_Apertura");
             entity.Property(e => e.FechaCierre).HasColumnName("Fecha_Cierre");
-            entity.Property(e => e.PropiedadId).HasColumnName("Propiedad_ID");
-            entity.Property(e => e.TipoOcupacion)
-                .HasMaxLength(50)
-                .HasColumnName("Tipo_Ocupacion");
+            entity.Property(e => e.UltimaActualizacion).HasColumnName("Ultima_Actualizacion");
+            entity.Property(e => e.CreadoPorId).HasColumnName("CreadoPor_ID");
+            entity.Property(e => e.ModificadoPorId).HasColumnName("ModificadoPor_ID");
 
-            entity.HasOne(d => d.Cliente).WithMany(p => p.Expedientes)
+            entity.HasOne(d => d.Propiedad)
+                .WithMany(p => p.Expedientes)
+                .HasForeignKey(d => d.PropiedadId)
+                .HasConstraintName("FK__Expedient__Propi__59063A47");
+
+            entity.HasOne(d => d.Cliente)
+                .WithMany(p => p.Expedientes)
                 .HasForeignKey(d => d.ClienteId)
                 .HasConstraintName("FK__Expedient__Clien__59FA5E80");
 
-            entity.HasOne(d => d.Propiedad).WithMany(p => p.Expedientes)
-                .HasForeignKey(d => d.PropiedadId)
-                .HasConstraintName("FK__Expedient__Propi__59063A47");
+            entity.HasOne(d => d.Agente)
+                .WithMany()
+                .HasForeignKey(d => d.AgenteId)
+                .HasConstraintName("FK_Expediente_Agente");
+
+            entity.HasOne(d => d.CreadoPor)
+                .WithMany()
+                .HasForeignKey(d => d.CreadoPorId)
+                .HasConstraintName("FK_Expediente_CreadoPor");
+
+            entity.HasOne(d => d.ModificadoPor)
+                .WithMany()
+                .HasForeignKey(d => d.ModificadoPorId)
+                .HasConstraintName("FK_Expediente_ModificadoPor");
+        });
+
+        modelBuilder.Entity<HistorialExpediente>(entity =>
+        {
+            entity.HasKey(e => e.HistorialId).HasName("PK__HistorialExpediente");
+            entity.ToTable("HistorialExpediente");
+
+            entity.Property(e => e.HistorialId).HasColumnName("Historial_ID");
+            entity.Property(e => e.ExpedienteId).HasColumnName("Expediente_ID");
+            entity.Property(e => e.UsuarioId).HasColumnName("Usuario_ID");
+
+            entity.Property(e => e.FechaModificacion)
+                .HasColumnName("Fecha_Modificacion")
+                .HasColumnType("datetime")
+                .HasDefaultValueSql("GETDATE()");
+
+            entity.Property(e => e.Descripcion).HasMaxLength(500);
+            entity.Property(e => e.EstadoNuevo).HasMaxLength(100);
+            entity.Property(e => e.EstadoAnterior).HasMaxLength(50);
+            entity.Property(e => e.TipoAccion).HasMaxLength(100);
+            entity.Property(e => e.Observacion).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.IPRegistro).HasMaxLength(50);
+
+            entity.HasOne(d => d.Expediente)
+                .WithMany(p => p.HistorialExpedientes)
+                .HasForeignKey(d => d.ExpedienteId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_HistorialExpediente_Expediente");
+
+            entity.HasOne(d => d.Usuario)
+                .WithMany()
+                .HasForeignKey(d => d.UsuarioId)
+                .HasConstraintName("FK_HistorialExpediente_Usuario");
         });
 
         modelBuilder.Entity<PropertyTour360>(entity =>
@@ -381,39 +441,6 @@ public partial class LuxpropContext : DbContext
                 .HasForeignKey(d => d.UsuarioId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Usuario_R__Usuar__4F7CD00D");
-        });
-
-        modelBuilder.Entity<HistorialExpediente>(entity =>
-        {
-            entity.HasKey(e => e.HistorialId).HasName("PK__HistorialExpediente");
-            entity.ToTable("HistorialExpediente");
-            entity.Property(e => e.HistorialId).HasColumnName("Historial_ID");
-            entity.Property(e => e.ExpedienteId).HasColumnName("Expediente_ID");
-            entity.Property(e => e.UsuarioId).HasColumnName("Usuario_ID");
-
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnName("Fecha_Modificacion")
-                .HasColumnType("datetime")
-                .HasDefaultValueSql("GETDATE()");
-
-            entity.Property(e => e.EstadoNuevo)
-                .HasColumnName("EstadoNuevo")
-                .HasMaxLength(100);
-
-            entity.Property(e => e.Descripcion)
-                .HasColumnName("Descripcion")
-                .HasMaxLength(500);
-            entity.HasOne(d => d.Expediente)
-                .WithMany(p => p.HistorialExpedientes)
-                .HasForeignKey(d => d.ExpedienteId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_HistorialExpediente_Expediente");
-            entity.HasOne(d => d.Expediente)
-              .WithMany(p => p.HistorialExpedientes)
-              .HasForeignKey(d => d.ExpedienteId)
-              .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK_HistorialExpediente_Expediente");
-
         });
 
         OnModelCreatingPartial(modelBuilder);

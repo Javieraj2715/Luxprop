@@ -2,6 +2,8 @@
 using Google.Apis.Auth.OAuth2;
 using Luxprop.Business.Services;
 using Luxprop.Data.Models;
+using Luxprop.Data.Repositories;
+using Luxprop.Hubs;
 using Luxprop.Services;
 using Microsoft.EntityFrameworkCore;
 using Luxprop.Hubs;
@@ -35,6 +37,11 @@ builder.Services.AddScoped<IReminderService, ReminderService>();
 builder.Services.AddHostedService<ReminderNotifier>();
 builder.Services.AddSingleton<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IHistorialExpedienteRepository, HistorialExpedienteRepository>();
+builder.Services.AddHostedService<DocumentExpirationJob>();
+
+builder.Services.AddScoped<IAlertasDocumentoRepository, AlertasDocumentoRepository>();
+builder.Services.AddScoped<IAlertasDocumentoService, AlertasDocumentoService>();
+
 
 builder.Services.AddHttpContextAccessor();
 
@@ -44,6 +51,21 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("DocsReaders", policy =>
         policy.RequireRole("admin", "agent"));
 });
+builder.Services.AddScoped<IReminderService, ReminderService>();
+builder.Services.AddHostedService<ReminderNotifier>();
+builder.Services.AddSingleton<IEmailService, SmtpEmailService>();
+builder.Services.AddHttpContextAccessor();
+
+
+
+
+// 🔹 Repositorios base
+builder.Services.AddScoped<IExpedienteRepository, ExpedienteRepository>();
+builder.Services.AddScoped<IHistorialExpedienteRepository, HistorialExpedienteRepository>();
+
+
+builder.Services.AddScoped<IHistorialExpedienteService, HistorialExpedienteService>();
+builder.Services.AddScoped<IExpedienteService, ExpedienteService>();
 
 // Servicio de documentos
 builder.Services.AddScoped<IDocService, DocService>();
@@ -52,6 +74,7 @@ builder.Services.AddScoped<IDocService, DocService>();
 builder.Services.AddSignalR();
 
 // (Opcional) Firebase credencial por variable de entorno
+//var credentialPath = @"C:\ProyectoFinalGrupal\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
 var credentialPath = @"C:\Users\Usuario\source\repos\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
 Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialPath);
 
