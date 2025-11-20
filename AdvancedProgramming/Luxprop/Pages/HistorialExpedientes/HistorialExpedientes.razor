@@ -119,19 +119,10 @@
         var roleRaw = await Session.GetUserRoleAsync();
         var role = NormalizeRole(roleRaw);
 
-        var prueba = await Db.Expedientes.FirstOrDefaultAsync();
-
-        if (role == "agent")
-        {
-            var expedientesAsignados = await Db.Expedientes
-                .Where(e => e.AgenteId == usuarioId)
-                .Select(e => e.ExpedienteId)
-                .ToListAsync();
-
-            historial = historial
-                .Where(h => expedientesAsignados.Contains(h.ExpedienteId))
-                .ToList();
-        }
+        historial = await Db.HistorialExpedientes
+            .Include(h => h.Usuario)
+            .OrderByDescending(h => h.FechaModificacion)
+            .ToListAsync();
 
         historialFiltrado = historial;
 
@@ -145,6 +136,7 @@
             .OrderBy(id => id)
             .ToList();
     }
+
 
 
 

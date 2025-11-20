@@ -19,8 +19,6 @@ public partial class Expediente
 
     public DateOnly? FechaCierre { get; set; }
 
-    public int? AgenteId { get; set; }
-
     public virtual ICollection<Citum> Cita { get; set; } = new List<Citum>();
 
     public virtual Cliente? Cliente { get; set; }
