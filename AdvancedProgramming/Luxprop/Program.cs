@@ -10,6 +10,7 @@ using QuestPDF.Infrastructure;   // <-- IMPORTANTE
 
 // Alias explícito al hub correcto
 using ChatHubType = Luxprop.Hubs.ChatHub;
+using Luxprop.Data.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +34,8 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IReminderService, ReminderService>();
 builder.Services.AddHostedService<ReminderNotifier>();
 builder.Services.AddSingleton<IEmailService, SmtpEmailService>();
+builder.Services.AddScoped<IHistorialExpedienteRepository, HistorialExpedienteRepository>();
+
 builder.Services.AddHttpContextAccessor();
 
 // Autorización por roles reales (ya la usas en componentes Blazor)
