@@ -1,0 +1,75 @@
+﻿@page "/historial-expedientes"
+@using Luxprop.Data.Models
+@using Microsoft.EntityFrameworkCore
+@inject LuxpropContext Db
+@inject NavigationManager Navigation
+
+<PageTitle>Historial de Expedientes - Luxprop</PageTitle>
+
+<div class="expedientes-page">
+    <div class="page-header">
+        <h1>Historial de Expedientes</h1>
+    </div>
+
+    @if (historial == null)
+    {
+        <div class="loading">Cargando historial...</div>
+    }
+    else if (!historial.Any())
+    {
+        <div class="no-data">No existen registros en el historial.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Expediente</th>
+                        <th>Usuario</th>
+                        <th>Acción</th>
+                        <th>Descripción</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var h in historial)
+                    {
+                        <tr>
+                            <td>@h.HistorialId</td>
+                            <td>@h.ExpedienteId</td>
+                            <td>@h.Usuario?.Nombre @h.Usuario?.Apellido</td>
+                            <td>@h.EstadoNuevo</td>
+                            <td>@h.Descripcion</td>
+                            <td>@h.FechaModificacion.ToString("dd/MM/yyyy HH:mm")</td>
+
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="/expedientes/details/@h.ExpedienteId"
+                                       class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-eye"></i> Ver expediente
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<HistorialExpediente>? historial;
+
+    protected override async Task OnInitializedAsync()
+    {
+        historial = await Db.HistorialExpedientes
+            .Include(h => h.Usuario)
+            .Include(h => h.Expediente)
+            .OrderByDescending(h => h.FechaModificacion)
+            .ToListAsync();
+    }
+}
