@@ -13,13 +13,18 @@ namespace Luxprop.Data.Repositories
         Task<IEnumerable<HistorialExpediente>> GetByIPAsync(string ip);
         Task<IEnumerable<HistorialExpediente>> GetByTipoAccionAsync(string tipoAccion);
         Task<IEnumerable<HistorialExpediente>> GetRecentAsync(int cantidad = 10);
+        Task CrearHistorialAsync(int expedienteId, string estadoNuevo, string descripcion, int? usuarioId = null);
     }
 
     public class HistorialExpedienteRepository : RepositoryBase<HistorialExpediente>, IHistorialExpedienteRepository
     {
-        public HistorialExpedienteRepository()
+        private readonly LuxpropContext _context;
+        private readonly DbSet<HistorialExpediente> _dbSet;
+
+        public HistorialExpedienteRepository(LuxpropContext context)
         {
-            DbSet = DbContext.Set<HistorialExpediente>();
+            _context = context;
+            _dbSet = _context.Set<HistorialExpediente>();
         }
 
         private IQueryable<HistorialExpediente> IncludeAll()
@@ -91,6 +96,21 @@ namespace Luxprop.Data.Repositories
                 .OrderByDescending(h => h.FechaModificacion)
                 .Take(cantidad)
                 .ToListAsync();
+        }
+
+        public async Task CrearHistorialAsync(int expedienteId, string estadoNuevo, string descripcion, int? usuarioId = null)
+        {
+            var historial = new HistorialExpediente
+            {
+                ExpedienteId = expedienteId,
+                UsuarioId = usuarioId,
+                EstadoNuevo = estadoNuevo,
+                Descripcion = descripcion,
+                FechaModificacion = DateTime.Now
+            };
+
+            await DbSet.AddAsync(historial);
+            await _context.SaveChangesAsync();
         }
     }
 }

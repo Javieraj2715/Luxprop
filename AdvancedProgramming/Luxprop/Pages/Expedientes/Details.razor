@@ -194,6 +194,9 @@ else
     private string activeTab = "info";
     private bool showTaskModal;
     private TareaTramite newTask = new();
+    
+    private List<HistorialExpediente>? historial;
+    private List<TareaTramite>? tasks;
 
     protected override async Task OnInitializedAsync()
     {
@@ -317,7 +320,7 @@ else
                     // Filas
                     foreach (var h in items)
                     {
-                        table.Cell().Element(cell => cell.Padding(6).Text(h.FechaModificacion.ToString("yyyy-MM-dd HH:mm")));
+                        table.Cell().Element(cell => cell.Padding(6).Text(h.FechaModificacion?.ToString("yyyy-MM-dd HH:mm") ?? ""));
                         table.Cell().Element(cell => cell.Padding(6).Text(h.EstadoNuevo ?? "-"));
                         table.Cell().Element(cell =>
                             cell.Padding(6).Text($"{h.Usuario?.Nombre ?? ""} {h.Usuario?.Apellido ?? ""}".Trim()));
@@ -333,7 +336,7 @@ else
     }
 
     // UI helpers for badges (render as MarkupString to keep spans)
-    private MarkupString BadgeForStatus(string? status)
+    
     private MarkupString BadgeForStatus(string? s)
     {
         var cls = s switch

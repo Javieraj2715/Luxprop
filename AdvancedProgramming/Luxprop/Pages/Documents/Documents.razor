@@ -270,9 +270,7 @@
 
     private async Task DeleteDocument(int id)
     {
-        var doc = Db.Documentos.Find(id);
-        if (doc != null)
-        {
+        
             int usuarioId = await Session.GetUserIdAsync();
 
             var doc = Db.Documentos.Find(id);
@@ -281,18 +279,17 @@
                 if (!string.IsNullOrEmpty(doc.UrlArchivo))
                     await DocumentoService.DeleteFileAsync(doc.UrlArchivo, doc.ExpedienteId, usuarioId);
 
-            Db.Documentos.Remove(doc);
-            await Db.SaveChangesAsync();
+                Db.Documentos.Remove(doc);
+                await Db.SaveChangesAsync();
 
-            await LoadDocuments();
-        }
+                await LoadDocuments();
+            }
+        
     }
 
     private async Task ChangeStatus(int documentoId, string newStatus)
     {
-        bool result = await DocumentoService.UpdateDocumentStatusAsync(documentoId, newStatus);
-        if (result)
-        {
+        
             int usuarioId = await Session.GetUserIdAsync();
             bool result = await DocumentoService.UpdateDocumentStatusAsync(documentoId, newStatus, usuarioId);
 
@@ -309,8 +306,6 @@
                 StateHasChanged();
             }
 
-            StateHasChanged();
-        }
     }
 
     private string GetFriendlyTypeName(string mimeType)
@@ -330,7 +325,7 @@
         };
     }
 }
-
+}
 <style>
     .documents-page {
         padding: 2rem;

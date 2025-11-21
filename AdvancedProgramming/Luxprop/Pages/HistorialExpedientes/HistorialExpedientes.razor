@@ -82,7 +82,7 @@
 
                             <td>@h.Usuario?.Nombre @h.Usuario?.Apellido</td>
 
-                            <td>@h.FechaModificacion.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@(h.FechaModificacion.HasValue ? h.FechaModificacion.Value.ToString("dd/MM/yyyy HH:mm") : "")</td>
 
                             <td>@h.Descripcion</td>
 
@@ -195,7 +195,7 @@
             ws.Cell(row, 1).Value = h.HistorialId;
             ws.Cell(row, 2).Value = h.ExpedienteId;
             ws.Cell(row, 3).Value = $"{h.Usuario?.Nombre} {h.Usuario?.Apellido}";
-            ws.Cell(row, 4).Value = h.FechaModificacion.ToString("yyyy-MM-dd HH:mm");
+            ws.Cell(row, 4).Value = h.FechaModificacion.HasValue ? h.FechaModificacion.Value.ToString("yyyy-MM-dd HH:mm") : "";
             ws.Cell(row, 5).Value = h.EstadoNuevo;
             ws.Cell(row, 6).Value = h.Descripcion;
             row++;
@@ -256,7 +256,7 @@
                         table.Cell().Element(c => c.Padding(6).Text(h.HistorialId));
                         table.Cell().Element(c => c.Padding(6).Text(h.ExpedienteId));
                         table.Cell().Element(c => c.Padding(6).Text(h.UsuarioId));
-                        table.Cell().Element(c => c.Padding(6).Text(h.FechaModificacion.ToString("yyyy-MM-dd HH:mm")));
+                        table.Cell().Element(c => c.Padding(6).Text(h.FechaModificacion.HasValue ? h.FechaModificacion.Value.ToString("yyyy-MM-dd HH:mm") : ""));
                         table.Cell().Element(c => c.Padding(6).Text(h.EstadoNuevo ?? "-"));
                         table.Cell().Element(c => c.Padding(6).Text(h.Descripcion ?? ""));
                     }
