@@ -3,6 +3,8 @@
 @using Luxprop.Data.Models
 @inject LuxpropContext Db
 @inject IDocumentoService DocumentoService
+@inject Luxprop.Services.SessionService Session
+
 
 <PageTitle>Documents - Luxprop</PageTitle>
 
@@ -271,8 +273,13 @@
         var doc = Db.Documentos.Find(id);
         if (doc != null)
         {
-            if (!string.IsNullOrEmpty(doc.UrlArchivo))
-                await DocumentoService.DeleteFileAsync(doc.UrlArchivo);
+            int usuarioId = await Session.GetUserIdAsync();
+
+            var doc = Db.Documentos.Find(id);
+            if (doc != null)
+            {
+                if (!string.IsNullOrEmpty(doc.UrlArchivo))
+                    await DocumentoService.DeleteFileAsync(doc.UrlArchivo, doc.ExpedienteId, usuarioId);
 
             Db.Documentos.Remove(doc);
             await Db.SaveChangesAsync();
@@ -286,11 +293,20 @@
         bool result = await DocumentoService.UpdateDocumentStatusAsync(documentoId, newStatus);
         if (result)
         {
-            var doc = documents.FirstOrDefault(d => d.DocumentoId == documentoId);
-            if (doc != null)
+            int usuarioId = await Session.GetUserIdAsync();
+            bool result = await DocumentoService.UpdateDocumentStatusAsync(documentoId, newStatus, usuarioId);
+
+            if (result)
             {
-                doc.Estado = newStatus;
-                await DocumentoService.UpdateExpedienteStatusAsync(doc.ExpedienteId);
+                var doc = documents.FirstOrDefault(d => d.DocumentoId == documentoId);
+                if (doc != null)
+                {
+                    doc.Estado = newStatus;
+
+                    await DocumentoService.UpdateExpedienteStatusAsync(doc.ExpedienteId, usuarioId);
+                }
+
+                StateHasChanged();
             }
 
             StateHasChanged();
