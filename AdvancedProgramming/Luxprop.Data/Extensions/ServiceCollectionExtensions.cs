@@ -9,7 +9,6 @@ namespace Luxprop.Data.Extensions
         {
             // Register all repository interfaces and implementations
             services.AddScoped<IAgenteRepository, AgenteRepository>();
-            services.AddScoped<IAlertaVencimientoRepository, AlertaVencimientoRepository>();
             services.AddScoped<IAuditoriumRepository, AuditoriumRepository>();
             services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
             services.AddScoped<IChatThreadRepository, ChatThreadRepository>();
@@ -23,6 +22,7 @@ namespace Luxprop.Data.Extensions
             services.AddScoped<IUbicacionRepository, UbicacionRepository>();
             services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             services.AddScoped<IUsuarioRolRepository, UsuarioRolRepository>();
+            services.AddScoped<IAlertasDocumentoRepository, AlertasDocumentoRepository>();
 
             return services;
         }

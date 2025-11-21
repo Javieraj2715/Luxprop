@@ -1,0 +1,168 @@
+﻿@page "/graficos"
+@using Luxprop.Data.Models
+@using Microsoft.EntityFrameworkCore
+@inject LuxpropContext Db
+
+<h2 class="mt-4 mb-4">Resumen General</h2>
+
+<div class="row">
+
+    <!-- ▒▒▒ DOCUMENTOS ▒▒▒ -->
+    <div class="col-md-6">
+        <h4 class="title-section mb-3">Estado de Documentos</h4>
+
+        <div class="pie-chart-box">
+            <div class="pie"
+                 style="--p1:@porcCompletados; --p2:@porcPendientes; --p3:@porcVencidos;">
+            </div>
+        </div>
+
+        <ul class="legend">
+            <li><span class="color green"></span> Completados: @completados</li>
+            <li><span class="color yellow"></span> Pendientes: @pendientes</li>
+            <li><span class="color red"></span> Vencidos: @vencidos</li>
+        </ul>
+    </div>
+
+
+    <!-- ▒▒▒ TRÁMITES ▒▒▒ -->
+    <div class="col-md-6">
+        <h4 class="title-section mb-3">Estado de Trámites</h4>
+
+        <div class="pie-chart-box">
+            <div class="pie"
+                 style="--p1:@porcTareasDone; --p2:@porcTareasPending; --p3:0;">
+            </div>
+        </div>
+
+        <ul class="legend">
+            <li><span class="color green"></span> Completados: @tareasDone</li>
+            <li><span class="color yellow"></span> Pendientes: @tareasPending</li>
+        </ul>
+    </div>
+
+</div>
+
+<style>
+
+    .title-section {
+        font-weight: 600;
+        color: #0d4651;
+    }
+
+    /* Contenedor del gráfico */
+    .pie-chart-box {
+        width: 260px;
+        height: 260px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* Gráfico circular */
+    .pie {
+        width: 230px;
+        height: 230px;
+        border-radius: 50%;
+        background: conic-gradient( #28a745 0deg calc(var(--p1)), #ffc107 calc(var(--p1)) calc(var(--p1) + var(--p2)), #dc3545 calc(var(--p1) + var(--p2)) calc(var(--p1) + var(--p2) + var(--p3)) );
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+    }
+
+        /* Hoyo interno para estilo donut */
+        .pie::before {
+            content: "";
+            width: 120px;
+            height: 120px;
+            background: #fff;
+            border-radius: 50%;
+            z-index: 10;
+        }
+
+    /* Leyenda */
+    .legend {
+        margin-top: 15px;
+        list-style: none;
+        padding: 0;
+    }
+
+        .legend li {
+            margin: 5px 0;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .legend .color {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+
+    .color.green {
+        background: #28a745;
+    }
+
+    .color.yellow {
+        background: #ffc107;
+    }
+
+    .color.red {
+        background: #dc3545;
+    }
+
+</style>
+
+@code {
+
+    // ---------- DOCUMENTOS ----------
+    int completados, pendientes, vencidos;
+    double porcCompletados, porcPendientes, porcVencidos;
+
+    // ---------- TAREAS / TRÁMITES ----------
+    int tareasDone, tareasPending;
+    double porcTareasDone, porcTareasPending;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDocumentos();
+        await CargarTareas();
+    }
+
+    // ====== DOCUMENTOS ======
+    private async Task CargarDocumentos()
+    {
+        var hoy = DateTime.Today;
+        var docs = await Db.Set<Documento>().ToListAsync();
+
+        completados = docs.Count(d => d.Estado == "Completado");
+        pendientes = docs.Count(d => d.Estado == "Activo" || d.Estado == "En revisión");
+        vencidos = docs.Count(d => d.FechaVencimiento != null && d.FechaVencimiento < hoy);
+
+        int total = completados + pendientes + vencidos;
+        if (total == 0) total = 1;
+
+        porcCompletados = completados * 360.0 / total;
+        porcPendientes = pendientes * 360.0 / total;
+        porcVencidos = vencidos * 360.0 / total;
+    }
+
+    // ====== TRÁMITES ======
+    private async Task CargarTareas()
+    {
+        var tareas = await Db.Set<TareaTramite>().ToListAsync();
+
+        tareasDone = tareas.Count(t => t.Estado == "Done");
+        tareasPending = tareas.Count(t => t.Estado == "Pending");
+
+        int totalTareas = tareasDone + tareasPending;
+        if (totalTareas == 0) totalTareas = 1;
+
+        porcTareasDone = tareasDone * 360.0 / totalTareas;
+        porcTareasPending = tareasPending * 360.0 / totalTareas;
+    }
+}

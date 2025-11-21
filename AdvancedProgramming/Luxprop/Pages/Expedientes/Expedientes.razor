@@ -1,72 +1,63 @@
 @page "/expedientes"
 @using Luxprop.Data.Models
-@using Microsoft.EntityFrameworkCore
-@inject LuxpropContext Db
+@using Luxprop.Business.Services
+@inject IExpedienteService ExpedienteService
 @inject NavigationManager Navigation
 
 <PageTitle>Expedientes - Luxprop</PageTitle>
 
 <div class="expedientes-page">
-    <div class="page-header">
-        <h1>Expedientes</h1>
+
+    <!-- Filtros -->
+    <div class="filters mb-4 d-flex flex-wrap gap-2">
+        <select class="form-select w-auto" @bind="filtroEstado">
+            <option value="">Filtrar por Estado</option>
+            <option>Abierto</option>
+            <option>En proceso</option>
+            <option>Cerrado</option>
+        </select>
+
+        <input type="text" class="form-control w-auto" placeholder="Buscar por propiedad" @bind="filtroPropiedad" />
+        <input type="text" class="form-control w-auto" placeholder="Buscar por cliente" @bind="filtroCliente" />
+        <button class="btn btn-export" @onclick="ExportarPDF">Exportar a PDF</button>
+        <button class="btn btn-export" @onclick="ExportarExcel">Exportar a Excel</button>
     </div>
 
     @if (expedientes == null)
     {
-        <div class="loading">Cargando expedientes...</div>
+        <div class="text-muted mt-4">Cargando expedientes...</div>
     }
     else if (!expedientes.Any())
     {
-        <div class="no-data">No hay expedientes registrados.</div>
+        <div class="text-muted mt-4">No hay expedientes registrados.</div>
     }
     else
     {
         <div class="table-responsive">
-            <table class="table">
+            <table class="table table-hover align-middle">
                 <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Propiedad</th>
                         <th>Cliente</th>
                         <th>Estado</th>
                         <th>Fecha Apertura</th>
-                        <th>Fecha Cierre</th>
+                        <th>Última Actualización</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var expediente in expedientes)
+                    @foreach (var e in expedientesFiltrados)
                     {
                         <tr>
-                            <td>@expediente.ExpedienteId</td>
-                            <td>@expediente.Propiedad?.Titulo</td>
-                            <td>@(expediente.Cliente != null ? expediente.Cliente.Usuario : "Sin cliente")</td>
-
-                            <!-- Columna Estado: badge + selector -->
+                            <td>@e.Propiedad?.Titulo</td>
+                            <td>@(e.Cliente?.Cedula ?? "Sin cliente")</td>
                             <td>
-                                <span class="badge @(GetBadgeClass(expediente.Estado))">@expediente.Estado</span>
-                                <InputSelect @bind-Value="expediente.Estado"
-                                             class="form-select mt-2"
-                                             @onchange="async (_) => await CambiarEstado(expediente)">
-                                    <option value="Abierto">Abierto</option>
-                                    <option value="En proceso">En proceso</option>
-                                    <option value="Cerrado">Cerrado</option>
-                                </InputSelect>
+                                <span class="badge @(GetBadgeClass(e.Estado))">@e.Estado</span>
                             </td>
-
-                            <td>@expediente.FechaApertura</td>
-                            <td>@(expediente.FechaCierre?.ToString() ?? "-")</td>
-
-                            <!-- Acciones -->
+                            <td>@e.FechaApertura?.ToString("yyyy-MM-dd")</td>
+                            <td>@e.UltimaActualizacion?.ToString("yyyy-MM-dd")</td>
                             <td>
-                                <div class="action-buttons">
-                                    <a href="/expedientes/details/@expediente.ExpedienteId" class="btn btn-sm btn-outline-info">
-                                        <i class="bi bi-eye"></i> Ver
-                                    </a>
-                                    <a href="/expedientes/edit/@expediente.ExpedienteId" class="btn btn-sm btn-outline-warning">
-                                        <i class="bi bi-pencil-square"></i> Editar
-                                    </a>
-                                </div>
+                                <button class="btn btn-view" @onclick="@(() => VerDetalles(e.ExpedienteId))">Ver</button>
                             </td>
                         </tr>
                     }
@@ -78,76 +69,111 @@
 
 @code {
     private List<Expediente>? expedientes;
+    private string filtroEstado = "";
+    private string filtroPropiedad = "";
+    private string filtroCliente = "";
 
-    // Mapea los 3 estados que usas en el selector
+    private IEnumerable<Expediente> expedientesFiltrados =>
+        expedientes?
+            .Where(e =>
+                (string.IsNullOrEmpty(filtroEstado) || e.Estado == filtroEstado) &&
+                (string.IsNullOrEmpty(filtroPropiedad) || (e.Propiedad?.Titulo?.Contains(filtroPropiedad, StringComparison.OrdinalIgnoreCase) ?? false)) &&
+                (string.IsNullOrEmpty(filtroCliente) || (e.Cliente?.Cedula?.Contains(filtroCliente, StringComparison.OrdinalIgnoreCase) ?? false))
+            ) ?? Enumerable.Empty<Expediente>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        expedientes = (await ExpedienteService.GetAllAsync()).ToList();
+    }
+
     private string GetBadgeClass(string estado) => estado switch
     {
-        "Abierto" => "bg-info",
-        "En proceso" => "bg-warning text-dark",
+        "Abierto" => "bg-warning text-dark",
+        "En proceso" => "bg-info text-dark",
         "Cerrado" => "bg-success",
         _ => "bg-secondary"
     };
 
-    protected override async Task OnInitializedAsync()
-    {
-        expedientes = await Db.Expedientes
-            .Include(e => e.Propiedad)
-            .Include(e => e.Cliente)
-            .ToListAsync();
-    }
+    private void VerDetalles(int id) => Navigation.NavigateTo($"/expedientes/details/{id}");
 
-    private async Task CambiarEstado(Expediente expediente)
-    {
-        // Si lo cierran, se marca FechaCierre; si no, se limpia
-        if (expediente.Estado == "Cerrado")
-            expediente.FechaCierre = DateOnly.FromDateTime(DateTime.Now);
-        else
-            expediente.FechaCierre = null;
+    private void AgregarExpediente() => Navigation.NavigateTo("/expedientes/create");
 
-        Db.Expedientes.Update(expediente);
-        await Db.SaveChangesAsync();
-        StateHasChanged();
-    }
+    private void ExportarPDF() => Console.WriteLine("Exportar PDF (implementación futura)");
+    private void ExportarExcel() => Console.WriteLine("Exportar Excel (implementación futura)");
 }
-
 <style>
     .expedientes-page {
         padding: 2rem;
+        background: #f8f9fa;
+        border-radius: 8px;
     }
 
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
+    .btn-add {
+        background-color: #0d505a;
+        color: #fff;
+        font-weight: 600;
+        border-radius: 6px;
+    }
+
+        .btn-add:hover {
+            background-color: #0b4049;
+        }
+
+    .filters .form-select,
+    .filters .form-control {
+        border-radius: 6px;
+        border-color: #ccc;
+    }
+
+    .btn-export {
+        background-color: #0d505a;
+        color: #fff;
+        font-weight: 500;
+        border-radius: 6px;
+    }
+
+    .btn-view {
+        background-color: #0d505a;
+        color: white;
+        border-radius: 6px;
+        padding: 0.4rem 0.9rem;
+        font-weight: 500;
     }
 
     .table {
-        background: #fff;
+        background: white;
         border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 3px 8px rgba(0,0,0,0.1);
     }
 
         .table th {
-            background: #0d505a;
+            background-color: #0d505a;
             color: white;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
         }
-
-        .table td, .table th {
-            padding: 1rem;
-            vertical-align: middle;
-        }
-
-    .action-buttons {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-    }
 
     .badge {
-        font-size: .85rem;
-        padding: .5rem .6rem;
-        border-radius: .5rem;
+        font-size: 0.85rem;
+        padding: 0.4rem 0.6rem;
+        border-radius: 0.4rem;
+        font-weight: 600;
+    }
+
+    .bg-warning.text-dark {
+        background-color: #ffc107 !important;
+    }
+
+    .bg-info.text-dark {
+        background-color: #0dcaf0 !important;
+    }
+
+    .bg-success {
+        background-color: #198754 !important;
+    }
+
+    .bg-secondary {
+        background-color: #6c757d !important;
     }
 </style>

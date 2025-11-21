@@ -5,7 +5,7 @@ namespace Luxprop.Business.Services
     public interface IChatService
     {
         // ===============================
-        // 💬 MENSAJES
+        // MENSAJES
         // ===============================
 
         /// <summary>
