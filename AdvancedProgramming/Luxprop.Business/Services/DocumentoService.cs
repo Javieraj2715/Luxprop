@@ -1,18 +1,23 @@
 ﻿using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
 using Luxprop.Data.Models;
+using Luxprop.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
-//Cambio
+
 namespace Luxprop.Business.Services
 {
     public class DocumentoService : IDocumentoService
     {
         private readonly LuxpropContext _db;
         private readonly string _bucketName = "luxprop-3fc09.firebasestorage.app";
-        public DocumentoService(LuxpropContext db)
+        private readonly IHistorialExpedienteRepository _historialRepository;
+
+        public DocumentoService(LuxpropContext db, IHistorialExpedienteRepository historialRepository)
         {
             _db = db;
+            _historialRepository = historialRepository;
         }
+
         public async Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType)
         {
             var credential = await GoogleCredential.GetApplicationDefaultAsync();
@@ -26,7 +31,7 @@ namespace Luxprop.Business.Services
             return publicUrl;
         }
 
-        public async Task DeleteFileAsync(string fileUrl)
+        public async Task DeleteFileAsync(string fileUrl, int? expedienteId, int usuarioId)
         {
             if (string.IsNullOrWhiteSpace(fileUrl))
                 throw new ArgumentException("Invalid file URL");
@@ -34,33 +39,62 @@ namespace Luxprop.Business.Services
             try
             {
                 var uri = new Uri(fileUrl);
-                var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
-
-               
                 var segments = uri.AbsolutePath.Split("/o/");
                 if (segments.Length < 2)
                     throw new InvalidOperationException("Invalid Firebase file URL format.");
 
-                
-                var objectName = Uri.UnescapeDataString(segments[1].Replace("?alt=media", string.Empty));
+                var objectName = Uri.UnescapeDataString(
+                    segments[1].Replace("?alt=media", string.Empty)
+                );
 
                 var storageClient = await StorageClient.CreateAsync();
                 await storageClient.DeleteObjectAsync(_bucketName, objectName);
 
                 Console.WriteLine($"Deleted file: {objectName}");
+
+                if (expedienteId.HasValue)
+                {
+                    await _historialRepository.CrearHistorialAsync(
+                        expedienteId.Value,
+                        estadoNuevo: "Eliminado",
+                        descripcion: $"El archivo '{objectName}' fue eliminado correctamente.",
+                        usuarioId: usuarioId
+                    );
+                }
             }
             catch (Google.GoogleApiException ex) when (ex.Error.Code == 404)
             {
                 Console.WriteLine("File not found in Firebase Storage.");
+
+                if (expedienteId.HasValue)
+                {
+                    await _historialRepository.CrearHistorialAsync(
+                        expedienteId.Value,
+                        estadoNuevo: "No encontrado",
+                        descripcion: "Se intentó eliminar el archivo pero no existía en Storage.",
+                        usuarioId: usuarioId
+                    );
+                }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error deleting file: {ex.Message}");
+
+                if (expedienteId.HasValue)
+                {
+                    await _historialRepository.CrearHistorialAsync(
+                        expedienteId.Value,
+                        estadoNuevo: "Error",
+                        descripcion: $"Error: {ex.Message}",
+                        usuarioId: usuarioId
+                    );
+                }
+
                 throw;
             }
         }
 
-        public async Task<bool> UpdateDocumentStatusAsync(int documentoId, string newStatus)
+        public async Task<bool> UpdateDocumentStatusAsync(int documentoId, string newStatus, int usuarioId)
         {
             try
             {
@@ -69,6 +103,17 @@ namespace Luxprop.Business.Services
 
                 documento.Estado = newStatus;
                 await _db.SaveChangesAsync();
+
+                if (documento.ExpedienteId != null)
+                {
+                    await _historialRepository.CrearHistorialAsync(
+                        expedienteId: documento.ExpedienteId.Value,
+                        estadoNuevo: $"Documento {newStatus}",
+                        descripcion: $"El documento '{documento.Nombre}' cambió a estado '{newStatus}'.",
+                        usuarioId: usuarioId
+                    );
+                }
+
                 return true;
             }
             catch (Exception ex)
@@ -78,7 +123,7 @@ namespace Luxprop.Business.Services
             }
         }
 
-        public async Task UpdateExpedienteStatusAsync(int? expedienteId)
+        public async Task UpdateExpedienteStatusAsync(int? expedienteId, int usuarioId)
         {
             if (expedienteId == null) return;
 
@@ -104,9 +149,22 @@ namespace Luxprop.Business.Services
                 var expediente = await _db.Expedientes.FindAsync(expedienteId);
                 if (expediente != null)
                 {
-                    expediente.Estado = nuevoEstado;
-                    await _db.SaveChangesAsync();
-                    Console.WriteLine($"Expediente {expedienteId} actualizado a '{nuevoEstado}'.");
+                    string estadoAnterior = expediente.Estado!;
+
+                    if (estadoAnterior != nuevoEstado)
+                    {
+                        expediente.Estado = nuevoEstado;
+                        await _db.SaveChangesAsync();
+
+                        await _historialRepository.CrearHistorialAsync(
+                            expedienteId.Value,
+                            estadoNuevo: nuevoEstado,
+                            descripcion: $"El estado del expediente cambió de '{estadoAnterior}' a '{nuevoEstado}'.",
+                            usuarioId: usuarioId
+                        );
+
+                        Console.WriteLine($"Expediente {expedienteId} actualizado a '{nuevoEstado}'.");
+                    }
                 }
             }
             catch (Exception ex)

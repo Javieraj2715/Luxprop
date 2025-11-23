@@ -5,74 +5,150 @@
 @inject Luxprop.Services.SessionService Session
 @inject NavigationManager Nav
 
-<PageTitle>Vendedor Dashboard</PageTitle>
+<PageTitle>Seller Dashboard</PageTitle>
 
 @if (!loaded)
 {
-    <p>Loading…</p>
-    ;
+    <div class="container py-5 text-center text-muted">
+        <div class="spinner-border mb-3" role="status"></div>
+        <p>Loading your dashboard…</p>
+    </div>
 }
 else if (!authorized)
 {
-
-    <p>Unauthorized</p>
-    ;
+    <div class="container py-5 text-center text-danger">
+        <h2 class="h4">Unauthorized</h2>
+        <p>You don't have access to this area.</p>
+    </div>
 }
 else
 {
-    <div class="dashboard-page">
-        <div class="page-header"><h1>Vendedor Dashboard</h1></div>
+    <div class="dashboard-page container py-4">
 
-        <div class="dashboard-grid">
-            <!-- Resumen -->
-            <div class="dashboard-card">
-                <div class="card-header"><h3>Mis Propiedades</h3></div>
-                <div class="card-content">
-                    <div class="stat-item">
-                        <span class="stat-number">@totalProperties</span>
-                        <span class="stat-label">Total</span>
+        <!-- HEADER -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+            <div>
+                <h1 class="h3 mb-1">Seller dashboard</h1>
+                <p class="text-muted mb-0">
+                    Track the status of your listings and take action quickly.
+                </p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/properties/create" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i> Add property
+                </a>
+                <a href="/properties" class="btn btn-outline-secondary">
+                    <i class="bi bi-list-ul me-1"></i> View all
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Summary -->
+            <div class="col-lg-4">
+                <div class="dashboard-card h-100">
+                    <div class="card-header">
+                        <h3 class="h5 mb-0">Portfolio summary</h3>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-number">@activeProperties</span>
-                        <span class="stat-label">Activas</span>
+                    <div class="card-content">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <div class="text-muted small">Total properties</div>
+                                <div class="stat-number h3 mb-0">@totalProperties</div>
+                            </div>
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-2">
+                                <i class="bi bi-house-door fs-4 text-primary"></i>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small">Active listings</div>
+                                    <div class="stat-number h4 mb-0">@activeProperties</div>
+                                </div>
+                                @{
+                                    var activePct = totalProperties > 0
+                                    ? (int)(activeProperties * 100.0 / totalProperties)
+                                    : 0;
+                                }
+                                <span class="badge bg-success bg-opacity-10 text-success">
+                                    @activePct% active
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mt-2">
+                            <div class="d-flex justify-content-between small text-muted mb-1">
+                                <span>Portfolio health</span>
+                                <span>@(totalProperties == 0 ? "N/A" : $"{activeProperties}/{totalProperties} active")</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-success"
+                                     style="width:@(totalProperties > 0 ? activeProperties * 100.0 / totalProperties : 0)%">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Acciones -->
-            <div class="dashboard-card">
-                <div class="card-header"><h3>Acciones rápidas</h3></div>
-                <div class="card-content">
-                    <a href="/properties/create" class="btn btn-primary">Agregar propiedad</a>
-                    <a href="/properties" class="btn btn-secondary">Ver propiedades</a>
+            <!-- Quick actions -->
+            <div class="col-lg-4">
+                <div class="dashboard-card h-100">
+                    <div class="card-header">
+                        <h3 class="h5 mb-0">Quick actions</h3>
+                    </div>
+                    <div class="card-content d-grid gap-2">
+                        <a href="/properties/create" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle me-1"></i> Add new property
+                        </a>
+                        <a href="/properties" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-list-ul me-1"></i> View all listings
+                        </a>
+                    </div>
                 </div>
             </div>
 
-            <!-- Recientes -->
-            <div class="dashboard-card">
-                <div class="card-header"><h3>Recientes</h3></div>
-                <div class="card-content">
-                    @if (recentProperties?.Any() == true)
-                    {
-                        <ul class="activity-list">
-                            @foreach (var p in recentProperties.Take(5))
-                            {
-                                <li class="activity-item">
-                                    <div class="activity-title">@p.Titulo</div>
-                                    <div class="activity-meta">@p.EstadoPublicacion</div>
-                                </li>
-                            }
-                        </ul>
-                    }
-                    else
-                    {
-
-                        <div class="no-activity">Sin actividad reciente</div>
-                        ;
-                    }
+            <!-- Recent properties -->
+            <div class="col-lg-4">
+                <div class="dashboard-card h-100">
+                    <div class="card-header">
+                        <h3 class="h5 mb-0">Recent properties</h3>
+                    </div>
+                    <div class="card-content">
+                        @if (recentProperties?.Any() == true)
+                        {
+                            <ul class="activity-list list-unstyled mb-0">
+                                @foreach (var p in recentProperties.Take(5))
+                                {
+                                    <li class="activity-item py-2 border-bottom small">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="activity-title fw-semibold">@p.Titulo</div>
+                                                <div class="activity-meta text-muted">
+                                                    ID: @p.PropiedadId
+                                                </div>
+                                            </div>
+                                            <span class="badge @GetPropertyStatusBadge(p.EstadoPublicacion)">
+                                                @p.EstadoPublicacion
+                                            </span>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <div class="no-activity text-muted">
+                                No recent activity yet.
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
+
     </div>
 }
 
@@ -110,7 +186,11 @@ else
             return;
         }
 
-        var all = Db.Propiedads.OrderByDescending(p => p.PropiedadId).ToList();
+        // Later you can filter by current seller when that linkage exists.
+        var all = Db.Propiedads
+            .OrderByDescending(p => p.PropiedadId)
+            .ToList();
+
         totalProperties = all.Count;
         activeProperties = all.Count(p => p.EstadoPublicacion == "Active");
         recentProperties = all;
@@ -131,7 +211,12 @@ else
             _ => string.Empty
         };
     }
+
+    private static string GetPropertyStatusBadge(string? status) =>
+        status?.ToLowerInvariant() switch
+        {
+            "active" or "activo" => "bg-success text-white",
+            "pending" or "pendiente" => "bg-warning text-dark",
+            _ => "bg-secondary text-white"
+        };
 }
-
-
-

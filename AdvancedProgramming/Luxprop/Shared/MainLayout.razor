@@ -1,4 +1,4 @@
-﻿@using Luxprop.Services
+﻿﻿@using Luxprop.Services
 @inherits LayoutComponentBase
 @inject SessionService SessionService
 @inject NavigationManager Navigation
@@ -23,8 +23,17 @@
         <nav class="menu-bar">
             <NavLink href="@dashboardHref" class="menu-link">Dashboard</NavLink>
             <NavLink href="/documents" class="menu-link">Documents</NavLink>
+            <NavLink href="/documentsVencidos" class="menu-link">Expired Documents</NavLink>
+            <NavLink href="/graficos" class="menu-link">Graficos</NavLink>
             <NavLink href="/properties" class="menu-link">Properties</NavLink>
+            <NavLink href="/historial-expedientes" class="menu-link">History</NavLink>
+            <NavLink href="/reminders" class="menu-link">Reminders</NavLink>
 
+            <NavLink href="/expedientes" class="menu-link">
+                <i class="bi bi-folder2-open"></i> Expedientes
+            </NavLink>
+            <NavLink href="/tramites" class="menu-link">Tasks</NavLink>
+            @* Chat dinámico según rol *@
             @if (role == "admin" || role == "agent")
             {
                 <NavLink href="/chatadmin" class="menu-link"><i class="bi bi-headset"></i> Chat Panel</NavLink>
@@ -114,3 +123,5 @@ else
         };
     }
 }
+
+

@@ -17,9 +17,9 @@ public partial class TareaTramite
 
     public string? Prioridad { get; set; }
 
-    public DateOnly? FechaInicio { get; set; }
+    public DateTime? FechaInicio { get; set; }
 
-    public DateOnly? FechaCierre { get; set; }
+    public DateTime? FechaCierre { get; set; }
 
     public DateOnly? FechaCompromiso { get; set; }
 

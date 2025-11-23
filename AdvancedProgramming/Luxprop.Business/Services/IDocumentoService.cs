@@ -9,9 +9,8 @@ namespace Luxprop.Business.Services
     public interface IDocumentoService
     {
         Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType);
-        Task DeleteFileAsync(string fileUrl);
-        Task<bool> UpdateDocumentStatusAsync(int documentoId, string newStatus);
-
-        Task UpdateExpedienteStatusAsync(int? expedienteId);
+        Task DeleteFileAsync(string fileUrl, int? expedienteId, int usuarioId);
+        Task<bool> UpdateDocumentStatusAsync(int documentoId, string newStatus, int usuarioId);
+        Task UpdateExpedienteStatusAsync(int? expedienteId, int usuarioId);
     }
 }
