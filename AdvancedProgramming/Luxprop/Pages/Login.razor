@@ -100,7 +100,9 @@
             var role = NormalizeRole(roleNameRaw);
 
             // Guardamos en sesión (guarda el raw para mostrar y el normalizado lo usamos para rutas)
-            await SessionService.SetUserAsync(user.UsuarioId, user.Nombre, roleNameRaw, user.Email);
+            await SessionService.SetUserAsync(user.UsuarioId, user.Nombre, role, user.Email);
+            await JSRuntime.InvokeVoidAsync("sessionStorage.setItem", "UserRoleRaw", roleNameRaw);
+
 
             // Redirección según rol normalizado
             switch (role)

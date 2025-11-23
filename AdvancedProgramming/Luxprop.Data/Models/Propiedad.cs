@@ -7,6 +7,8 @@ namespace Luxprop.Data.Models;
 public partial class Propiedad
 {
     public int PropiedadId { get; set; }
+    public string? MlsId { get; set; }
+
 
     public string? Titulo { get; set; }
 
