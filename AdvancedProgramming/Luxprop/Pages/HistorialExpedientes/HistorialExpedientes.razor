@@ -119,10 +119,17 @@
         var roleRaw = await Session.GetUserRoleAsync();
         var role = NormalizeRole(roleRaw);
 
-        historial = await Db.HistorialExpedientes
+        var query = Db.HistorialExpedientes
             .Include(h => h.Usuario)
             .OrderByDescending(h => h.FechaModificacion)
-            .ToListAsync();
+            .AsQueryable();
+
+        if (role == "agent")
+        {
+            query = query.Where(h => h.UsuarioId == usuarioId);
+        }
+
+        historial = await query.ToListAsync();
 
         historialFiltrado = historial;
 
@@ -136,9 +143,6 @@
             .OrderBy(id => id)
             .ToList();
     }
-
-
-
 
     private void OnUserFilterChanged(ChangeEventArgs e)
     {
