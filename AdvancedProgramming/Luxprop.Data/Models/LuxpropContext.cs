@@ -52,9 +52,6 @@ public partial class LuxpropContext : DbContext
     => optionsBuilder.UseSqlServer(
         "Server=localhost\\SQLEXPRESS;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
 
-        => optionsBuilder.UseSqlServer("Server=MARIANA_MASIS\\SQLEXPRESS;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
-
-
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -420,6 +417,10 @@ public partial class LuxpropContext : DbContext
                 .HasMaxLength(200)
                 .HasDefaultValue("");
             entity.Property(e => e.Telefono).HasMaxLength(20);
+            entity.Property(e => e.ResetPasswordToken).HasMaxLength(200).HasColumnName("ResetPasswordToken");
+            entity.Property(e => e.ResetPasswordExpiration)
+                  .HasColumnType("datetime")
+                  .HasColumnName("ResetPasswordExpiration");
         });
 
         modelBuilder.Entity<UsuarioRol>(entity =>
