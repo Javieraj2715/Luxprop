@@ -10,8 +10,12 @@ namespace Luxprop.Data.Repositories
         Task<IEnumerable<Usuario>> GetActiveUsersAsync();
         Task<IEnumerable<Usuario>> GetByRoleAsync(int roleId);
         Task<bool> EmailExistsAsync(string email);
+        Task<Usuario?> GetByResetTokenAsync(string token);
+        Task<bool> SaveResetTokenAsync(int userId, string token, DateTime expiration);
+        Task<bool> ClearResetTokenAsync(int userId);
+
     }
-    
+
     public class UsuarioRepository : RepositoryBase<Usuario>, IUsuarioRepository
     {
         public UsuarioRepository()
@@ -57,5 +61,39 @@ namespace Luxprop.Data.Repositories
         {
             return await DbSet.AnyAsync(u => u.Email == email);
         }
+
+        public async Task<Usuario?> GetByResetTokenAsync(string token)
+        {
+            return await DbSet.FirstOrDefaultAsync(u => u.ResetPasswordToken == token);
+        }
+
+        public async Task<bool> SaveResetTokenAsync(int userId, string token, DateTime expiration)
+        {
+            var user = await DbSet.FirstOrDefaultAsync(u => u.UsuarioId == userId);
+
+            if (user == null) return false;
+
+            user.ResetPasswordToken = token;
+            user.ResetPasswordExpiration = expiration;
+
+            DbContext.Update(user);
+            await DbContext.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> ClearResetTokenAsync(int userId)
+        {
+            var user = await DbSet.FirstOrDefaultAsync(u => u.UsuarioId == userId);
+
+            if (user == null) return false;
+
+            user.ResetPasswordToken = null;
+            user.ResetPasswordExpiration = null;
+
+            DbContext.Update(user);
+            await DbContext.SaveChangesAsync();
+            return true;
+        }
+
     }
 }

@@ -70,6 +70,8 @@ builder.Services.AddScoped<IExpedienteService, ExpedienteService>();
 // Servicio de documentos
 builder.Services.AddScoped<IDocService, DocService>();
 
+builder.Services.AddScoped<EmailService>();
+
 // SignalR
 builder.Services.AddSignalR();
 
