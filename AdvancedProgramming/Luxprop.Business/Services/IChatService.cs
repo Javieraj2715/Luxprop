@@ -28,6 +28,10 @@ namespace Luxprop.Business.Services
         /// </summary>
         Task AddAgentMessageAsync(int threadId, string text);
 
+        Task<int> GetUnreadCountAsync(string role, string userEmail);
+
+
+
 
         // ===============================
         // 🧵 HILOS (THREADS)
@@ -59,6 +63,7 @@ namespace Luxprop.Business.Services
         Task<List<ChatThread>> GetAllThreadsAsync();
 
 
+
         // ===============================
         // ⚙️ CONTROL DE ESTADO
         // ===============================
@@ -73,4 +78,7 @@ namespace Luxprop.Business.Services
         /// </summary>
         Task NotifyWaitingAsync(int threadId);
     }
+
+
+
 }

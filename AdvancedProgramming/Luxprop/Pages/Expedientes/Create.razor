@@ -2,6 +2,7 @@
 @using Luxprop.Data.Models
 @inject LuxpropContext Db
 @inject NavigationManager Navigation
+@inject Luxprop.Services.SessionService Session
 
 <PageTitle>Create Case File</PageTitle>
 
@@ -77,14 +78,19 @@
     [Parameter] public int PropiedadId { get; set; }
     private Expediente newCase = new();
 
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
+        int usuarioId = await Session.GetUserIdAsync();
+
         newCase.PropiedadId = PropiedadId;
         newCase.Estado = "Abierto";
         newCase.FechaApertura = DateOnly.FromDateTime(DateTime.Now);
         newCase.Prioridad = "Normal";
-        return Task.CompletedTask;
+        newCase.AgenteId = usuarioId;
+
+        await Task.CompletedTask;
     }
+
 
     private async Task SaveCase()
     {

@@ -3,6 +3,8 @@
 @using Luxprop.Business.Services
 @inject IExpedienteService ExpedienteService
 @inject NavigationManager Navigation
+@inject Luxprop.Services.SessionService Session
+
 
 <PageTitle>Expedientes - Luxprop</PageTitle>
 
@@ -39,6 +41,7 @@
                     <tr>
                         <th>Propiedad</th>
                         <th>Cliente</th>
+                        <th>Agente</th>
                         <th>Estado</th>
                         <th>Fecha Apertura</th>
                         <th>Última Actualización</th>
@@ -51,6 +54,7 @@
                         <tr>
                             <td>@e.Propiedad?.Titulo</td>
                             <td>@(e.Cliente?.Cedula ?? "Sin cliente")</td>
+                            <td>@e.Agente?.Nombre @e.Agente?.Apellido</td>
                             <td>
                                 <span class="badge @(GetBadgeClass(e.Estado))">@e.Estado</span>
                             </td>
@@ -83,7 +87,23 @@
 
     protected override async Task OnInitializedAsync()
     {
-        expedientes = (await ExpedienteService.GetAllAsync()).ToList();
+        await Session.LoadUserAsync();
+        int usuarioId = await Session.GetUserIdAsync();
+        var roleRaw = await Session.GetUserRoleAsync();
+        var role = NormalizeRole(roleRaw);
+
+        var allExpedientes = await ExpedienteService.GetAllAsync();
+
+        if (role == "agent")
+        {
+            expedientes = allExpedientes
+                .Where(e => e.AgenteId == usuarioId)
+                .ToList();
+
+            return;
+        }
+
+        expedientes = allExpedientes.ToList();
     }
 
     private string GetBadgeClass(string estado) => estado switch
@@ -100,6 +120,19 @@
 
     private void ExportarPDF() => Console.WriteLine("Exportar PDF (implementación futura)");
     private void ExportarExcel() => Console.WriteLine("Exportar Excel (implementación futura)");
+
+    private static string NormalizeRole(string? name)
+    {
+        var n = name?.Trim().ToLowerInvariant();
+        return n switch
+        {
+            "administrador" or "admin" => "admin",
+            "agente" or "agent" => "agent",
+            "vendedor" or "seller" => "seller",
+            "comprador" or "buyer" or "cliente" => "buyer",
+            _ => string.Empty
+        };
+    }
 }
 <style>
     .expedientes-page {

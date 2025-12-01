@@ -55,8 +55,6 @@ public partial class LuxpropContext : DbContext
         
 
 
-
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Agente>(entity =>
@@ -420,6 +418,10 @@ public partial class LuxpropContext : DbContext
                 .HasMaxLength(200)
                 .HasDefaultValue("");
             entity.Property(e => e.Telefono).HasMaxLength(20);
+            entity.Property(e => e.ResetPasswordToken).HasMaxLength(200).HasColumnName("ResetPasswordToken");
+            entity.Property(e => e.ResetPasswordExpiration)
+                  .HasColumnType("datetime")
+                  .HasColumnName("ResetPasswordExpiration");
         });
 
         modelBuilder.Entity<UsuarioRol>(entity =>
