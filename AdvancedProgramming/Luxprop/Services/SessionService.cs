@@ -82,6 +82,11 @@ namespace Luxprop.Services
             return CurrentUserId;
         }
 
+        public async Task<string?> GetUserRoleRawAsync()
+        {
+            return await _js.InvokeAsync<string>("sessionStorage.getItem", "UserRoleRaw");
+        }
+
         // ✅ Cierra sesión y limpia almacenamiento
         public async Task LogoutAsync()
         {
@@ -89,10 +94,14 @@ namespace Luxprop.Services
             CurrentUserName = null;
             CurrentUserRole = null;
             CurrentUserEmail = null;
-            await _js.InvokeVoidAsync("sessionStorage.clear");
+            await _js.InvokeVoidAsync("sessionStorage.removeItem", "UserRoleRaw");
+
         }
 
         // ✅ Verifica si hay sesión activa
         public bool IsAuthenticated => CurrentUserId > 0;
     }
+
+
+
 }

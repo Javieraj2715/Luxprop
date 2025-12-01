@@ -63,7 +63,8 @@
             <option value="">Seleccione una propiedad</option>
             @foreach (var p in propiedades)
             {
-                <option value="@p.PropiedadId">@p.Titulo</option>
+                <option value="@p.PropiedadId">@p.MlsId - @p.Titulo</option>
+
             }
         </InputSelect>
     </div>

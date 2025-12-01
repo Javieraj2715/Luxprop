@@ -3,6 +3,7 @@
 @using Microsoft.EntityFrameworkCore
 @inject LuxpropContext Db
 @inject NavigationManager Navigation
+@inject Luxprop.Services.SessionService Session
 
 <h3 class="mb-3">Edit Case File</h3>
 
@@ -97,7 +98,7 @@ else
                 <button type="button" class="btn btn-secondary" @onclick="Volver">Cancel</button>
             </div>
         </div>
-      
+
     </EditForm>
 
     <!-- TASKS -->
@@ -203,7 +204,9 @@ else
             .FirstOrDefaultAsync(e => e.ExpedienteId == ExpedienteId);
 
         documentos = expediente?.Documentos.ToList();
+
         tareas = await Db.TareaTramites.Where(t => t.ExpedienteId == ExpedienteId).ToListAsync();
+
         historial = await Db.HistorialExpedientes.Where(h => h.ExpedienteId == ExpedienteId)
                                                  .OrderByDescending(h => h.FechaModificacion)
                                                  .ToListAsync();
@@ -217,14 +220,23 @@ else
 
     private async Task GuardarCambios()
     {
+
+        int usuarioId = await Session.GetUserIdAsync();
+
+
+        if (expediente != null)
+        {
+            expediente.UltimaActualizacion = DateTime.Now;
+        }
+
         // Save expediente
-        Db.Expedientes.Update(expediente);
+        Db.Expedientes.Update(expediente!);
 
         // Save history
         Db.HistorialExpedientes.Add(new HistorialExpediente
         {
-            ExpedienteId = expediente.ExpedienteId,
-            UsuarioId = 1,
+            ExpedienteId = expediente!.ExpedienteId,
+            UsuarioId = usuarioId,
             FechaModificacion = DateTime.Now,
             EstadoNuevo = expediente.Estado,
             Descripcion = string.IsNullOrWhiteSpace(descripcionHistorial) ? "Case updated." : descripcionHistorial

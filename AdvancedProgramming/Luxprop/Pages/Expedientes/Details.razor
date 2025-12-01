@@ -204,6 +204,7 @@ else
         expediente = await Db.Expedientes
             .Include(e => e.Propiedad)
             .Include(e => e.Cliente).ThenInclude(c => c.Usuario)
+            .Include(e => e.Agente)
             .Include(e => e.Documentos)
             .FirstOrDefaultAsync(e => e.ExpedienteId == ExpedienteId);
 

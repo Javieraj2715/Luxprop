@@ -136,6 +136,7 @@
 
         try
         {
+            property.MlsId = GenerateMlsId();
             Db.Propiedads.Add(property);
             await Db.SaveChangesAsync();
             Navigation.NavigateTo("/properties");
@@ -149,6 +150,10 @@
         {
             isLoading = false;
         }
+    }
+    private string GenerateMlsId()
+    {
+        return DateTime.Now.ToString("yyyyMMddHHmmss");
     }
 }
 

@@ -2,7 +2,8 @@
 
 @using Luxprop.Data.Models
 @using Microsoft.EntityFrameworkCore
-@inject LuxpropContext Db
+@using Luxprop.Business.Services
+@inject IPropiedadService PropiedadService
 @inject NavigationManager Navigation
 
 <PageTitle>Properties - Luxprop</PageTitle>
@@ -27,6 +28,7 @@
             <table class="table">
                 <thead>
                     <tr>
+                        <th>MLS ID</th>
                         <th>Title</th>
                         <th>Description</th>
                         <th>Price</th>
@@ -41,6 +43,7 @@
                     @foreach (var property in properties)
                     {
                         <tr>
+                            <td>@property.MlsId</td>
                             <td>@property.Titulo</td>
                             <td>@property.Descripcion</td>
                             <td>@property.Precio?.ToString("C")</td>
@@ -95,20 +98,27 @@
 
     private async Task LoadProperties()
     {
-        properties = await Db.Propiedads
-            .Include(p => p.Ubicacion)
-            .Include(p => p.Expedientes) // ✅ Importante para saber si tiene expediente
-            .ToListAsync();
+        try
+        {
+            properties = await PropiedadService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading properties: {ex.Message}");
+        }
     }
 
     private async Task DeleteProperty(int id)
     {
-        var property = await Db.Propiedads.FindAsync(id);
-        if (property != null)
+        try
         {
-            Db.Propiedads.Remove(property);
-            await Db.SaveChangesAsync();
-            await LoadProperties();
+            var deleted = await PropiedadService.DeleteAsync(id);
+            if (deleted)
+                await LoadProperties();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting property: {ex.Message}");
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿@page "/documents"
 @using Luxprop.Business.Services
 @using Luxprop.Data.Models
+@using Microsoft.EntityFrameworkCore
 @inject LuxpropContext Db
 @inject IDocumentoService DocumentoService
 @inject Luxprop.Services.SessionService Session
@@ -185,7 +186,23 @@
 
     private async Task LoadDocuments()
     {
-        documents = Db.Documentos.ToList();
+        var role = await Session.GetUserRoleAsync();
+        var userId = await Session.GetUserIdAsync();
+
+        var query = Db.Documentos.AsQueryable();
+
+        if (role == "buyer" || role == "seller")
+        {
+            query = query.Where(d => d.UsuarioId == userId);
+        }
+
+        if (role == "agent")
+        {
+            query = query.Where(d => d.Expediente.AgenteId == userId);
+        }
+        // admin no tiene filtro
+        documents = await query.ToListAsync();
+
     }
 
     private void LoadDocumentTypes()

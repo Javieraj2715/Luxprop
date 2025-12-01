@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Luxprop.Data.Models;
 
@@ -19,6 +20,11 @@ public partial class Documento
     public string? UrlArchivo { get; set; }
 
     public string? Etiquetas { get; set; }
+    public int? UsuarioId { get; set; }
+
+    [ForeignKey(nameof(UsuarioId))]
+    public virtual Usuario? Usuario { get; set; }
+
 
     public DateTime? FechaVencimiento { get; set; }
 

@@ -50,8 +50,9 @@ public partial class LuxpropContext : DbContext
     public DbSet<Recordatorio> Recordatorios { get; set; } = default!;
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     => optionsBuilder.UseSqlServer(
-        "Server=localhost\\SQLEXPRESS;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
+        "Server=MSI\\MSSQLSERVER01;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;");
 
+        
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
