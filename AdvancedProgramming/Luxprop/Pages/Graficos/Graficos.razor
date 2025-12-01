@@ -3,41 +3,41 @@
 @using Microsoft.EntityFrameworkCore
 @inject LuxpropContext Db
 
-<h2 class="mt-4 mb-4">Resumen General</h2>
+<h2 class="mt-4 mb-4">General Summary</h2>
 
 <div class="row">
 
-    <!-- ▒▒▒ DOCUMENTOS ▒▒▒ -->
+    <!-- DOCUMENTS -->
     <div class="col-md-6">
-        <h4 class="title-section mb-3">Estado de Documentos</h4>
+        <h4 class="title-section mb-3">Document Status</h4>
 
         <div class="pie-chart-box">
             <div class="pie"
-                 style="--p1:@porcCompletados; --p2:@porcPendientes; --p3:@porcVencidos;">
+                 style="--p1:@porcCompCss; --p2:@porcPendCss; --p3:@porcVencCss;">
             </div>
         </div>
 
         <ul class="legend">
-            <li><span class="color green"></span> Completados: @completados</li>
-            <li><span class="color yellow"></span> Pendientes: @pendientes</li>
-            <li><span class="color red"></span> Vencidos: @vencidos</li>
+            <li><span class="color green"></span> Completed: @completed</li>
+            <li><span class="color yellow"></span> Pending: @pending</li>
+            <li><span class="color red"></span> Expired: @expired</li>
         </ul>
     </div>
 
 
-    <!-- ▒▒▒ TRÁMITES ▒▒▒ -->
+    <!-- TASKS -->
     <div class="col-md-6">
-        <h4 class="title-section mb-3">Estado de Trámites</h4>
+        <h4 class="title-section mb-3">Task Status</h4>
 
         <div class="pie-chart-box">
             <div class="pie"
-                 style="--p1:@porcTareasDone; --p2:@porcTareasPending; --p3:0;">
+                 style="--p1:@porcTasksDoneCss; --p2:@porcTasksPendingCss; --p3:0deg;">
             </div>
         </div>
 
         <ul class="legend">
-            <li><span class="color green"></span> Completados: @tareasDone</li>
-            <li><span class="color yellow"></span> Pendientes: @tareasPending</li>
+            <li><span class="color green"></span> Completed: @tasksDone</li>
+            <li><span class="color yellow"></span> Pending: @tasksPending</li>
         </ul>
     </div>
 
@@ -50,7 +50,7 @@
         color: #0d4651;
     }
 
-    /* Contenedor del gráfico */
+    /* Chart container */
     .pie-chart-box {
         width: 260px;
         height: 260px;
@@ -60,19 +60,19 @@
         align-items: center;
     }
 
-    /* Gráfico circular */
+    /* Pie chart */
     .pie {
         width: 230px;
         height: 230px;
         border-radius: 50%;
-        background: conic-gradient( #28a745 0deg calc(var(--p1)), #ffc107 calc(var(--p1)) calc(var(--p1) + var(--p2)), #dc3545 calc(var(--p1) + var(--p2)) calc(var(--p1) + var(--p2) + var(--p3)) );
+        background: conic-gradient( #28a745 0deg var(--p1), #ffc107 var(--p1) calc(var(--p1) + var(--p2)), #dc3545 calc(var(--p1) + var(--p2)) calc(var(--p1) + var(--p2) + var(--p3)) );
         display: flex;
         justify-content: center;
         align-items: center;
         position: relative;
     }
 
-        /* Hoyo interno para estilo donut */
+        /* Donut hole */
         .pie::before {
             content: "";
             width: 120px;
@@ -82,7 +82,7 @@
             z-index: 10;
         }
 
-    /* Leyenda */
+    /* Legend */
     .legend {
         margin-top: 15px;
         list-style: none;
@@ -119,50 +119,62 @@
 
 @code {
 
-    // ---------- DOCUMENTOS ----------
-    int completados, pendientes, vencidos;
-    double porcCompletados, porcPendientes, porcVencidos;
+    // ---------- DOCUMENTS ----------
+    int completed, pending, expired;
+    double percCompleted, percPending, percExpired;
+    string porcCompCss = "0deg";
+    string porcPendCss = "0deg";
+    string porcVencCss = "0deg";
 
-    // ---------- TAREAS / TRÁMITES ----------
-    int tareasDone, tareasPending;
-    double porcTareasDone, porcTareasPending;
+    // ---------- TASKS ----------
+    int tasksDone, tasksPending;
+    double percTasksDone, percTasksPending;
+    string porcTasksDoneCss = "0deg";
+    string porcTasksPendingCss = "0deg";
 
     protected override async Task OnInitializedAsync()
     {
-        await CargarDocumentos();
-        await CargarTareas();
+        await LoadDocuments();
+        await LoadTasks();
     }
 
-    // ====== DOCUMENTOS ======
-    private async Task CargarDocumentos()
+    // Load documents and calculate percentages
+    private async Task LoadDocuments()
     {
-        var hoy = DateTime.Today;
+        var today = DateTime.Today;
         var docs = await Db.Set<Documento>().ToListAsync();
 
-        completados = docs.Count(d => d.Estado == "Completado");
-        pendientes = docs.Count(d => d.Estado == "Activo" || d.Estado == "En revisión");
-        vencidos = docs.Count(d => d.FechaVencimiento != null && d.FechaVencimiento < hoy);
+        completed = docs.Count(d => d.Estado == "Completado");
+        pending = docs.Count(d => d.Estado == "Activo" || d.Estado == "En revisión");
+        expired = docs.Count(d => d.FechaVencimiento != null && d.FechaVencimiento < today);
 
-        int total = completados + pendientes + vencidos;
+        int total = completed + pending + expired;
         if (total == 0) total = 1;
 
-        porcCompletados = completados * 360.0 / total;
-        porcPendientes = pendientes * 360.0 / total;
-        porcVencidos = vencidos * 360.0 / total;
+        percCompleted = completed * 360.0 / total;
+        percPending = pending * 360.0 / total;
+        percExpired = expired * 360.0 / total;
+
+        porcCompCss = percCompleted + "deg";
+        porcPendCss = percPending + "deg";
+        porcVencCss = percExpired + "deg";
     }
 
-    // ====== TRÁMITES ======
-    private async Task CargarTareas()
+    // Load tasks and calculate percentages
+    private async Task LoadTasks()
     {
-        var tareas = await Db.Set<TareaTramite>().ToListAsync();
+        var tasks = await Db.Set<TareaTramite>().ToListAsync();
 
-        tareasDone = tareas.Count(t => t.Estado == "Done");
-        tareasPending = tareas.Count(t => t.Estado == "Pending");
+        tasksDone = tasks.Count(t => t.Estado == "Done");
+        tasksPending = tasks.Count(t => t.Estado == "Pending");
 
-        int totalTareas = tareasDone + tareasPending;
-        if (totalTareas == 0) totalTareas = 1;
+        int totalTasks = tasksDone + tasksPending;
+        if (totalTasks == 0) totalTasks = 1;
 
-        porcTareasDone = tareasDone * 360.0 / totalTareas;
-        porcTareasPending = tareasPending * 360.0 / totalTareas;
+        percTasksDone = tasksDone * 360.0 / totalTasks;
+        percTasksPending = tasksPending * 360.0 / totalTasks;
+
+        porcTasksDoneCss = percTasksDone + "deg";
+        porcTasksPendingCss = percTasksPending + "deg";
     }
 }
