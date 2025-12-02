@@ -243,21 +243,7 @@
                 return;
             }
 
-            // Proteger creación de Admin desde login público
-            if (!isAuthenticated && adminRoleId.HasValue && userModel.RolId == adminRoleId.Value)
-            {
-                errorMessage = "You cannot create an Admin from this page.";
-                return;
-            }
-
-            // Validar que el rol esté permitido
-            if (!allowedRoles.Any(r => r.RolId == userModel.RolId))
-            {
-                errorMessage = "Selected role is not allowed.";
-                return;
-            }
-
-            // Crear usuario
+            // Crear Usuario
             var usuario = new Usuario
             {
                 Nombre = userModel.Nombre,
@@ -277,8 +263,27 @@
                 UsuarioId = usuario.UsuarioId,
                 RolId = userModel.RolId
             });
+
             await Db.SaveChangesAsync();
 
+            // 🔥 SI EL ROL ES BUYER → CREAR CLIENTE AUTOMÁTICAMENTE
+            var buyerRoleId = Db.Rols.FirstOrDefault(r => r.Nombre.ToLower() == "buyer")?.RolId;
+
+            if (userModel.RolId == buyerRoleId)
+            {
+                var cliente = new Cliente
+                {
+                    UsuarioId = usuario.UsuarioId,
+                    Cedula = "Pendiente",  // Puedes adaptar esto
+					TipoCliente = "Buyer"
+
+                };
+
+                Db.Clientes.Add(cliente);
+                await Db.SaveChangesAsync();
+            }
+
+            // Registrar auditoría
             var rol = Db.Rols.Find(userModel.RolId);
             AuditoriaService.RegistrarAuditoria(
                 usuario.UsuarioId,
@@ -287,7 +292,7 @@
                 $"Usuario creado {usuario.Nombre} {usuario.Apellido} con el rol {rol?.Nombre}"
             );
 
-            successMessage = "User created and role assigned.";
+            successMessage = "User created successfully.";
             userModel = new CreateUserVM();
             StateHasChanged();
 
@@ -306,6 +311,7 @@
             isLoading = false;
         }
     }
+
 
 
     private void GoBack()

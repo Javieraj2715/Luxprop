@@ -94,9 +94,18 @@ namespace Luxprop.Services
             CurrentUserName = null;
             CurrentUserRole = null;
             CurrentUserEmail = null;
+
+            // 🔥 BORRAR TODO LO DEL SESSION STORAGE
+            await _js.InvokeVoidAsync("sessionStorage.removeItem", "UserId");
+            await _js.InvokeVoidAsync("sessionStorage.removeItem", "UserName");
+            await _js.InvokeVoidAsync("sessionStorage.removeItem", "UserRole");
+            await _js.InvokeVoidAsync("sessionStorage.removeItem", "UserEmail");
             await _js.InvokeVoidAsync("sessionStorage.removeItem", "UserRoleRaw");
 
+            // (Opcional) Limpiar todo completamente:
+            // await _js.InvokeVoidAsync("sessionStorage.clear");
         }
+
 
         // ✅ Verifica si hay sesión activa
         public bool IsAuthenticated => CurrentUserId > 0;

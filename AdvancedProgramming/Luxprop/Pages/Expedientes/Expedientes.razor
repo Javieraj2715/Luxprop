@@ -1,10 +1,10 @@
-@page "/expedientes"
+﻿@page "/expedientes"
 @using Luxprop.Data.Models
 @using Luxprop.Business.Services
 @inject IExpedienteService ExpedienteService
 @inject NavigationManager Navigation
 @inject Luxprop.Services.SessionService Session
-
+@inject IJSRuntime JS
 
 <PageTitle>Expedientes - Luxprop</PageTitle>
 
@@ -21,6 +21,7 @@
 
         <input type="text" class="form-control w-auto" placeholder="Buscar por propiedad" @bind="filtroPropiedad" />
         <input type="text" class="form-control w-auto" placeholder="Buscar por cliente" @bind="filtroCliente" />
+
         <button class="btn btn-export" @onclick="ExportarPDF">Exportar a PDF</button>
         <button class="btn btn-export" @onclick="ExportarExcel">Exportar a Excel</button>
     </div>
@@ -44,7 +45,7 @@
                         <th>Agente</th>
                         <th>Estado</th>
                         <th>Fecha Apertura</th>
-                        <th>�ltima Actualizaci�n</th>
+                        <th>Última Actualización</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -52,16 +53,47 @@
                     @foreach (var e in expedientesFiltrados)
                     {
                         <tr>
+                            <!-- Propiedad -->
                             <td>@e.Propiedad?.Titulo</td>
-                            <td>@(e.Cliente?.Cedula ?? "Sin cliente")</td>
-                            <td>@e.Agente?.Nombre @e.Agente?.Apellido</td>
+
+                            <!-- Cliente -->
+                            <td>
+                                @($"{e.Cliente?.Usuario?.Nombre} {e.Cliente?.Usuario?.Apellido}")
+                            </td>
+
+                            <!-- Agente -->
+                            <td>
+                                @($"{e.Agente?.Nombre} {e.Agente?.Apellido}")
+                            </td>
+
+                            <!-- Estado -->
                             <td>
                                 <span class="badge @(GetBadgeClass(e.Estado))">@e.Estado</span>
                             </td>
+
+                            <!-- Fecha apertura -->
                             <td>@e.FechaApertura?.ToString("yyyy-MM-dd")</td>
+
+                            <!-- Última actualización -->
                             <td>@e.UltimaActualizacion?.ToString("yyyy-MM-dd")</td>
+
+                            <!-- Acciones -->
                             <td>
-                                <button class="btn btn-view" @onclick="@(() => VerDetalles(e.ExpedienteId))">Ver</button>
+                                <div class="action-buttons d-flex gap-1">
+
+                                    <!-- Botón Ver (verde con borde grueso) -->
+                                    <a href="/expedientes/details/@e.ExpedienteId"
+                                       class="btn btn-sm btn-outline-success ver-btn">
+                                        <i class="bi bi-eye"></i> Ver
+                                    </a>
+
+                                    <!-- Botón Eliminar -->
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            @onclick="() => ConfirmDelete(e.ExpedienteId)">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </button>
+
+                                </div>
                             </td>
                         </tr>
                     }
@@ -77,15 +109,25 @@
     private string filtroPropiedad = "";
     private string filtroCliente = "";
 
+    // ✅ Aplica filtros con null-safe para cliente
     private IEnumerable<Expediente> expedientesFiltrados =>
         expedientes?
             .Where(e =>
                 (string.IsNullOrEmpty(filtroEstado) || e.Estado == filtroEstado) &&
-                (string.IsNullOrEmpty(filtroPropiedad) || (e.Propiedad?.Titulo?.Contains(filtroPropiedad, StringComparison.OrdinalIgnoreCase) ?? false)) &&
-                (string.IsNullOrEmpty(filtroCliente) || (e.Cliente?.Cedula?.Contains(filtroCliente, StringComparison.OrdinalIgnoreCase) ?? false))
+                (string.IsNullOrEmpty(filtroPropiedad) ||
+                    (e.Propiedad?.Titulo?.Contains(filtroPropiedad, StringComparison.OrdinalIgnoreCase) ?? false)) &&
+                (string.IsNullOrEmpty(filtroCliente) ||
+                    ($"{e.Cliente?.Usuario?.Nombre} {e.Cliente?.Usuario?.Apellido}"
+                        .Contains(filtroCliente, StringComparison.OrdinalIgnoreCase)))
             ) ?? Enumerable.Empty<Expediente>();
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadExpedientes();
+    }
+
+    // ✅ Carga expedientes respetando el rol (admin / agente)
+    private async Task LoadExpedientes()
     {
         await Session.LoadUserAsync();
         int usuarioId = await Session.GetUserIdAsync();
@@ -99,11 +141,11 @@
             expedientes = allExpedientes
                 .Where(e => e.AgenteId == usuarioId)
                 .ToList();
-
-            return;
         }
-
-        expedientes = allExpedientes.ToList();
+        else
+        {
+            expedientes = allExpedientes.ToList();
+        }
     }
 
     private string GetBadgeClass(string estado) => estado switch
@@ -114,12 +156,11 @@
         _ => "bg-secondary"
     };
 
-    private void VerDetalles(int id) => Navigation.NavigateTo($"/expedientes/details/{id}");
+    private void VerDetalles(int id) =>
+        Navigation.NavigateTo($"/expedientes/details/{id}");
 
-    private void AgregarExpediente() => Navigation.NavigateTo("/expedientes/create");
-
-    private void ExportarPDF() => Console.WriteLine("Exportar PDF (implementaci�n futura)");
-    private void ExportarExcel() => Console.WriteLine("Exportar Excel (implementaci�n futura)");
+    private void ExportarPDF() => Console.WriteLine("Exportar PDF");
+    private void ExportarExcel() => Console.WriteLine("Exportar Excel");
 
     private static string NormalizeRole(string? name)
     {
@@ -133,80 +174,46 @@
             _ => string.Empty
         };
     }
+
+    // ✅ Confirmación + borrado + recarga
+    private async Task ConfirmDelete(int id)
+    {
+        bool confirm = await JS.InvokeAsync<bool>(
+            "confirm",
+            "¿Seguro que deseas eliminar este expediente? Esta acción no se puede deshacer.");
+
+        if (!confirm)
+            return;
+
+        try
+        {
+            var ok = await ExpedienteService.DeleteAsync(id);
+
+            if (!ok)
+            {
+                await JS.InvokeVoidAsync("alert", "No se pudo eliminar el expediente (no existe o falló la operación).");
+                return;
+            }
+
+            await LoadExpedientes();  // recargar la lista desde BD
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error deleting expediente: " + ex.Message);
+            await JS.InvokeVoidAsync("alert", "Ocurrió un error al eliminar el expediente. Revisa la consola.");
+        }
+    }
 }
+
 <style>
-    .expedientes-page {
-        padding: 2rem;
-        background: #f8f9fa;
-        border-radius: 8px;
-    }
-
-    .btn-add {
-        background-color: #0d505a;
-        color: #fff;
-        font-weight: 600;
-        border-radius: 6px;
-    }
-
-        .btn-add:hover {
-            background-color: #0b4049;
-        }
-
-    .filters .form-select,
-    .filters .form-control {
-        border-radius: 6px;
-        border-color: #ccc;
-    }
-
-    .btn-export {
-        background-color: #0d505a;
-        color: #fff;
-        font-weight: 500;
-        border-radius: 6px;
-    }
-
-    .btn-view {
-        background-color: #0d505a;
-        color: white;
-        border-radius: 6px;
-        padding: 0.4rem 0.9rem;
-        font-weight: 500;
-    }
-
-    .table {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-    }
-
-        .table th {
-            background-color: #0d505a;
-            color: white;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-            letter-spacing: 0.5px;
-        }
-
-    .badge {
-        font-size: 0.85rem;
-        padding: 0.4rem 0.6rem;
-        border-radius: 0.4rem;
+    .ver-btn {
+        border: 2px solid #28a745 !important;
+        color: #28a745 !important;
         font-weight: 600;
     }
 
-    .bg-warning.text-dark {
-        background-color: #ffc107 !important;
-    }
-
-    .bg-info.text-dark {
-        background-color: #0dcaf0 !important;
-    }
-
-    .bg-success {
-        background-color: #198754 !important;
-    }
-
-    .bg-secondary {
-        background-color: #6c757d !important;
-    }
+        .ver-btn:hover {
+            background-color: #28a745 !important;
+            color: white !important;
+        }
 </style>

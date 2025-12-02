@@ -1,5 +1,6 @@
 ﻿using Luxprop.Data.Models;
 using Luxprop.Data.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace Luxprop.Business.Services
 {
@@ -12,16 +13,20 @@ namespace Luxprop.Business.Services
     public class PropiedadService : IPropiedadService
     {
         private readonly IPropiedadRepository _repository;
+        private readonly LuxpropContext _db;
 
-        public PropiedadService(IPropiedadRepository repository)
+        public PropiedadService(IPropiedadRepository repository, LuxpropContext db)
         {
             _repository = repository;
+            _db = db;
         }
 
+        // ✅ CARGA PROPIEDADES + SUS EXPEDIENTES (para mostrar el botón correctamente)
         public async Task<List<Propiedad>> GetAllAsync()
         {
-            var list = await _repository.ReadAsync();
-            return list.ToList();
+            return await _db.Propiedads
+                .Include(p => p.Expedientes)
+                .ToListAsync();
         }
 
         public async Task<bool> DeleteAsync(int id)

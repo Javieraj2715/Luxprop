@@ -21,6 +21,7 @@ public partial class Usuario
 
     public string? ResetPasswordToken { get; set; }
 
+    
     public DateTime? ResetPasswordExpiration { get; set; }
 
     public virtual ICollection<Agente> Agentes { get; set; } = new List<Agente>();
