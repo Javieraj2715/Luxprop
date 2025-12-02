@@ -34,6 +34,7 @@ namespace Luxprop.Business.Services
         {
             return await _db.Expedientes
                 .Include(e => e.Propiedad)
+                .Include(e => e.Agente)
                 .Include(e => e.Cliente)
                 .Include(e => e.Documentos)
                 .Include(e => e.HistorialExpedientes)

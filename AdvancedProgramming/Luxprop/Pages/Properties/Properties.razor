@@ -4,7 +4,10 @@
 @using Microsoft.EntityFrameworkCore
 @using Luxprop.Business.Services
 @inject IPropiedadService PropiedadService
+@inject IUtilsService UtilsService
 @inject NavigationManager Navigation
+@inject Luxprop.Services.SessionService Session
+
 
 <PageTitle>Properties - Luxprop</PageTitle>
 
@@ -93,14 +96,21 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadProperties();
-    }
-
-    private async Task LoadProperties()
-    {
         try
         {
+            int usuarioId = await Session.GetUserIdAsync();
+            var roleRaw = await Session.GetUserRoleAsync();
+
+            var role = await UtilsService.NormalizeRole(roleRaw);
+
             properties = await PropiedadService.GetAllAsync();
+
+            if (role == "agent")
+            {
+                properties = properties
+                    .Where(p => p.AgenteId == usuarioId)
+                    .ToList();
+            }
         }
         catch (Exception ex)
         {
@@ -114,7 +124,7 @@
         {
             var deleted = await PropiedadService.DeleteAsync(id);
             if (deleted)
-                await LoadProperties();
+                await OnInitializedAsync();
         }
         catch (Exception ex)
         {
