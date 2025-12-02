@@ -25,6 +25,8 @@ public partial class Propiedad
     public string? Recorrido360Url { get; set; }
 
     public int? AgenteId { get; set; }
+    public string Tipo_Propiedad { get; set; } = string.Empty;
+
 
     public int? UbicacionId { get; set; }
     public PropertyTour360? Tour360 { get; set; }

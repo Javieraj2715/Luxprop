@@ -40,6 +40,8 @@ builder.Services.AddScoped<IHistorialExpedienteRepository, HistorialExpedienteRe
 builder.Services.AddHostedService<DocumentExpirationJob>();
 builder.Services.AddScoped<IPropiedadRepository, PropiedadRepository>();
 builder.Services.AddScoped<IPropiedadService, PropiedadService>();
+builder.Services.AddScoped<DocumentoService>();
+
 
 
 builder.Services.AddScoped<IPropiedadService, PropiedadService>();
@@ -82,7 +84,7 @@ builder.Services.AddSignalR();
 
 // (Opcional) Firebase credencial por variable de entorno
 //var credentialPath = @"C:\ProyectoFinalGrupal\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
-var credentialPath = @"C:\Users\Usuario\source\repos\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
+var credentialPath = @"C:\Users\pepon\Documents\GitHub\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
 Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialPath);
 
 // ***** QuestPDF: licencia *****
