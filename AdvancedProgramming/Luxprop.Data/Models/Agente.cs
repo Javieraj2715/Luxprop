@@ -7,11 +7,12 @@ public partial class Agente
 {
     public int AgenteId { get; set; }
 
-    public int UsuarioId { get; set; }
-
-    public string? CodigoAgente { get; set; }
+    public string CodigoAgente { get; set; } = null!;
 
     public string? Sucursal { get; set; }
 
-    public virtual Usuario Usuario { get; set; } = null!;
+    public int UsuarioId { get; set; }
+
+    public virtual Usuario? Usuario { get; set; }   // ✅ RELACIÓN CORRECTA
 }
+

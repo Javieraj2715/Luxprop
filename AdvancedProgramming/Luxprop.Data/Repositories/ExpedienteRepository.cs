@@ -11,7 +11,6 @@ namespace Luxprop.Data.Repositories
         Task<IEnumerable<Expediente>> GetByTipoOcupacionAsync(string tipoOcupacion);
         Task<IEnumerable<Expediente>> GetOpenExpedientesAsync();
         Task<IEnumerable<Expediente>> GetExpedientesWithDocumentsAsync();
-
         Task<IEnumerable<Expediente>> GetByAgenteIdAsync(int agenteId);
         Task<IEnumerable<Expediente>> GetByPrioridadAsync(string prioridad);
         Task<IEnumerable<Expediente>> GetByCategoriaAsync(string categoria);
@@ -29,14 +28,23 @@ namespace Luxprop.Data.Repositories
         {
             return DbSet
                 .Include(e => e.Propiedad)
+
+                // *** Cliente -> Usuario (importante) ***
                 .Include(e => e.Cliente)
+                    .ThenInclude(c => c.Usuario)
+
+                // Agente (que también es Usuario)
+                .Include(e => e.Agente)
+
+                // Auditoría
+                .Include(e => e.CreadoPor)
+                .Include(e => e.ModificadoPor)
+
+                // Otros
                 .Include(e => e.Documentos)
                 .Include(e => e.Cita)
                 .Include(e => e.TareaTramites)
-                .Include(e => e.HistorialExpedientes)
-                .Include(e => e.Agente)
-                .Include(e => e.CreadoPor)
-                .Include(e => e.ModificadoPor);
+                .Include(e => e.HistorialExpedientes);
         }
 
         public async Task<IEnumerable<Expediente>> GetByPropiedadIdAsync(int propiedadId)
@@ -86,6 +94,7 @@ namespace Luxprop.Data.Repositories
                 .OrderByDescending(e => e.FechaApertura)
                 .ToListAsync();
         }
+
         public async Task<IEnumerable<Expediente>> GetByAgenteIdAsync(int agenteId)
         {
             return await IncludeAll()

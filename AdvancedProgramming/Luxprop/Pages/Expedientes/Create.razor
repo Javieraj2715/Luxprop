@@ -3,6 +3,7 @@
 @inject LuxpropContext Db
 @inject NavigationManager Navigation
 @inject Luxprop.Services.SessionService Session
+@using Microsoft.EntityFrameworkCore
 
 <PageTitle>Create Case File</PageTitle>
 
@@ -23,7 +24,7 @@
             <!-- Tipo de ocupación -->
             <div class="form-group">
                 <label>Occupation Type</label>
-                <InputText class="form-control" placeholder="Residential, Commercial..." @bind-Value="newCase.TipoOcupacion" />
+                <InputText class="form-control" @bind-Value="newCase.TipoOcupacion" />
             </div>
 
             <!-- Prioridad -->
@@ -63,18 +64,34 @@
             <!-- Descripción -->
             <div class="form-group">
                 <label>Description</label>
-                <InputTextArea class="form-control" rows="3" placeholder="Brief case description..." @bind-Value="newCase.Descripcion" />
+                <InputTextArea class="form-control" rows="3" @bind-Value="newCase.Descripcion" />
+            </div>
+
+            <!-- Seleccionar cliente -->
+            <div class="form-group">
+                <label>Select Client (Buyer)</label>
+                <InputSelect class="form-select" @bind-Value="newCase.ClienteId">
+                    <option value="">-- Select Buyer --</option>
+
+                    @foreach (var c in Buyers)
+                    {
+                        <option value="@c.ClienteId">@c.Usuario.Nombre @c.Usuario.Apellido</option>
+                    }
+                </InputSelect>
             </div>
 
             <div class="buttons">
                 <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">Back</button>
                 <button type="submit" class="btn btn-primary">Create</button>
             </div>
+
         </EditForm>
     </div>
 </div>
 
 @code {
+    private List<Cliente> Buyers = new();
+
     [Parameter] public int PropiedadId { get; set; }
     private Expediente newCase = new();
 
@@ -88,25 +105,27 @@
         newCase.Prioridad = "Normal";
         newCase.AgenteId = usuarioId;
 
-        await Task.CompletedTask;
+        // ▶️ Traer SOLO Buyeres desde la tabla Cliente
+        Buyers = await Db.Clientes
+            .Include(c => c.Usuario)
+            .Where(c => c.Usuario.UsuarioRols.Any(r => r.RolId == 4))  // Rol Buyer
+            .ToListAsync();
     }
-
 
     private async Task SaveCase()
     {
-        if (string.IsNullOrWhiteSpace(newCase.Codigo))
-        {
-            // Si no escribe código, pedimos que lo haga
+        if (string.IsNullOrWhiteSpace(newCase.Codigo) || newCase.ClienteId == 0)
             return;
-        }
 
         Db.Expedientes.Add(newCase);
         await Db.SaveChangesAsync();
+
         Navigation.NavigateTo($"/expedientes/details/{newCase.ExpedienteId}");
     }
 
     private void Cancel() => Navigation.NavigateTo("/properties");
 }
+
 
 <style>
     /* === Layout general === */

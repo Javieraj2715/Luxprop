@@ -13,6 +13,8 @@ namespace Luxprop.Data.Repositories
         Task<Usuario?> GetByResetTokenAsync(string token);
         Task<bool> SaveResetTokenAsync(int userId, string token, DateTime expiration);
         Task<bool> ClearResetTokenAsync(int userId);
+        Task<List<Usuario>> GetBuyersAsync();
+        
 
     }
 
@@ -93,6 +95,13 @@ namespace Luxprop.Data.Repositories
             DbContext.Update(user);
             await DbContext.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<List<Usuario>> GetBuyersAsync()
+        {
+            return await DbContext.Usuarios
+                .Where(u => u.UsuarioRols.Any(r => r.RolId == 4))
+                .ToListAsync();
         }
 
     }

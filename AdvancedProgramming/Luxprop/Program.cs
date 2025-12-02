@@ -38,6 +38,11 @@ builder.Services.AddHostedService<ReminderNotifier>();
 builder.Services.AddSingleton<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IHistorialExpedienteRepository, HistorialExpedienteRepository>();
 builder.Services.AddHostedService<DocumentExpirationJob>();
+builder.Services.AddScoped<IPropiedadRepository, PropiedadRepository>();
+builder.Services.AddScoped<IPropiedadService, PropiedadService>();
+
+
+builder.Services.AddScoped<IPropiedadService, PropiedadService>();
 
 builder.Services.AddScoped<IAlertasDocumentoRepository, AlertasDocumentoRepository>();
 builder.Services.AddScoped<IAlertasDocumentoService, AlertasDocumentoService>();
