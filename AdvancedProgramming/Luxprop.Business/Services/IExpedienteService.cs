@@ -11,6 +11,7 @@ namespace Luxprop.Business.Services
         Task CreateAsync(Expediente expediente, int usuarioId, string ip);
         Task UpdateAsync(Expediente expediente, int usuarioId, string ip);
         Task CloseAsync(int id, int usuarioId, string ip);
+        Task<bool> DeleteAsync(int id);
     }
 
     public class ExpedienteService : IExpedienteService
@@ -29,22 +30,25 @@ namespace Luxprop.Business.Services
             _db = db;
         }
 
-        // ✅ Carga todos los expedientes con sus relaciones
+        // ✅ Carga todos los expedientes con sus relaciones necesarias para la tabla
         public async Task<IEnumerable<Expediente>> GetAllAsync()
         {
             return await _db.Expedientes
                 .Include(e => e.Propiedad)
                 .Include(e => e.Cliente)
+                    .ThenInclude(c => c.Usuario)   // Cliente.Usuario
+                .Include(e => e.Agente)           // Agente es Usuario directamente
                 .Include(e => e.Documentos)
                 .Include(e => e.HistorialExpedientes)
                 .ToListAsync();
         }
 
-        // ✅ Carga un expediente por ID con toda la información relacionada
         public async Task<Expediente?> GetByIdAsync(int id)
         {
             return await _db.Expedientes
                 .Include(e => e.Cliente)
+                    .ThenInclude(c => c.Usuario)
+                .Include(e => e.Agente)
                 .Include(e => e.Propiedad)
                 .Include(e => e.Documentos)
                 .Include(e => e.HistorialExpedientes)
@@ -121,6 +125,38 @@ namespace Luxprop.Business.Services
                 "Expediente finalizado correctamente",
                 ip
             );
+        }
+
+        // ✅ Eliminar expediente (borrando hijos para evitar errores de FK)
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var exp = await _db.Expedientes
+                .Include(e => e.Documentos)
+                .Include(e => e.Cita)
+                .Include(e => e.TareaTramites)
+                .Include(e => e.HistorialExpedientes)
+                .FirstOrDefaultAsync(e => e.ExpedienteId == id);
+
+            if (exp == null)
+                return false;
+
+            // Borrar hijos primero (por si las FKs no tienen cascade)
+            if (exp.Documentos != null && exp.Documentos.Any())
+                _db.Documentos.RemoveRange(exp.Documentos);
+
+            if (exp.Cita != null && exp.Cita.Any())
+                _db.Cita.RemoveRange(exp.Cita);
+
+            if (exp.TareaTramites != null && exp.TareaTramites.Any())
+                _db.TareaTramites.RemoveRange(exp.TareaTramites);
+
+            if (exp.HistorialExpedientes != null && exp.HistorialExpedientes.Any())
+                _db.HistorialExpedientes.RemoveRange(exp.HistorialExpedientes);
+
+            _db.Expedientes.Remove(exp);
+
+            await _db.SaveChangesAsync();
+            return true;
         }
 
         // ✅ Método auxiliar centralizado

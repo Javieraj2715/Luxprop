@@ -44,7 +44,8 @@
                         <div class="user-dropdown">
                             <a href="/profile">My Profile</a>
                             <a href="/settings">Settings</a>
-                            <a href="#" @onclick="Logout">Logout</a>
+                            <a href="" @onclick="Logout">Logout</a>
+
                         </div>
                     }
                 </div>
@@ -99,27 +100,24 @@ else
     private string? roleRaw;
     private string role = "";
     private string dashboardHref = "/dashboard";
-    private bool initialized;
     private bool menuOpen = false;
 
-    // 🔴 Notification counter
     private int unreadChats = 0;
     private Timer? chatTimer;
 
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnParametersSetAsync()
     {
-        if (!firstRender || initialized) return;
-        initialized = true;
-
+        // 1) Cargar datos de sesión
         await SessionService.LoadUserAsync();
 
         userName = await SessionService.GetUserNameAsync();
         roleRaw = await SessionService.GetUserRoleAsync();
         role = NormalizeRole(roleRaw);
 
-        isAuthenticated = !string.IsNullOrWhiteSpace(userName);
+        isAuthenticated = SessionService.IsAuthenticated
+                          && !string.IsNullOrWhiteSpace(userName);
 
+        // 2) Definir dashboard según rol
         dashboardHref = role switch
         {
             "admin" => "/dashboard",
@@ -129,17 +127,29 @@ else
             _ => "/dashboard"
         };
 
+        // 3) Si NO está autenticado, solo permitir rutas públicas
         if (!isAuthenticated)
         {
             var uri = Navigation.Uri.ToLowerInvariant();
             var isPublic = uri.EndsWith("/login") || uri.EndsWith("/user/create");
 
             if (!isPublic)
-                Navigation.NavigateTo("/login", true);
-        }
+            {
+                Navigation.NavigateTo("/login");
+            }
 
-        StartChatPolling();
-        StateHasChanged();
+            // Si no está autenticado, asegurarse de que no se esté contando chat
+            chatTimer?.Dispose();
+            chatTimer = null;
+        }
+        else
+        {
+            // 4) Si SÍ está autenticado, arrancar el polling de chat si aún no está
+            if (chatTimer == null)
+            {
+                StartChatPolling();
+            }
+        }
     }
 
     private void GoToChat()
@@ -173,8 +183,24 @@ else
 
     private async Task Logout()
     {
+        // 1) Limpiar sesión
         await SessionService.LogoutAsync();
-        Navigation.NavigateTo("/login", true);
+
+        // 2) Actualizar estado local
+        isAuthenticated = false;
+        userName = null;
+        role = "";
+        menuOpen = false;
+
+        // 3) Detener timer de chat
+        chatTimer?.Dispose();
+        chatTimer = null;
+
+        // 4) Navegar al login
+        Navigation.NavigateTo("/login", forceLoad: true);
+
+        // 5) Forzar re-render inmediato por si sigue en la misma página
+        await InvokeAsync(StateHasChanged);
     }
 
     private static string NormalizeRole(string? name)
@@ -190,6 +216,7 @@ else
         };
     }
 }
+
 
 <style>
 
