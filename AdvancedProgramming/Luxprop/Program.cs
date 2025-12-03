@@ -41,7 +41,7 @@ builder.Services.AddHostedService<DocumentExpirationJob>();
 builder.Services.AddScoped<IPropiedadRepository, PropiedadRepository>();
 builder.Services.AddScoped<IPropiedadService, PropiedadService>();
 builder.Services.AddScoped<DocumentoService>();
-
+builder.Services.AddScoped<IUtilsService, UtilsService>();
 
 
 builder.Services.AddScoped<IPropiedadService, PropiedadService>();
