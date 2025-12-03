@@ -1,18 +1,18 @@
 ﻿using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Luxprop.Business.Services;
+using Luxprop.Business.Services.Dashboard;
+using Luxprop.Business.Services.Docs;
 using Luxprop.Data.Models;
 using Luxprop.Data.Repositories;
+using Luxprop.Data.Repositories;
+using Luxprop.Hubs;
 using Luxprop.Hubs;
 using Luxprop.Services;
 using Microsoft.EntityFrameworkCore;
-using Luxprop.Hubs;
-using Luxprop.Business.Services.Docs;
 using QuestPDF.Infrastructure;   // <-- IMPORTANTE
-
 // Alias explícito al hub correcto
 using ChatHubType = Luxprop.Hubs.ChatHub;
-using Luxprop.Data.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +41,7 @@ builder.Services.AddHostedService<DocumentExpirationJob>();
 builder.Services.AddScoped<IPropiedadRepository, PropiedadRepository>();
 builder.Services.AddScoped<IPropiedadService, PropiedadService>();
 builder.Services.AddScoped<DocumentoService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 
 
