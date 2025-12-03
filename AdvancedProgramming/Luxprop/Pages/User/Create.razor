@@ -295,6 +295,11 @@
             successMessage = "User created successfully.";
             userModel = new CreateUserVM();
             StateHasChanged();
+
+            await Task.Delay(2500);
+
+            Navigation.NavigateTo("/login", forceLoad: true);
+            return;
         }
         catch (Exception ex)
         {
