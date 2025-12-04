@@ -32,11 +32,32 @@ namespace Luxprop.Business.Services
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var propiedad = await _repository.FindAsync(id);
+            var propiedad = await _db.Propiedads
+                .Include(p => p.Expedientes)
+                .ThenInclude(e => e.Documentos)
+                .Include(p => p.Expedientes)
+                .ThenInclude(e => e.TareaTramites)
+                .FirstOrDefaultAsync(p => p.PropiedadId == id);
+
             if (propiedad == null)
                 return false;
 
-            return await _repository.DeleteAsync(propiedad);
+            // 🔥 Borrar documentos del expediente
+            foreach (var exp in propiedad.Expedientes)
+            {
+                _db.Documentos.RemoveRange(exp.Documentos);
+                _db.TareaTramites.RemoveRange(exp.TareaTramites);
+            }
+
+            // 🔥 Borrar expedientes asociados
+            _db.Expedientes.RemoveRange(propiedad.Expedientes);
+
+            // 🔥 Borrar propiedad
+            _db.Propiedads.Remove(propiedad);
+
+            await _db.SaveChangesAsync();
+            return true;
         }
+
     }
 }

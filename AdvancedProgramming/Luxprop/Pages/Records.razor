@@ -9,126 +9,136 @@
 @inject SessionService Session
 @inject NavigationManager Nav
 
-<h3>@(isAdmin ? "Case Records (Admin)" : "My Case Records")</h3>
+<PageTitle>Case Records - Luxprop</PageTitle>
 
-@if (!roleResolved)
-{
-    <p>Loading...</p>
-}
-else if (!isAdmin && !isAgent)
-{
-    <div class="alert alert-danger">You are not authorized to view this report.</div>
-}
-else
-{
-    @* Filtros solo para ADMIN *@
-    @if (isAdmin)
+<div class="records-page">
+
+    <h2 class="page-title">
+        @(isAdmin ? "Case Records (Admin)" : "My Case Records")
+    </h2>
+
+    @if (!roleResolved)
     {
-        <EditForm Model="@filters" OnValidSubmit="@LoadCases">
-            <DataAnnotationsValidator />
-            <div class="row g-2 mb-3">
-                <div class="col">
-                    <label>Case ID</label>
-                    <InputNumber class="form-control" @bind-Value="filters.ExpedienteId" />
-                </div>
-                <div class="col">
-                    <label>Status</label>
-                    <InputText class="form-control" @bind-Value="filters.Estado" />
-                </div>
-                <div class="col">
-                    <label>Search (Property / Client)</label>
-                    <InputText class="form-control" @bind-Value="filters.Search" />
-                </div>
-                <div class="col">
-                    <label>Opened From</label>
-                    <InputDate TValue="DateOnly ?" class="form-control" @bind-Value="filters.From" />
-                </div>
-                <div class="col">
-                    <label>Opened To</label>
-                    <InputDate TValue="DateOnly ?" class="form-control" @bind-Value="filters.To" />
-                </div>
-                <div class="col d-flex align-items-end gap-2">
-                    <button type="submit" class="btn btn-primary">Apply filters</button>
-
-                    <a class="btn btn-outline-secondary @(selectedCaseId == null ? "disabled" : "")"
-                       href="@GetExportUrl()"
-                       target="_blank"
-                       role="button"
-                       aria-disabled="@(selectedCaseId == null)">
-                        Export PDF
-                    </a>
-                </div>
-            </div>
-        </EditForm>
+        <div class="loading">Loading...</div>
     }
-    else if (isAgent)
+    else if (!isAdmin && !isAgent)
     {
-        <div class="d-flex justify-content-between mb-3">
-            <p class="text-muted mb-0">
-                You are viewing your assigned case records. Filters are managed by administrators.
-            </p>
-
-            <a class="btn btn-outline-secondary @(selectedCaseId == null ? "disabled" : "")"
-               href="@GetExportUrl()"
-               target="_blank"
-               role="button"
-               aria-disabled="@(selectedCaseId == null)">
-                Export PDF
-            </a>
-        </div>
-    }
-
-    @if (isLoading)
-    {
-        <p>Loading...</p>
-    }
-    else if (rows == null || rows.Count == 0)
-    {
-        <div class="alert alert-info">No case records found for the selected filters.</div>
+        <div class="alert alert-danger mt-3">You are not authorized to view this report.</div>
     }
     else
     {
-        <table class="table table-striped table-sm">
-            <thead>
-                <tr>
-                    <th style="width:60px;">Select</th>
-                    <th>Case ID</th>
-                    <th>Property</th>
-                    <th>Client</th>
-                    <th>Status</th>
-                    <th>Opened</th>
-                    <th>Closed</th>
-                    <th>Docs</th>
-                    <th>Tasks</th>
-                    <th>Progress</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var r in rows)
-                {
-                    <tr>
-                        <td>
-                            <input type="radio"
-                                   name="selectedCase"
-                                   value="@r.Id"
-                                   checked="@(selectedCaseId == r.Id)"
-                                   @onchange="@(() => SelectCase(r.Id))" />
-                        </td>
-                        <td>@r.Id</td>
-                        <td>@r.Property</td>
-                        <td>@r.Client</td>
-                        <td>@r.Status</td>
-                        <td>@(r.Opened?.ToString("yyyy-MM-dd"))</td>
-                        <td>@(r.Closed?.ToString("yyyy-MM-dd"))</td>
-                        <td>@r.DocumentCount</td>
-                        <td>@($"{r.CompletedTasks}/{r.TotalTasks}")</td>
-                        <td>@($"{r.ProgressPercent:0}%")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <!-- FILTROS ADMIN -->
+        @if (isAdmin)
+        {
+            <EditForm Model="@filters" OnValidSubmit="@LoadCases">
+                <DataAnnotationsValidator />
+
+                <div class="filters d-flex flex-wrap gap-2 mb-4">
+
+                    <input class="form-control w-auto" placeholder="Case ID"
+                           type="number" @bind-value="filters.ExpedienteId" />
+
+                    <input class="form-control w-auto" placeholder="Status"
+                           @bind-value="filters.Estado" />
+
+                    <input class="form-control w-auto" placeholder="Search property or client"
+                           @bind-value="filters.Search" />
+
+                    <InputDate TValue="DateOnly ?" class="form-control w-auto"
+                               @bind-Value="filters.From" />
+
+                    <InputDate TValue="DateOnly ?" class="form-control w-auto"
+                               @bind-Value="filters.To" />
+
+                    <button class="btn btn-export">Apply filters</button>
+
+                    <a class="btn btn-export @(selectedCaseId == null ? "disabled" : "")"
+                       href="@GetExportUrl()" target="_blank">
+                        Export PDF
+                    </a>
+                </div>
+            </EditForm>
+        }
+        else if (isAgent)
+        {
+            <div class="d-flex justify-content-between mb-3">
+                <p class="text-muted mb-0">
+                    You are viewing your assigned case records.
+                </p>
+
+                <a class="btn btn-export @(selectedCaseId == null ? "disabled" : "")"
+                   href="@GetExportUrl()" target="_blank">
+                    Export PDF
+                </a>
+            </div>
+        }
+
+        <!-- TABLA -->
+        @if (isLoading)
+        {
+            <div class="loading">Loading records…</div>
+        }
+        else if (rows == null || rows.Count == 0)
+        {
+            <div class="no-data">No case records found.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table">
+
+                    <thead>
+                        <tr>
+                            <th>Select</th>
+                            <th>Case ID</th>
+                            <th>Property</th>
+                            <th>Client</th>
+                            <th>Status</th>
+                            <th>Opened</th>
+                            <th>Closed</th>
+                            <th>Docs</th>
+                            <th>Tasks</th>
+                            <th>Progress</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var r in rows)
+                        {
+                            <tr>
+                                <td>
+                                    <input type="radio"
+                                           name="selectedCase"
+                                           value="@r.Id"
+                                           checked="@(selectedCaseId == r.Id)"
+                                           @onchange="@(() => SelectCase(r.Id))" />
+                                </td>
+
+                                <td>@r.Id</td>
+                                <td>@r.Property</td>
+                                <td>@r.Client</td>
+
+                                <td>
+                                    <span class="badge @GetBadgeClass(r.Status)">
+                                        @r.Status
+                                    </span>
+                                </td>
+
+                                <td>@(r.Opened?.ToString("yyyy-MM-dd"))</td>
+                                <td>@(r.Closed?.ToString("yyyy-MM-dd"))</td>
+
+                                <td>@r.DocumentCount</td>
+                                <td>@($"{r.CompletedTasks}/{r.TotalTasks}")</td>
+                                <td>@($"{r.ProgressPercent:0}%")</td>
+                            </tr>
+                        }
+                    </tbody>
+
+                </table>
+            </div>
+        }
     }
-}
+</div>
 
 @code {
 
@@ -157,6 +167,14 @@ else
     {
         selectedCaseId = id;
     }
+    private string GetBadgeClass(string status) => status switch
+    {
+        "Open" => "bg-warning text-dark",
+        "In progress" => "bg-info text-dark",
+        "Closed" => "bg-success",
+        _ => "bg-secondary"
+    };
+
 
     // Cargamos usuario/rol DESPUÉS del prerender para no disparar JS interop
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -325,3 +343,93 @@ else
         public double ProgressPercent { get; set; }
     }
 }
+
+<style>
+
+    .records-page {
+        padding: 2rem;
+    }
+
+    .page-title {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        color: #0d505a;
+    }
+
+    /* Filters */
+    .filters .form-control {
+        min-width: 180px;
+        border-radius: 6px;
+    }
+
+    .btn-export {
+        background-color: #0d505a;
+        color: white;
+        border-radius: 6px;
+        padding: .45rem 1rem;
+        font-size: .85rem;
+        border: none;
+    }
+
+        .btn-export:hover {
+            background-color: #093e47;
+            color: white;
+        }
+
+    /* Table (same as Expedientes) */
+    .table {
+        width: 100%;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+
+        .table th {
+            background-color: #0d505a;
+            color: white;
+            padding: 1rem;
+            font-size: .85rem;
+            text-transform: uppercase;
+        }
+
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e2e2e2;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f1f5f6;
+        }
+
+    /* Badges */
+    .badge {
+        padding: .45rem .7rem;
+        border-radius: 6px;
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+    .bg-warning {
+        background-color: #ffc107 !important;
+        color: #000 !important;
+    }
+
+    .bg-success {
+        background-color: #28a745 !important;
+    }
+
+    .bg-secondary {
+        background-color: #6c757d !important;
+    }
+
+    .loading,
+    .no-data {
+        text-align: center;
+        padding: 2rem;
+        font-size: 1.2rem;
+        color: #0d505a;
+    }
+
+</style>

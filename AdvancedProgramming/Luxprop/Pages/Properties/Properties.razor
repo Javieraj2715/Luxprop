@@ -14,7 +14,10 @@
 <div class="properties-page">
     <div class="page-header">
         <h1>Properties</h1>
-        <a href="/properties/create" class="btn btn-primary">Create Property</a>
+        @if (role == "admin" || role == "agent")
+        {
+            <a href="/properties/create" class="btn btn-primary">Create Property</a>
+        }
     </div>
 
     @if (properties == null)
@@ -93,11 +96,14 @@
                                     @if (property.Expedientes != null && property.Expedientes.Any())
                                     {
                                         var expedienteId = property.Expedientes.First().ExpedienteId;
-
-                                        <a href="/expedientes/details/@expedienteId"
-                                           class="btn btn-sm btn-outline-success">
-                                            <i class="bi bi-folder2-open"></i> View Case
-                                        </a>
+                                        @if (role == "admin" || role == "agent")
+                                        {
+                                            <a href="/expedientes/details/@expedienteId"
+                                               class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-folder2-open"></i> View Case
+                                            </a>
+                                        }
+                                        
                                     }
                                     else if (role == "admin" || role == "agent")
                                     {

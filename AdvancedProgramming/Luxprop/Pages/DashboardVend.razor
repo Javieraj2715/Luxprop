@@ -220,3 +220,135 @@ else
             _ => "bg-secondary text-white"
         };
 }
+<style>
+    .dashboard-page {
+        padding: 2rem;
+        min-height: 100vh;
+        background-color: #f8f9fa;
+    }
+
+    /* HEADER */
+    .dashboard-header {
+        background: linear-gradient(135deg, #0f4e56, #159d7f);
+        color: white;
+        padding: 1.8rem;
+        border-radius: 12px;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.16);
+        margin-bottom: 2rem;
+    }
+
+        .dashboard-header h1 {
+            font-size: 1.9rem;
+            margin: 0;
+        }
+
+        .dashboard-header p {
+            opacity: .8;
+            margin: 0;
+        }
+
+    /* CARD CONTAINER */
+    .dashboard-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transition: transform .2s, box-shadow .2s;
+    }
+
+        .dashboard-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+
+    .card-header {
+        margin-bottom: 1rem;
+        border-bottom: 1px solid #eaeaea;
+        padding-bottom: .5rem;
+    }
+
+        .card-header h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #0d505a;
+        }
+
+    /* STATS */
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #0d505a;
+    }
+
+    .stat-label {
+        font-size: .85rem;
+        color: #666;
+    }
+
+    .progress {
+        height: 6px;
+        border-radius: 50px;
+    }
+
+    .progress-bar {
+        border-radius: 50px;
+    }
+
+    /* ACTIVITY LIST */
+    .activity-list .activity-item {
+        padding: .75rem 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .activity-title {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .activity-meta {
+        font-size: .8rem;
+        color: #777;
+    }
+
+    .no-activity {
+        padding: 1rem 0;
+        font-size: .9rem;
+        color: #888;
+        text-align: center;
+        font-style: italic;
+    }
+
+    /* BUTTONS */
+    .btn {
+        border-radius: 6px;
+        padding: .55rem 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+    }
+
+    .btn-primary {
+        background-color: #0d505a;
+        border-color: #0d505a;
+    }
+
+        .btn-primary:hover {
+            background-color: #093e47;
+            border-color: #093e47;
+        }
+
+    .btn-outline-secondary:hover {
+        background-color: #f1f1f1;
+    }
+
+    /* RESPONSIVE GRID */
+     
+        font-size: 1.5rem;
+    }
+
+    .dashboard-header h1 {
+        font-size: 1.5rem;
+    }
+
+    }
+</style>
