@@ -155,6 +155,7 @@ else
 
         <!-- MAIN CONTENT -->
         <div class="row g-4">
+
             <!-- Recent Properties -->
             <div class="col-lg-6">
                 <div class="dashboard-card h-100">
@@ -239,6 +240,7 @@ else
                     </div>
                 </div>
             </div>
+
             <!-- Documents about to expire -->
             <div class="col-lg-6">
                 <div class="dashboard-card h-100">
@@ -304,8 +306,6 @@ else
                     </div>
                 </div>
             </div>
-
-            
         </div>
 
     </div>
@@ -351,8 +351,13 @@ else
             return;
         }
 
-        // TODO: filter by current agent when you map properties/cases to the logged-in user.
+        // 🟦 USER ID del agente logueado
+        var userId = await Session.GetUserIdAsync() ;
+
+
+        // 🟩 FILTRAR PROPIEDADES DEL AGENTE
         var allProps = Db.Propiedads
+            .Where(p => p.AgenteId == userId)
             .OrderByDescending(p => p.PropiedadId)
             .ToList();
 
@@ -360,7 +365,11 @@ else
         activeProperties = allProps.Count(p => p.EstadoPublicacion == "Active");
         recentProperties = allProps;
 
+        // 🟧 FILTRAR CASOS SOLO DE PROPIEDADES DEL AGENTE
+        var propIds = allProps.Select(p => p.PropiedadId).ToList();
+
         var allCases = Db.Expedientes
+            .Where(e => propIds.Contains(e.PropiedadId ?? 0))
             .OrderByDescending(e => e.ExpedienteId)
             .ToList();
 
@@ -368,25 +377,21 @@ else
         activeCases = allCases.Count(e => e.Estado == "Activo" || e.Estado == "En proceso");
         recentCases = allCases;
 
-        // DOCUMENTOS QUE VENCEN EN 7 DÍAS
+        // 🟪 Documentos próximos a vencer
         docsToExpire = Db.Documentos
-     .Where(d => d.FechaVencimiento.HasValue &&
-                 d.FechaVencimiento.Value.Date >= DateTime.Now.Date &&
-                 d.FechaVencimiento.Value.Date <= DateTime.Now.AddDays(7).Date)
-     .OrderBy(d => d.FechaVencimiento)
-     .ToList();
+            .Where(d => d.FechaVencimiento.HasValue &&
+                        d.FechaVencimiento.Value.Date >= DateTime.Now.Date &&
+                        d.FechaVencimiento.Value.Date <= DateTime.Now.AddDays(7).Date)
+            .OrderBy(d => d.FechaVencimiento)
+            .ToList();
 
-
-
-        // RECORDATORIOS PRÓXIMOS (basados en Fecha de Inicio)
+        // 🟦 Reminders próximos
         upcomingReminders = Db.Recordatorios
             .Where(r =>
                 r.Inicio >= DateTime.Now &&
                 r.Inicio <= DateTime.Now.AddDays(7))
             .OrderBy(r => r.Inicio)
             .ToList();
-
-
 
         loaded = true;
         StateHasChanged();
