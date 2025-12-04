@@ -8,7 +8,6 @@
 
 <PageTitle>Marty LiveChat</PageTitle>
 
-
 <div class="chat-container">
     @if (!isChatActive)
     {
@@ -50,7 +49,9 @@
     private ChatMessage newMessage = new();
     private int currentThreadId = 0;
     private ElementReference messagesContainer;
-    private Timer? pollTimer;
+
+    // 🔥 Nuevo: control del loop
+    private bool keepPolling = true;
 
     private string? userName;
     private string? userEmail;
@@ -70,7 +71,6 @@
         userEmail = await Session.GetUserEmailAsync();
         userId = await Session.GetUserIdAsync();
 
-        // Fallback: get user email directly from DB if not in session
         if (string.IsNullOrEmpty(userEmail))
         {
             userEmail = Db.Usuarios
@@ -91,7 +91,6 @@
 
         if (thread == null || thread.State == "Closed")
         {
-            // Create a new chat thread
             thread = new ChatThread
             {
                 State = "Open",
@@ -115,7 +114,7 @@
         isBotActive = !waitingForAgent;
 
         await LoadMessages();
-        StartPolling();
+        await StartPolling();   // ⭐ Corrección
     }
 
     private async Task StartChat() => await LoadOrCreateThread();
@@ -197,9 +196,16 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private void StartPolling()
+    // 🔥 Polling SEGURO sin Timer
+    private async Task StartPolling()
     {
-        pollTimer = new Timer(async _ => await PollForNewMessages(), null, TimeSpan.Zero, TimeSpan.FromSeconds(3));
+        keepPolling = true;
+
+        while (keepPolling)
+        {
+            await PollForNewMessages();
+            await Task.Delay(3000);
+        }
     }
 
     private async Task PollForNewMessages()
@@ -260,8 +266,11 @@
         return "I didn’t quite get that 🤔\n" + GetMainMenu();
     }
 
-    private void GoToDashboard() => Navigation.NavigateTo("/dashboard");
-    public void Dispose() => pollTimer?.Dispose();
+    // 🔥 Nuevo Dispose
+    public void Dispose()
+    {
+        keepPolling = false;
+    }
 }
 
 <style>
