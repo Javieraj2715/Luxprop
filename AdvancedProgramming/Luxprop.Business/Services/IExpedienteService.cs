@@ -12,6 +12,7 @@ namespace Luxprop.Business.Services
         Task UpdateAsync(Expediente expediente, int usuarioId, string ip);
         Task CloseAsync(int id, int usuarioId, string ip);
         Task<bool> DeleteAsync(int id);
+        Task<Cliente> GetClientByIdAsync(int id);
     }
 
     public class ExpedienteService : IExpedienteService
@@ -35,6 +36,7 @@ namespace Luxprop.Business.Services
         {
             return await _db.Expedientes
                 .Include(e => e.Propiedad)
+                .Include(e => e.Agente)
                 .Include(e => e.Cliente)
                     .ThenInclude(c => c.Usuario)   // Cliente.Usuario
                 .Include(e => e.Agente)           // Agente es Usuario directamente
@@ -184,6 +186,15 @@ namespace Luxprop.Business.Services
             };
 
             await _historialRepo.CreateAsync(registro);
+        }
+
+        public async Task<Cliente> GetClientByIdAsync(int id)
+        {
+            var cliente = await _db.Clientes
+                .Include(e => e.Usuario)
+                .FirstOrDefaultAsync(e => e.UsuarioId == id);
+
+            return cliente ?? new();
         }
     }
 }

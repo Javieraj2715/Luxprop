@@ -145,14 +145,19 @@
             // Identificar el rol Admin (por nombre)
             adminRoleId = roles.FirstOrDefault(r => IsAdminName(r.Nombre))?.RolId;
 
-            // Qué roles se pueden elegir
-            if (isAuthenticated && isAdmin)
+
+            // Admin → puede ver todos
+            if (userRole == "admin")
             {
                 allowedRoles = roles.OrderBy(r => r.Nombre).ToList();
             }
-            else
+            // Agent → solo puede crear Buyer y Seller
+            else if (userRole == "agent")
             {
-                allowedRoles = roles.Where(r => !IsAdminName(r.Nombre)).OrderBy(r => r.Nombre).ToList();
+                allowedRoles = roles
+                    .Where(r => r.Nombre == "buyer" || r.Nombre == "seller")
+                    .OrderBy(r => r.Nombre)
+                    .ToList();
             }
 
             StateHasChanged();
@@ -295,6 +300,11 @@
             successMessage = "User created successfully.";
             userModel = new CreateUserVM();
             StateHasChanged();
+
+            await Task.Delay(2500);
+
+            Navigation.NavigateTo("/login", forceLoad: true);
+            return;
         }
         catch (Exception ex)
         {
