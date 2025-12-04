@@ -8,6 +8,19 @@ public partial class LuxpropContext : DbContext
 {
     public LuxpropContext()
     {
+        var optionsBuilder = new DbContextOptionsBuilder<LuxpropContext>();
+
+        var conn = Environment.GetEnvironmentVariable("LuxpropDb");
+
+        if (string.IsNullOrEmpty(conn))
+        {
+            conn = "Server=MSI\\MSSQLSERVER01;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;";
+        }
+
+        optionsBuilder.UseSqlServer(conn);
+
+        // Este truco le mete opciones al DbContext creado manualmente
+        this.Database.SetConnectionString(conn);
     }
 
     public LuxpropContext(DbContextOptions<LuxpropContext> options)
@@ -49,10 +62,22 @@ public partial class LuxpropContext : DbContext
 
     public DbSet<Recordatorio> Recordatorios { get; set; } = default!;
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    => optionsBuilder.UseSqlServer(
-         "Server=tcp:luxprop-sql-server.database.windows.net,1433;Initial Catalog=Luxprop;Persist Security Info=False;User ID=sqladmin;Password=Luxprop2025!;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;");
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            // Lee la connection string que Azure guarda en Environment Variables
+            var conn = Environment.GetEnvironmentVariable("LuxpropDb");
 
-        
+            if (string.IsNullOrEmpty(conn))
+            {
+                // Si no existe, estamos en LOCAL → usa tu SQL local
+                conn = "Server=MSI\\MSSQLSERVER01;Database=Luxprop;Trusted_Connection=True;TrustServerCertificate=True;";
+            }
+
+            optionsBuilder.UseSqlServer(conn);
+        }
+    }
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
