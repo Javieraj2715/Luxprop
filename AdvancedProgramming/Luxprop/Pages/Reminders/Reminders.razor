@@ -205,112 +205,118 @@ else
 }
 
 <style>
-    /* 🌊 Estilo Luxprop Calendar con color institucional #084c61 */
-    .calendar-container {
-        background-color: #f9fdfd;
-        border-left: 6px solid #084c61;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    /* ============================================================
+       🎨 ESTILO GENERAL – LUXPROP TEAL THEME (#0A4F55)
+       ============================================================ */
+    :root {
+        --luxprop-main: #0A4F55;
+        --luxprop-main-dark: #073C41;
+        --luxprop-light: #f4fafb;
+        --luxprop-gray: #e6ecef;
+        --luxprop-shadow: rgba(0, 0, 0, 0.08);
     }
 
-    .calendar-card {
-        border-radius: 10px;
-        overflow: hidden;
-        transition: transform 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
+    /* ============================================================
+       🔵 FILTROS BONITOS Y MODERNOS
+       ============================================================ */
+    .filters {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
     }
 
-        .calendar-card:hover {
-            transform: scale(1.015);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        .filters input[type="date"],
+        .filters select {
+            padding: 0.55rem 0.8rem;
+            border-radius: 8px;
+            border: 1.8px solid var(--luxprop-main);
+            font-size: 0.9rem;
+            background: white;
+            color: var(--luxprop-main);
+            min-width: 170px;
+            transition: all 0.25s ease;
         }
 
-        /* Encabezado del día */
-        .calendar-card .card-header {
-            background-color: #084c61 !important;
-            color: #ffffff !important;
+            .filters input[type="date"]:focus,
+            .filters select:focus {
+                outline: none;
+                border-color: var(--luxprop-main);
+                box-shadow: 0 0 8px rgba(10, 79, 85, 0.35);
+            }
+
+        /* Botones de los filtros */
+        .filters .btn-primary {
+            background-color: var(--luxprop-main);
+            border-color: var(--luxprop-main);
+            color: #ffffff;
+            border-radius: 8px;
             font-weight: 600;
-            letter-spacing: 0.5px;
+            padding: 0.55rem 1rem;
+            transition: 0.2s ease-in-out;
         }
 
-        /* Cuerpo del recordatorio */
-        .calendar-card .card-body {
-            background-color: #ffffff;
+            .filters .btn-primary:hover {
+                background-color: var(--luxprop-main-dark);
+            }
+
+        .filters .btn-success {
+            background-color: #2e7d32;
+            border-color: #2e7d32;
+            color: white;
+            border-radius: 8px;
+            padding: 0.55rem 1rem;
+            font-weight: 600;
         }
 
-    /* Título del calendario */
-    .calendar-container h3 {
-        color: #084c61 !important;
-        font-weight: 700;
-    }
+            .filters .btn-success:hover {
+                background-color: #256628;
+            }
 
-    /* Íconos, acentos y botones */
-    .text-info, .bi-check-circle-fill {
-        color: #0b6b82 !important;
-    }
-
-    .btn-outline-info {
-        border-color: #084c61 !important;
-        color: #084c61 !important;
-    }
-
-        .btn-outline-info:hover {
-            background-color: #084c61 !important;
-            color: #ffffff !important;
-        }
-
-    /* Días del calendario */
-    .calendar-day h5 {
-        color: #084c61;
-        font-weight: 600;
-    }
-
-    /* Alertas */
-    .alert-info {
-        background-color: #e8f5f8;
-        border-color: #084c61;
-        color: #084c61;
-    }
-
-
+    /* ============================================================
+       🟦 TABLA SÚPER BONITA – ESTILO LUXPROP
+       ============================================================ */
     .table-reminders {
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
-        border-radius: 10px;
+        background: white;
+        border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 3px 10px var(--luxprop-shadow);
     }
 
         /* Encabezado */
         .table-reminders thead {
-            background-color: #084c61;
+            background-color: var(--luxprop-main);
             color: #ffffff;
-            font-weight: 600;
         }
 
             .table-reminders thead th {
-                padding: 12px 15px;
-                text-align: left;
-                vertical-align: middle;
+                padding: 14px 16px;
+                font-size: 0.88rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
             }
 
         /* Filas */
         .table-reminders tbody tr {
-            background-color: #ffffff;
-            transition: background-color 0.2s ease-in-out;
+            background: white;
+            transition: background 0.25s ease;
         }
 
             .table-reminders tbody tr:hover {
-                background-color: #f1f7f8;
+                background-color: #eef6f7;
             }
 
         /* Celdas */
         .table-reminders td {
-            padding: 12px 15px;
-            vertical-align: middle;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--luxprop-gray);
+            font-size: 0.9rem;
             color: #333;
-            border-bottom: 1px solid #e6ecef;
         }
 
             /* Estado */
@@ -318,63 +324,90 @@ else
                 font-weight: 600;
             }
 
-    /* Badges de estado */
-    .badge-status {
-        padding: 4px 10px;
+        /* ============================================================
+       🔘 BOTONES DE ACCIÓN
+       ============================================================ */
+        .table-reminders .btn {
+            font-size: 0.78rem;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        /* DONE */
+        .table-reminders .btn-outline-success {
+            color: #2e7d32;
+            border-color: #2e7d32;
+        }
+
+            .table-reminders .btn-outline-success:hover {
+                background-color: #2e7d32;
+                color: white;
+            }
+
+        /* EDIT */
+        .table-reminders .btn-primary {
+            background-color: var(--luxprop-main) !important;
+            border-color: var(--luxprop-main) !important;
+        }
+
+            .table-reminders .btn-primary:hover {
+                background-color: var(--luxprop-main-dark) !important;
+            }
+
+        /* DELETE */
+        .table-reminders .btn-outline-danger {
+            color: #d64545;
+            border-color: #d64545;
+        }
+
+            .table-reminders .btn-outline-danger:hover {
+                background-color: #d64545;
+                color: white;
+            }
+
+    /* ============================================================
+       📅 CALENDARIO BONITO (con tu mismo estilo)
+       ============================================================ */
+    .calendar-container {
+        background-color: #f9fdfd;
+        border-left: 6px solid var(--luxprop-main);
         border-radius: 12px;
-        font-size: 0.85rem;
+        padding: 20px;
+        box-shadow: 0 3px 10px var(--luxprop-shadow);
+    }
+
+    .calendar-card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+        .calendar-card:hover {
+            transform: scale(1.01);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.14);
+        }
+
+        /* Header día */
+        .calendar-card .card-header {
+            background-color: var(--luxprop-main) !important;
+            color: white !important;
+            font-weight: 700;
+        }
+
+    /* Título calendario */
+    .calendar-container h3 {
+        color: var(--luxprop-main) !important;
+        font-weight: 800;
+    }
+
+    /* Mensaje sin eventos */
+    .alert-info {
+        background-color: #eaf7f9;
+        border-color: var(--luxprop-main);
+        color: var(--luxprop-main);
         font-weight: 600;
-        color: #fff;
     }
 
-    .badge-pendiente {
-        background-color: #b0b0b0;
-    }
-
-    .badge-completado {
-        background-color: #4caf50;
-    }
-
-    .badge-incumplido {
-        background-color: #e74c3c;
-    }
-
-    /* Botones */
-    .table-reminders .btn {
-        font-size: 0.8rem;
-        border-radius: 6px;
-        padding: 4px 10px;
-        font-weight: 500;
-    }
-
-    .table-reminders .btn-outline-success {
-        color: #4caf50;
-        border-color: #4caf50;
-    }
-
-        .table-reminders .btn-outline-success:hover {
-            background-color: #4caf50;
-            color: white;
-        }
-
-    .table-reminders .btn-outline-danger {
-        color: #e74c3c;
-        border-color: #e74c3c;
-    }
-
-        .table-reminders .btn-outline-danger:hover {
-            background-color: #e74c3c;
-            color: white;
-        }
-
-    .table-reminders .btn-primary {
-        background-color: #084c61;
-        border-color: #084c61;
-    }
-
-        .table-reminders .btn-primary:hover {
-            background-color: #0b607a;
-            border-color: #0b607a;
-        }
 </style>
 
