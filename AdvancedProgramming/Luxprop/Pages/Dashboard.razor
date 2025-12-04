@@ -1,14 +1,28 @@
 ﻿@page "/dashboard"
+@using Luxprop.Business.Services.Dashboard
 @using Luxprop.Data
 @using Luxprop.Data.Models
 @using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.EntityFrameworkCore
 @inject LuxpropContext Db
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 @inject Luxprop.Services.SessionService SessionService
 @implements IAsyncDisposable
+@inject IDashboardService DashboardService
+
 
 <PageTitle>Dashboard - Luxprop</PageTitle>
+
+
+@if (!_initialized)
+{
+    <div class="text-center p-5">
+        <div class="spinner-border text-primary"></div>
+        <p class="mt-3 text-muted">Loading dashboard...</p>
+    </div>
+    return;
+}
 
 <div class="dashboard-page">
     <div class="page-header">
@@ -16,6 +30,58 @@
     </div>
 
     <div class="dashboard-grid">
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3>Documents Expiring Soon</h3>
+            </div>
+            <div class="card-content">
+                @if (docsToExpire.Any())
+                {
+                    <ul class="activity-list">
+                        @foreach (var d in docsToExpire.Take(5))
+                        {
+                            <li class="activity-item">
+                                <div class="activity-title">@d.Nombre</div>
+                                <div class="activity-meta">
+                                    Expires: @d.FechaVencimiento?.ToString("yyyy-MM-dd")
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="no-activity">No documents expiring soon</div>
+                }
+            </div>
+        </div>
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3>Upcoming Reminders</h3>
+            </div>
+            <div class="card-content">
+                @if (upcomingReminders.Any())
+                {
+                    <ul class="activity-list">
+                        @foreach (var r in upcomingReminders.Take(5))
+                        {
+                            <li class="activity-item">
+                                <div class="activity-title">@r.Titulo</div>
+                                <div class="activity-meta">
+                                    @r.Inicio.ToString("yyyy-MM-dd HH:mm")
+
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="no-activity">No reminders in the next days</div>
+                }
+            </div>
+        </div>
+
         <div class="dashboard-card">
             <div class="card-header">
                 <h3>Properties Overview</h3>
@@ -148,52 +214,73 @@
     private HubConnection? hub;
     private readonly List<string> chatNotifications = new();
 
-    private bool _initialized;
-    private bool _authorized;
+    private bool _initialized = false;
+    private bool _authorized = false;
     private string _role = "";
+
+    private List<Documento> docsToExpire = new();
+    private List<Recordatorio> upcomingReminders = new();
+
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || _initialized) return;
-        _initialized = true;
+        if (!firstRender) return;
 
+        // 1) Obtener el rol (sessionStorage ya está disponible)
         var roleRaw = await SessionService.GetUserRoleAsync();
         _role = NormalizeRole(roleRaw);
 
         _authorized = _role == "admin";
+
         if (!_authorized)
         {
-            var target = _role switch
+            NavigationManager.NavigateTo(_role switch
             {
                 "agent" => "/dashboardagent",
                 "seller" => "/dashboardvend",
                 "buyer" => "/dashboardcomp",
                 _ => "/login"
-            };
-            NavigationManager.NavigateTo(target);
+            }, true);
             return;
         }
 
+        // 2) Cargar los datos
         await LoadDashboardData();
+
+        // 3) Inicializar chat
         await InitializeChatHubAsync();
+
+        // 4) Usuario cargado
         await LoadUserName();
+
+        // 5) Ahora sí mostrar todo
+        _initialized = true;
+
         StateHasChanged();
     }
+
 
     private async Task LoadDashboardData()
     {
         try
         {
-            var properties = Db.Propiedads.ToList();
+            await LoadProperties();
+            await LoadCases();
+
+            docsToExpire = await DashboardService.GetDocumentsToExpireAsync(7);
+            upcomingReminders = await DashboardService.GetUpcomingRemindersAsync(7);
+
+            var properties = await Db.Propiedads.ToListAsync();
             totalProperties = properties.Count;
             activeProperties = properties.Count(p => p.EstadoPublicacion == "Active");
-            recentProperties = properties.OrderByDescending(p => p.PropiedadId).ToList();
+            recentProperties = properties.OrderByDescending(p => p.PropiedadId).Take(5).ToList();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading dashboard data: {ex.Message}");
+            Console.WriteLine("Dashboard error: " + ex.Message);
         }
     }
+
 
     private async Task LoadUserName()
     {
@@ -201,11 +288,9 @@
         {
             var userName = await JSRuntime.InvokeAsync<string>("sessionStorage.getItem", "UserName");
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading user name: {ex.Message}");
-        }
+        catch { }
     }
+
 
     private async Task InitializeChatHubAsync()
     {
@@ -234,17 +319,8 @@
             });
 
             await hub.StartAsync();
-
-            if (_role == "agent")
-            {
-                var agentId = (await SessionService.GetUserIdAsync()).ToString();
-                await hub.SendAsync("JoinAgent", agentId);
-            }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error initializing chat hub: {ex.Message}");
-        }
+        catch { }
     }
 
     public async ValueTask DisposeAsync()
@@ -265,7 +341,19 @@
             _ => string.Empty
         };
     }
+
+    private async Task LoadProperties()
+    {
+        var list = await Db.Propiedads.ToListAsync();
+        totalProperties = list.Count;
+        activeProperties = list.Count(p => p.EstadoPublicacion == "Active");
+        recentProperties = list.OrderByDescending(p => p.PropiedadId).Take(5).ToList();
+    }
+
+    private Task LoadCases() => Task.CompletedTask;
 }
+
+
 
 
 

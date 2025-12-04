@@ -26,6 +26,7 @@ namespace Luxprop.Business.Services
         {
             return await _db.Propiedads
                 .Include(p => p.Expedientes)
+                .Include(p => p.Agente)
                 .ToListAsync();
         }
 

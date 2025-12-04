@@ -32,6 +32,7 @@
                 <thead>
                     <tr>
                         <th>MLS ID</th>
+                        <th>Agent</th>
                         <th>Title</th>
                         <th>Description</th>
                         <th>Type</th>
@@ -48,6 +49,20 @@
                     {
                         <tr>
                             <td>@property.MlsId</td>
+                            <td>
+                                @if (property.Agente != null)
+                                {
+                                    @($"{property.Agente.Nombre} {property.Agente.Apellido}")
+                                }
+                                else
+                                {
+                                    <span class="text-muted">No assigned</span>
+                                }
+                            </td>
+
+                            <td>
+                                <!-- botones -->
+                            </td>
                             <td>@property.Titulo</td>
                             <td>@property.Descripcion</td>
                             <td>@property.Tipo_Propiedad</td>
