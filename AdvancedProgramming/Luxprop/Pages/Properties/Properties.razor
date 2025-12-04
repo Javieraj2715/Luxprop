@@ -4,6 +4,7 @@
 @using Microsoft.EntityFrameworkCore
 @using Luxprop.Business.Services
 @inject IPropiedadService PropiedadService
+@inject IExpedienteService ExpedienteService
 @inject IUtilsService UtilsService
 @inject NavigationManager Navigation
 @inject Luxprop.Services.SessionService Session
@@ -76,28 +77,41 @@
                                     <a href="/properties/details/@property.PropiedadId" class="btn btn-sm btn-outline-info">
                                         <i class="bi bi-eye"></i> Details
                                     </a>
-                                    <a href="/properties/edit/@property.PropiedadId" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-pencil"></i> Edit
-                                    </a>
 
-                                    @* ✅ Si la propiedad ya tiene expediente(s) *@
-                                    @if (property.Expedientes != null && property.Expedientes.Any())
+                                    @if (role == "admin" || role == "agent")
                                     {
-                                        var expedienteId = property.Expedientes.First().ExpedienteId;
-                                        <a href="/expedientes/details/@expedienteId" class="btn btn-sm btn-outline-success">
-                                            <i class="bi bi-folder2-open"></i> Ver Expediente
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <a href="/expedientes/create/@property.PropiedadId" class="btn btn-sm btn-outline-secondary">
-                                            <i class="bi bi-folder-plus"></i> Crear Expediente
+                                        <a href="/properties/edit/@property.PropiedadId" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i> Edit
                                         </a>
                                     }
 
-                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProperty(property.PropiedadId)">
-                                        <i class="bi bi-trash"></i> Delete
-                                    </button>
+
+                                    @if (role == "admin" || role == "agent")
+                                    {
+                                        @if (property.Expedientes != null && property.Expedientes.Any())
+                                        {
+                                            var expedienteId = property.Expedientes.First().ExpedienteId;
+                                            <a href="/expedientes/details/@expedienteId" class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-folder2-open"></i> Ver Expediente
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a href="/expedientes/create/@property.PropiedadId" class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-folder-plus"></i> Crear Expediente
+                                            </a>
+                                        }
+                                    }
+
+
+
+                                    @if (role == "admin" || role == "agent")
+                                    {
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProperty(property.PropiedadId)">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    }
+
                                 </div>
                             </td>
                         </tr>
@@ -110,6 +124,9 @@
 
 @code {
     private List<Propiedad>? properties;
+    private IEnumerable<Expediente>? expedientesCliente;
+    private string role = "";
+    private Cliente? cliente = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -118,7 +135,7 @@
             int usuarioId = await Session.GetUserIdAsync();
             var roleRaw = await Session.GetUserRoleAsync();
 
-            var role = await UtilsService.NormalizeRole(roleRaw);
+            role = await UtilsService.NormalizeRole(roleRaw);
 
             properties = await PropiedadService.GetAllAsync();
 
@@ -128,6 +145,26 @@
                     .Where(p => p.AgenteId == usuarioId)
                     .ToList();
             }
+
+            if (role == "buyer")
+            {
+                cliente = await ExpedienteService.GetClientByIdAsync(usuarioId);
+
+                expedientesCliente = await ExpedienteService.GetAllAsync();
+
+                expedientesCliente = expedientesCliente
+                    .Where(ec => ec.ClienteId == cliente.ClienteId)
+                    .ToList();
+
+                var propiedadesIds = expedientesCliente
+                    .Select(ec => ec.PropiedadId)
+                    .ToList();
+
+                properties = properties
+                    .Where(p => propiedadesIds.Contains(p.PropiedadId))
+                    .ToList();
+            }
+
         }
         catch (Exception ex)
         {

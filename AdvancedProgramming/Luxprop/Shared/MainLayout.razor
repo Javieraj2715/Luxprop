@@ -58,14 +58,18 @@
         <nav class="menu-bar">
             <NavLink href="@dashboardHref" class="menu-link">Dashboard</NavLink>
             <NavLink href="/documents" class="menu-link">Documents</NavLink>
-            <NavLink href="/documentsVencidos" class="menu-link">Expired Documents</NavLink>
-            <NavLink href="/graficos" class="menu-link">Charts</NavLink>
+            @if (role == "admin" || role == "agent")
+            {
+                <NavLink href="/documentsVencidos" class="menu-link">Expired Documents</NavLink>
+                <NavLink href="/graficos" class="menu-link">Charts</NavLink>
+                <NavLink href="/historial-expedientes" class="menu-link">History</NavLink>
+                <NavLink href="/reminders" class="menu-link">Reminders</NavLink>
+                <NavLink href="/expedientes" class="menu-link"><i class="bi bi-folder2-open"></i> Expedientes</NavLink>
+                <NavLink href="/tramites" class="menu-link">Tasks</NavLink>
+            }
+            
+            
             <NavLink href="/properties" class="menu-link">Properties</NavLink>
-            <NavLink href="/historial-expedientes" class="menu-link">History</NavLink>
-            <NavLink href="/reminders" class="menu-link">Reminders</NavLink>
-
-            <NavLink href="/expedientes" class="menu-link"><i class="bi bi-folder2-open"></i> Expedientes</NavLink>
-            <NavLink href="/tramites" class="menu-link">Tasks</NavLink>
 
             @if (role == "admin" || role == "agent")
             {
@@ -169,12 +173,16 @@ else
                 unreadChats = await ChatService.GetUnreadCountAsync(role, userName ?? "");
                 await InvokeAsync(StateHasChanged);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error en StartChatPolling: {ex}");
+            }
         },
         null,
         TimeSpan.Zero,
         TimeSpan.FromSeconds(5));
     }
+
 
     private void ToggleMenu()
     {
