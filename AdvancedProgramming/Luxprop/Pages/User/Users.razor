@@ -163,7 +163,8 @@ else
             var role = NormalizeRole(roleRaw);
 
             isAuthorized = true;
-            isAdmin = role == "admin";
+            isAdmin = role == "admin" || role == "agent";
+
 
             if (!isAdmin)
             {

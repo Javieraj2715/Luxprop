@@ -12,6 +12,7 @@ namespace Luxprop.Business.Services
         Task UpdateAsync(Expediente expediente, int usuarioId, string ip);
         Task CloseAsync(int id, int usuarioId, string ip);
         Task<bool> DeleteAsync(int id);
+        Task<Cliente> GetClientByIdAsync(int id);
     }
 
     public class ExpedienteService : IExpedienteService
@@ -185,6 +186,15 @@ namespace Luxprop.Business.Services
             };
 
             await _historialRepo.CreateAsync(registro);
+        }
+
+        public async Task<Cliente> GetClientByIdAsync(int id)
+        {
+            var cliente = await _db.Clientes
+                .Include(e => e.Usuario)
+                .FirstOrDefaultAsync(e => e.UsuarioId == id);
+
+            return cliente ?? new();
         }
     }
 }
