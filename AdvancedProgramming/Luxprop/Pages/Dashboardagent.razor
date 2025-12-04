@@ -9,305 +9,177 @@
 
 @if (!loaded)
 {
-    <div class="container py-5 text-center text-muted">
-        <div class="spinner-border mb-3" role="status"></div>
-        <p>Loading your dashboard…</p>
+    <div class="loading-container">
+        <div class="spinner-border text-primary"></div>
+        <p>Loading dashboard…</p>
     </div>
 }
 else if (!authorized)
 {
-    <div class="container py-5 text-center text-danger">
-        <h2 class="h4">Unauthorized</h2>
-        <p>You don't have access to this area.</p>
+    <div class="unauthorized-container">
+        <h2>Unauthorized</h2>
+        <p>You do not have permission to view this page.</p>
     </div>
 }
 else
 {
-    <div class="dashboard-page container py-4">
+    <div class="dashboard-wrapper">
 
-        <!-- HERO HEADER -->
-        <div class="rounded-4 p-4 mb-4 text-white"
-             style="background: radial-gradient(circle at top left,#0f4e56,#0b2730); box-shadow:0 18px 35px rgba(0,0,0,.28);">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                <div>
-                    <h1 class="h3 mb-2">Agent overview</h1>
-                    <p class="mb-0 text-opacity-75">
-                        Snapshot of your portfolio, active listings, and case files.
-                    </p>
+        <!-- HEADER -->
+        <div class="dashboard-hero agent-hero">
+            <div>
+                <h1>Agent Dashboard</h1>
+                <p>Overview of your listings, cases and deadlines.</p>
+            </div>
+
+            <div class="hero-actions">
+                <a class="btn btn-light" href="/properties"><i class="bi bi-building"></i> Manage Properties</a>
+                <a class="btn btn-outline-light" href="/records"><i class="bi bi-folder2"></i> Case Records</a>
+            </div>
+        </div>
+
+        <!-- KPI GRID -->
+        <div class="kpi-grid">
+
+            <div class="dashboard-card">
+                <h3 class="card-title">Total Properties</h3>
+                <div class="kpi-container">
+                    <div class="kpi-number">@totalProperties</div>
+                    <i class="bi bi-houses kpi-icon text-primary"></i>
                 </div>
-                <div class="d-flex flex-wrap gap-2">
-                    <button class="btn btn-outline-light btn-sm px-3"
-                            @onclick="@(() => Nav.NavigateTo("/properties"))">
-                        <i class="bi bi-buildings me-1"></i> Manage Properties
-                    </button>
-                    <button class="btn btn-light btn-sm px-3"
-                            @onclick="@(() => Nav.NavigateTo("/records"))">
-                        <i class="bi bi-journal-text me-1"></i> View Case Records
-                    </button>
+            </div>
+
+            <div class="dashboard-card">
+                <h3 class="card-title">Active Properties</h3>
+                <div class="kpi-container">
+                    <div class="kpi-number">@activeProperties</div>
+                    <i class="bi bi-lightning-charge kpi-icon text-success"></i>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h3 class="card-title">Cases</h3>
+                <div class="kpi-container">
+                    <div class="kpi-number">@totalCases</div>
+                    <i class="bi bi-folder2-open kpi-icon text-info"></i>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h3 class="card-title">Active Cases</h3>
+                <div class="kpi-container">
+                    <div class="kpi-number">@activeCases</div>
+                    <i class="bi bi-activity kpi-icon text-warning"></i>
                 </div>
             </div>
         </div>
 
-        <!-- KPI ROW -->
-        <div class="row g-3 mb-4">
-            <div class="col-6 col-lg-3">
-                <div class="dashboard-card h-100">
-                    <div class="card-header border-0 pb-0">
-                        <span class="text-uppercase text-muted small">Properties</span>
-                    </div>
-                    <div class="card-content d-flex align-items-end justify-content-between pt-2">
-                        <div>
-                            <div class="stat-number h3 mb-0">@totalProperties</div>
-                            <div class="stat-label text-muted">Total in your portfolio</div>
-                        </div>
-                        <div class="rounded-circle bg-primary bg-opacity-10 p-2">
-                            <i class="bi bi-buildings fs-4 text-primary"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-6 col-lg-3">
-                <div class="dashboard-card h-100">
-                    <div class="card-header border-0 pb-0">
-                        <span class="text-uppercase text-muted small">Active listings</span>
-                    </div>
-                    <div class="card-content pt-2">
-                        <div class="d-flex align-items-end justify-content-between">
-                            <div>
-                                <div class="stat-number h3 mb-0">@activeProperties</div>
-                                <div class="stat-label text-muted">Currently published</div>
-                            </div>
-                            <div class="rounded-circle bg-success bg-opacity-10 p-2">
-                                <i class="bi bi-lightning-charge fs-4 text-success"></i>
-                            </div>
-                        </div>
-                        @if (totalProperties > 0)
-                        {
-                            var pct = (int)(activeProperties * 100.0 / totalProperties);
-                            <div class="mt-2">
-                                <div class="d-flex justify-content-between small text-muted mb-1">
-                                    <span>Activation rate</span>
-                                    <span>@pct%</span>
-                                </div>
-                                <div class="progress" style="height: 6px;">
-                                    <div class="progress-bar bg-success" style="width:@pct%"></div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-6 col-lg-3">
-                <div class="dashboard-card h-100">
-                    <div class="card-header border-0 pb-0">
-                        <span class="text-uppercase text-muted small">Case files</span>
-                    </div>
-                    <div class="card-content pt-2">
-                        <div class="d-flex align-items-end justify-content-between">
-                            <div>
-                                <div class="stat-number h3 mb-0">@totalCases</div>
-                                <div class="stat-label text-muted">Total records</div>
-                            </div>
-                            <div class="rounded-circle bg-info bg-opacity-10 p-2">
-                                <i class="bi bi-folder2-open fs-4 text-info"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-6 col-lg-3">
-                <div class="dashboard-card h-100">
-                    <div class="card-header border-0 pb-0">
-                        <span class="text-uppercase text-muted small">In progress</span>
-                    </div>
-                    <div class="card-content pt-2">
-                        @{
-                            var closedCases = totalCases - activeCases;
-                            var progressPct = totalCases > 0
-                            ? (int)(closedCases * 100.0 / totalCases)
-                            : 0;
-                        }
-                        <div class="d-flex align-items-end justify-content-between">
-                            <div>
-                                <div class="stat-number h3 mb-0">@activeCases</div>
-                                <div class="stat-label text-muted">Active case files</div>
-                            </div>
-                            <div class="rounded-circle bg-warning bg-opacity-10 p-2">
-                                <i class="bi bi-activity fs-4 text-warning"></i>
-                            </div>
-                        </div>
-                        <div class="mt-2">
-                            <div class="d-flex justify-content-between small text-muted mb-1">
-                                <span>Overall progress</span>
-                                <span>@progressPct%</span>
-                            </div>
-                            <div class="progress" style="height: 6px;">
-                                <div class="progress-bar bg-primary" style="width:@progressPct%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- MAIN CONTENT -->
-        <div class="row g-4">
+        <!-- MAIN CONTENT GRID -->
+        <div class="dashboard-grid">
 
             <!-- Recent Properties -->
-            <div class="col-lg-6">
-                <div class="dashboard-card h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3 class="h5 mb-0">Recent properties</h3>
-                        <span class="badge rounded-pill bg-light text-muted">
-                            @recentProperties.Count total
-                        </span>
-                    </div>
-                    <div class="card-content">
-                        @if (recentProperties?.Any() == true)
+            <div class="dashboard-card">
+                <h3 class="card-title">Recent Properties</h3>
+
+                @if (recentProperties.Any())
+                {
+                    <ul class="list-items">
+                        @foreach (var p in recentProperties.Take(6))
                         {
-                            <ul class="activity-list list-unstyled mb-0">
-                                @foreach (var p in recentProperties.Take(6))
-                                {
-                                    <li class="activity-item py-2 border-bottom small">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <div class="activity-title fw-semibold">@p.Titulo</div>
-                                                <div class="activity-meta text-muted">
-                                                    ID: @p.PropiedadId
-                                                </div>
-                                            </div>
-                                            <span class="badge @GetPropertyStatusBadge(p.EstadoPublicacion)">
-                                                @p.EstadoPublicacion
-                                            </span>
-                                        </div>
-                                    </li>
-                                }
-                            </ul>
+                            <li class="item-row">
+                                <div>
+                                    <strong>@p.Titulo</strong>
+                                    <div class="meta">ID: @p.PropiedadId</div>
+                                </div>
+                                <span class="badge @GetPropertyStatusBadge(p.EstadoPublicacion)">
+                                    @p.EstadoPublicacion
+                                </span>
+                            </li>
                         }
-                        else
-                        {
-                            <div class="no-activity text-muted">
-                                No recent properties found.
-                            </div>
-                        }
-                    </div>
-                </div>
+                    </ul>
+                }
+                else
+                {
+
+                    <p class="empty-text">No recent properties.</p>
+                }
             </div>
 
-            <!-- Recent Case Files -->
-            <div class="col-lg-6">
-                <div class="dashboard-card h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3 class="h5 mb-0">Recent case files</h3>
-                        <button class="btn btn-sm btn-outline-primary"
-                                @onclick="@(() => Nav.NavigateTo("/records"))">
-                            View full report
-                        </button>
-                    </div>
-                    <div class="card-content">
-                        @if (recentCases?.Any() == true)
+            <!-- Recent Cases -->
+            <div class="dashboard-card">
+                <h3 class="card-title">Recent Case Files</h3>
+
+                @if (recentCases.Any())
+                {
+                    <ul class="list-items">
+                        @foreach (var c in recentCases.Take(6))
                         {
-                            <ul class="activity-list list-unstyled mb-0">
-                                @foreach (var c in recentCases.Take(6))
-                                {
-                                    <li class="activity-item py-2 border-bottom small">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <div class="activity-title fw-semibold">
-                                                    Case #@c.ExpedienteId
-                                                </div>
-                                                <div class="activity-meta text-muted">
-                                                    Opened: @(c.FechaApertura?.ToString("yyyy-MM-dd") ?? "-")
-                                                </div>
-                                            </div>
-                                            <span class="badge @GetCaseStatusBadge(c.Estado)">
-                                                @c.Estado
-                                            </span>
-                                        </div>
-                                    </li>
-                                }
-                            </ul>
+                            <li class="item-row">
+                                <div>
+                                    <strong>Case #@c.ExpedienteId</strong>
+                                    <div class="meta">Opened: @c.FechaApertura?.ToString("yyyy-MM-dd")</div>
+                                </div>
+
+                                <span class="badge @GetCaseStatusBadge(c.Estado)">
+                                    @c.Estado
+                                </span>
+                            </li>
                         }
-                        else
-                        {
-                            <div class="no-activity text-muted">
-                                No case files found.
-                            </div>
-                        }
-                    </div>
-                </div>
+                    </ul>
+                }
+                else
+                {
+
+                    <p class="empty-text">No case files.</p>
+                }
             </div>
 
-            <!-- Documents about to expire -->
-            <div class="col-lg-6">
-                <div class="dashboard-card h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3 class="h5 mb-0">Documents about to expire</h3>
-                        <span class="badge rounded-pill bg-danger text-white">
-                            @docsToExpire.Count
-                        </span>
-                    </div>
-                    <div class="card-content">
-                        @if (docsToExpire?.Any() == true)
+            <!-- Expiring Documents -->
+            <div class="dashboard-card">
+                <h3 class="card-title">Documents Expiring Soon</h3>
+
+                @if (docsToExpire.Any())
+                {
+                    <ul class="list-items">
+                        @foreach (var d in docsToExpire.Take(6))
                         {
-                            <ul class="activity-list list-unstyled mb-0">
-                                @foreach (var d in docsToExpire.Take(6))
-                                {
-                                    <li class="activity-item py-2 border-bottom small">
-                                        <div class="d-flex justify-content-between">
-                                            <span class="fw-semibold">@d.TipoDocumento</span>
-                                            <span class="text-danger">
-                                                @d.FechaVencimiento?.ToString("yyyy-MM-dd")
-                                            </span>
-                                        </div>
-                                    </li>
-                                }
-                            </ul>
+                            <li class="item-row">
+                                <span>@d.Nombre</span>
+                                <span class="text-danger">@d.FechaVencimiento?.ToString("yyyy-MM-dd")</span>
+                            </li>
                         }
-                        else
-                        {
-                            <div class="text-muted small py-3">No expiring documents.</div>
-                        }
-                    </div>
-                </div>
+                    </ul>
+                }
+                else
+                {
+
+                    <p class="empty-text">No expiring documents.</p>
+                }
             </div>
 
             <!-- Upcoming Reminders -->
-            <div class="col-lg-6">
-                <div class="dashboard-card h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3 class="h5 mb-0">Upcoming reminders</h3>
-                        <span class="badge rounded-pill bg-primary text-white">
-                            @upcomingReminders.Count
-                        </span>
-                    </div>
-                    <div class="card-content">
-                        @if (upcomingReminders?.Any() == true)
+            <div class="dashboard-card">
+                <h3 class="card-title">Upcoming Reminders</h3>
+
+                @if (upcomingReminders.Any())
+                {
+                    <ul class="list-items">
+                        @foreach (var r in upcomingReminders.Take(6))
                         {
-                            <ul class="activity-list list-unstyled mb-0">
-                                @foreach (var r in upcomingReminders.Take(6))
-                                {
-                                    <li class="activity-item py-2 border-bottom small">
-                                        <div class="d-flex justify-content-between">
-                                            <span class="fw-semibold">@r.Titulo</span>
-                                            <span class="text-muted">@r.Inicio.ToString("yyyy-MM-dd")</span>
-                                        </div>
-                                    </li>
-                                }
-                            </ul>
+                            <li class="item-row">
+                                <span>@r.Titulo</span>
+                                <span class="meta">@r.Inicio.ToString("yyyy-MM-dd")</span>
+                            </li>
                         }
-                        else
-                        {
-                            <div class="text-muted small py-3">No upcoming reminders.</div>
-                        }
-                    </div>
-                </div>
+                    </ul>
+                }
+                else
+                {
+
+                    <p class="empty-text">No upcoming reminders.</p>
+                }
             </div>
         </div>
-
     </div>
 }
 
@@ -427,3 +299,100 @@ else
             _ => "bg-secondary"
         };
 }
+
+<style>
+    /* GENERAL */
+    .dashboard-wrapper {
+        padding: 2rem;
+        background-color: #f8f9fa;
+        min-height: 100vh;
+    }
+
+    /* HERO */
+    .dashboard-hero {
+        border-radius: 18px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .agent-hero {
+        background: linear-gradient(135deg, #0d505a, #146b74);
+    }
+
+    .hero-actions .btn {
+        margin-left: 0.5rem;
+    }
+
+    /* KPI CARDS */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .kpi-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .kpi-number {
+        font-size: 2.2rem;
+        font-weight: bold;
+    }
+
+    .kpi-icon {
+        font-size: 2.3rem;
+        opacity: 0.85;
+    }
+
+    /* GRID CARDS */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .dashboard-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .card-title {
+        font-size: 1.2rem;
+        color: #0d505a;
+        margin-bottom: 1rem;
+    }
+
+    /* LIST ITEMS */
+    .list-items {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .item-row {
+        padding: 0.65rem 0;
+        border-bottom: 1px solid #ececec;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .meta {
+        font-size: 0.85rem;
+        color: #777;
+    }
+
+    .empty-text {
+        text-align: center;
+        font-style: italic;
+        color: #888;
+    }
+</style>
