@@ -43,7 +43,6 @@
                     {
                         <div class="user-dropdown">
                             <a href="/profile">My Profile</a>
-                            <a href="/settings">Settings</a>
                             <a href="" @onclick="Logout">Logout</a>
 
                         </div>
@@ -131,7 +130,7 @@ else
         if (!isAuthenticated)
         {
             var uri = Navigation.Uri.ToLowerInvariant();
-            var isPublic = uri.EndsWith("/login") || uri.EndsWith("/user/create");
+            var isPublic = uri.EndsWith("/login") || uri.EndsWith("/user/create") || uri.EndsWith("/forgot-password"); ;
 
             if (!isPublic)
             {
