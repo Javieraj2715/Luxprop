@@ -1,8 +1,12 @@
 @page "/properties/create"
 @using Luxprop.Data
 @using Luxprop.Data.Models
+@using Luxprop.Services
+@using Microsoft.EntityFrameworkCore
 @inject LuxpropContext Db
 @inject NavigationManager Navigation
+@inject SessionService SessionService
+
 
 <PageTitle>Create Property - Luxprop</PageTitle>
 
@@ -77,17 +81,28 @@
                 <ValidationMessage For="@(() => property.EstadoPublicacion)" />
             </div>
 
-            <div class="form-group">
-                <label for="agenteId">Agent</label>
-                <InputSelect id="agenteId" @bind-Value="property.AgenteId" class="form-control">
-                    <option value="">Select Agent</option>
-                    @foreach (var agent in agents)
-                    {
-                        <option value="@agent.UsuarioId">@agent.Nombre</option>
-                    }
-                </InputSelect>
-                <ValidationMessage For="@(() => property.AgenteId)" />
-            </div>
+            @if (role == "admin")
+            {
+                <div class="mb-3">
+                    <label class="form-label">Agente asignado</label>
+                    <select @bind="property.AgenteId" class="form-select">
+                        <option value="">-- Seleccione un agente --</option>
+                        @foreach (var a in agentes)
+                        {
+                            <option value="@a.UsuarioId">@a.Nombre @a.Apellido</option>
+                        }
+                    </select>
+                    <ValidationMessage For="@(() => property.AgenteId)" />
+                </div>
+            }
+            else if (role == "agent")
+            {
+                <p class="text-muted">
+                    Esta propiedad será asignada automáticamente al agente:
+                    <strong>@SessionService.CurrentUserName</strong>
+                </p>
+            }
+
 
             <div class="form-group">
                 <label for="ubicacionId">Location</label>
@@ -124,16 +139,56 @@
 </div>
 
 @code {
+    private string role = "";
+
     private Propiedad property = new();
     private List<Usuario> agents = new();
     private List<Ubicacion> locations = new();
     private bool isLoading = false;
     private string errorMessage = string.Empty;
+    private List<Usuario> agentes = new();
+    private Propiedad model = new();
+
+
 
     protected override async Task OnInitializedAsync()
     {
+        // Asignar a la variable global
+        role = NormalizeRole(await SessionService.GetUserRoleAsync());
+
+        // ADMIN → cargar agentes
+        if (role == "admin")
+        {
+            agentes = await Db.Usuarios
+                .Where(u => u.UsuarioRols
+                    .Any(ur => ur.Rol.Nombre.ToLower() == "agente"
+                            || ur.Rol.Nombre.ToLower() == "agent"))
+                .ToListAsync();
+        }
+
+        // AGENTE → asignarse automáticamente
+        if (role == "agent")
+        {
+            property.AgenteId = await SessionService.GetUserIdAsync();
+        }
+
         await LoadData();
     }
+
+
+
+
+    private static string NormalizeRole(string? name)
+    {
+        var n = name?.Trim().ToLowerInvariant();
+        return n switch
+        {
+            "administrador" or "admin" => "admin",
+            "agente" or "agent" => "agent",
+            _ => string.Empty
+        };
+    }
+
 
     private async Task LoadData()
     {
