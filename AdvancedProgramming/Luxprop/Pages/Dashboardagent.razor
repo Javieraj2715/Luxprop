@@ -239,12 +239,82 @@ else
                     </div>
                 </div>
             </div>
+            <!-- Documents about to expire -->
+            <div class="col-lg-6">
+                <div class="dashboard-card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="h5 mb-0">Documents about to expire</h3>
+                        <span class="badge rounded-pill bg-danger text-white">
+                            @docsToExpire.Count
+                        </span>
+                    </div>
+                    <div class="card-content">
+                        @if (docsToExpire?.Any() == true)
+                        {
+                            <ul class="activity-list list-unstyled mb-0">
+                                @foreach (var d in docsToExpire.Take(6))
+                                {
+                                    <li class="activity-item py-2 border-bottom small">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="fw-semibold">@d.TipoDocumento</span>
+                                            <span class="text-danger">
+                                                @d.FechaVencimiento?.ToString("yyyy-MM-dd")
+                                            </span>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <div class="text-muted small py-3">No expiring documents.</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upcoming Reminders -->
+            <div class="col-lg-6">
+                <div class="dashboard-card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="h5 mb-0">Upcoming reminders</h3>
+                        <span class="badge rounded-pill bg-primary text-white">
+                            @upcomingReminders.Count
+                        </span>
+                    </div>
+                    <div class="card-content">
+                        @if (upcomingReminders?.Any() == true)
+                        {
+                            <ul class="activity-list list-unstyled mb-0">
+                                @foreach (var r in upcomingReminders.Take(6))
+                                {
+                                    <li class="activity-item py-2 border-bottom small">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="fw-semibold">@r.Titulo</span>
+                                            <span class="text-muted">@r.Inicio.ToString("yyyy-MM-dd")</span>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <div class="text-muted small py-3">No upcoming reminders.</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            
         </div>
 
     </div>
 }
 
 @code {
+    private List<Documento> docsToExpire = new();
+    private List<Recordatorio> upcomingReminders = new();
+
     private bool loaded, authorized, firstPass;
     private int totalProperties, activeProperties;
     private List<Propiedad> recentProperties = new();
@@ -297,6 +367,26 @@ else
         totalCases = allCases.Count;
         activeCases = allCases.Count(e => e.Estado == "Activo" || e.Estado == "En proceso");
         recentCases = allCases;
+
+        // DOCUMENTOS QUE VENCEN EN 7 DÍAS
+        docsToExpire = Db.Documentos
+     .Where(d => d.FechaVencimiento.HasValue &&
+                 d.FechaVencimiento.Value.Date >= DateTime.Now.Date &&
+                 d.FechaVencimiento.Value.Date <= DateTime.Now.AddDays(7).Date)
+     .OrderBy(d => d.FechaVencimiento)
+     .ToList();
+
+
+
+        // RECORDATORIOS PRÓXIMOS (basados en Fecha de Inicio)
+        upcomingReminders = Db.Recordatorios
+            .Where(r =>
+                r.Inicio >= DateTime.Now &&
+                r.Inicio <= DateTime.Now.AddDays(7))
+            .OrderBy(r => r.Inicio)
+            .ToList();
+
+
 
         loaded = true;
         StateHasChanged();

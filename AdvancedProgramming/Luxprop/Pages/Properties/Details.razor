@@ -1,9 +1,14 @@
 ﻿@page "/properties/details/{id:int}"
 
+@using Luxprop.Business.Services
 @using Luxprop.Data.Models
+@using Luxprop.Services
 @using Microsoft.EntityFrameworkCore
 @inject LuxpropContext Db
 @inject NavigationManager Navigation
+@inject IUtilsService UtilsService
+@inject Luxprop.Services.SessionService SessionService
+
 
 <PageTitle>Property Details</PageTitle>
 
@@ -30,7 +35,7 @@ else
         <hr />
 
         <!-- 👇 Recorrido 360 -->
-        @if (property.Recorrido360Url is not null && property.Recorrido360Url.Trim() != "")
+        @if (!string.IsNullOrWhiteSpace(property.Recorrido360Url))
         {
             <h2>Recorrido 360°</h2>
 
@@ -40,18 +45,28 @@ else
                     loading="lazy">
             </iframe>
 
-            <div style="margin-top:1rem">
-                <button class="btn btn-warning" @onclick="EditTour">Edit 360° Tour</button>
-                <button class="btn btn-danger" @onclick="DeleteTour">Delete</button>
-            </div>
+            <!-- Solo admin o agent pueden editar/eliminar -->
+            @if (role == "admin" || role == "agent")
+            {
+                <div style="margin-top:1rem">
+                    <button class="btn btn-warning" @onclick="EditTour">Edit 360° Tour</button>
+                    <button class="btn btn-danger" @onclick="DeleteTour">Delete</button>
+                </div>
+            }
         }
         else
         {
             <h3>No 360° tour available</h3>
-            <button class="btn btn-primary" @onclick="AddTour">Add 360° Tour</button>
+
+            <!-- Solo admin o agent pueden agregar -->
+            @if (role == "admin" || role == "agent")
+            {
+                <button class="btn btn-primary" @onclick="AddTour">Add 360° Tour</button>
+            }
         }
 
         <hr />
+
 
         <a href="/properties" class="btn btn-secondary">Back to List</a>
     </div>
@@ -61,6 +76,9 @@ else
 
 
 @code {
+
+    private string role = "";
+
     [Parameter]
     public int id { get; set; }
 
@@ -68,6 +86,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        role = await UtilsService.NormalizeRole(await SessionService.GetUserRoleAsync());
+
         property = await Db.Propiedads
             .Include(p => p.Ubicacion)
             .FirstOrDefaultAsync(p => p.PropiedadId == id);
@@ -82,6 +102,8 @@ else
     {
         Navigation.NavigateTo($"/properties/{id}/tour360/edit");
     }
+
+    
 
     private async Task DeleteTour()
     {
