@@ -97,13 +97,32 @@
 
     protected override async Task OnInitializedAsync()
     {
-        int usuarioId = await Session.GetUserIdAsync();
+        // 🔹 Cargar la propiedad con su agente asignado
+        var propiedad = await Db.Propiedads
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.PropiedadId == PropiedadId);
+
+        if (propiedad == null)
+        {
+            Navigation.NavigateTo("/properties");
+            return;
+        }
+
+        // 📌 Siempre asignar el agente de la propiedad (si tiene)
+        newCase.AgenteId = propiedad.AgenteId;
+
+        // Si no tiene agente asignado, usar el usuario actual SOLO si es agente
+        var role = (await Session.GetUserRoleAsync())?.Trim().ToLower();
+
+        if (newCase.AgenteId == null && (role == "agente" || role == "agent"))
+        {
+            newCase.AgenteId = await Session.GetUserIdAsync();
+        }
 
         newCase.PropiedadId = PropiedadId;
         newCase.Estado = "Abierto";
         newCase.FechaApertura = DateOnly.FromDateTime(DateTime.Now);
         newCase.Prioridad = "Normal";
-        newCase.AgenteId = usuarioId;
 
         // ▶️ Traer SOLO Buyeres desde la tabla Cliente
         Buyers = await Db.Clientes
