@@ -80,7 +80,7 @@
                 <NavLink href="/chat" class="menu-link"><i class="bi bi-chat-dots"></i> Chat</NavLink>
             }
 
-            @if (role == "admin")
+            @if (role == "admin" || role == "agent")
             {
                 <NavLink href="/users" class="menu-link">Manage Users</NavLink>
             }
