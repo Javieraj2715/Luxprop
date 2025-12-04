@@ -14,9 +14,9 @@
 {
     <p>Checking permissions...</p>
 }
-else if (!isAdmin)
+else if (!canAccessUsers)
 {
-    <p class="alert alert-warning mt-3">Access denied. Only administrators can view this page.</p>
+    <p class="alert alert-warning mt-3">Access denied. Only administrators and agents can manage users.</p>
 }
 else
 {
@@ -24,9 +24,12 @@ else
         <div class="page-header">
             <h1>Manage Users</h1>
 
-            <button class="btn btn-primary" @onclick="@(() => Navigation.NavigateTo("/user/create"))">
-                + Create User
-            </button>
+            @if (isAdmin)
+            {
+                <button class="btn btn-primary" @onclick="@(() => Navigation.NavigateTo("/user/create"))">
+                    + Create User
+                </button>
+            }
         </div>
 
         <div class="table-responsive">
@@ -48,9 +51,13 @@ else
                             <td>@user.Nombre @user.Apellido</td>
                             <td>@user.Email</td>
                             <td>@user.Telefono</td>
+
                             <td>
-                                <select class="form-select" @onchange="(e) => ChangeRole(user.UsuarioID, e.Value?.ToString())">
-                                    @foreach (var rol in roles)
+                                <select class="form-select"
+                                        @onchange="(e) => ChangeRole(user.UsuarioID, e.Value?.ToString())">
+
+                                    @foreach (var rol in GetAssignableRolesForUser(user))
+
                                     {
                                         <option value="@rol.RolId" selected="@(rol.RolId == user.RolId)">
                                             @rol.Nombre
@@ -58,12 +65,16 @@ else
                                     }
                                 </select>
                             </td>
+
                             <td>
-                                <input type="checkbox" checked="@user.Activo" 
+                                <input type="checkbox" checked="@user.Activo"
                                        @onchange="(e) => ToggleActive(user.UsuarioID, (bool)e.Value!)" />
                             </td>
+
                             <td class="action-buttons">
-                                <button class="btn btn-outline-primary btn-sm" @onclick="() => OpenModal(user)">Edit</button>
+                                <button class="btn btn-outline-primary btn-sm" @onclick="() => OpenModal(user)">
+                                    Edit
+                                </button>
                             </td>
                         </tr>
                     }
@@ -81,6 +92,7 @@ else
                             <h5 class="modal-title">Edit User</h5>
                             <button type="button" class="btn-close" @onclick="CloseModal"></button>
                         </div>
+
                         <div class="modal-body">
                             <EditForm Model="@selectedUser" OnSubmit="@SaveUserChanges">
                                 <DataAnnotationsValidator />
@@ -108,7 +120,7 @@ else
                                 <div class="form-group mb-3">
                                     <label>Role</label>
                                     <InputSelect @bind-Value="selectedUser.RolId" class="form-control">
-                                        @foreach (var rol in roles)
+                                        @foreach (var rol in GetAssignableRolesForUser(selectedUser))
                                         {
                                             <option value="@rol.RolId">@rol.Nombre</option>
                                         }
@@ -142,50 +154,81 @@ else
 
 @code {
     private List<CreateUserVM> users = new();
-    private List<Rol> roles = new();
+    private List<Rol> allRoles = new();
     private string? successMessage;
     private string? errorMessage;
+
     private bool isAdmin = false;
+    private bool isAgent = false;
     private bool isAuthorized = false;
+    private bool canAccessUsers = false;
+
     private CreateUserVM? selectedUser;
     private bool firstPass;
 
-    // Usar OnAfterRenderAsync para leer sesión (JS interop seguro)
+    // ---------------------------------------
+    // LOAD USER PERMISSIONS
+    // ---------------------------------------
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender || firstPass) return;
         firstPass = true;
 
-        try
+        await SessionService.LoadUserAsync();
+        var roleRaw = await SessionService.GetUserRoleAsync();
+        var role = NormalizeRole(roleRaw);
+
+        isAdmin = role == "admin";
+        isAgent = role == "agent";
+        isAuthorized = true;
+        canAccessUsers = isAdmin || isAgent;
+
+        if (!canAccessUsers)
         {
-            await SessionService.LoadUserAsync();
-            var roleRaw = await SessionService.GetUserRoleAsync();
-            var role = NormalizeRole(roleRaw);
-
-            isAuthorized = true;
-            isAdmin = role == "admin" || role == "agent";
-
-
-            if (!isAdmin)
-            {
-                Navigation.NavigateTo("/dashboard", forceLoad: true);
-                return;
-            }
-
-            await LoadUsers();
-            StateHasChanged();
+            Navigation.NavigateTo("/dashboard", forceLoad: true);
+            return;
         }
-        catch (Exception ex)
-        {
-            errorMessage = "Error loading users.";
-            Console.WriteLine(ex.Message);
-        }
+
+        allRoles = await Db.Rols.ToListAsync();
+        await LoadUsers();
+        StateHasChanged();
     }
 
+    // ---------------------------------------
+    // RETURN ROLES USER CAN ASSIGN
+    // ---------------------------------------
+    private IEnumerable<Rol> GetAssignableRolesForUser(CreateUserVM user)
+    {
+        string userRole = NormalizeRole(allRoles.First(r => r.RolId == user.RolId).Nombre);
+
+        if (isAdmin)
+        {
+            // Admin puede ver y asignar todo
+            return allRoles;
+        }
+
+        if (isAgent)
+        {
+            // --- AGENTE NO PUEDE MODIFICAR ADMIN NI AGENTS ---
+            if (userRole == "admin" || userRole == "agent")
+            {
+                // Se devuelve solo su propio rol, para que no cambie
+                return allRoles.Where(r => NormalizeRole(r.Nombre) == userRole);
+            }
+
+            // --- AGENTE SOLO PUEDE ASIGNAR BUYER / SELLER ---
+            return allRoles.Where(r =>
+                NormalizeRole(r.Nombre) == "buyer" ||
+                NormalizeRole(r.Nombre) == "seller"
+            );
+        }
+
+        return Enumerable.Empty<Rol>();
+    }
+
+    // ---------------------------------------
     private async Task LoadUsers()
     {
-        roles = await Db.Rols.OrderBy(r => r.Nombre).ToListAsync();
-
         users = await (
             from u in Db.Usuarios
             join ur in Db.UsuarioRols on u.UsuarioId equals ur.UsuarioId
@@ -200,7 +243,7 @@ else
                 RolId = r.RolId,
                 Activo = u.Activo ?? false
             }
-        ).OrderBy(u => u.Nombre).ThenBy(u => u.Apellido).ToListAsync();
+        ).OrderBy(u => u.Nombre).ToListAsync();
     }
 
     private void OpenModal(CreateUserVM user)
@@ -215,7 +258,6 @@ else
             RolId = user.RolId,
             Activo = user.Activo
         };
-        StateHasChanged();
     }
 
     private void CloseModal() => selectedUser = null;
@@ -224,27 +266,20 @@ else
     {
         try
         {
-            if (selectedUser is null)
-            {
-                errorMessage = "No user selected for editing.";
-                return;
-            }
+            if (selectedUser == null) return;
 
-            var usuario = await Db.Usuarios.FindAsync(selectedUser.UsuarioID);
-            if (usuario is null)
-            {
-                errorMessage = $"User with ID {selectedUser.UsuarioID} not found.";
-                return;
-            }
+            var dbUser = await Db.Usuarios.FindAsync(selectedUser.UsuarioID);
+            if (dbUser == null) return;
 
-            usuario.Nombre = selectedUser.Nombre;
-            usuario.Apellido = selectedUser.Apellido;
-            usuario.Telefono = selectedUser.Telefono;
-            usuario.Activo = selectedUser.Activo;
+            dbUser.Nombre = selectedUser.Nombre;
+            dbUser.Apellido = selectedUser.Apellido;
+            dbUser.Telefono = selectedUser.Telefono;
+            dbUser.Activo = selectedUser.Activo;
 
-            var userRol = Db.UsuarioRols.FirstOrDefault(ur => ur.UsuarioId == usuario.UsuarioId);
-            if (userRol is null)
-                Db.UsuarioRols.Add(new UsuarioRol { UsuarioId = usuario.UsuarioId, RolId = selectedUser.RolId });
+            // Update role
+            var userRol = Db.UsuarioRols.FirstOrDefault(ur => ur.UsuarioId == dbUser.UsuarioId);
+            if (userRol == null)
+                Db.UsuarioRols.Add(new UsuarioRol { UsuarioId = dbUser.UsuarioId, RolId = selectedUser.RolId });
             else
                 userRol.RolId = selectedUser.RolId;
 
@@ -252,89 +287,48 @@ else
             await LoadUsers();
 
             successMessage = "User updated successfully.";
-            errorMessage = null;
-
             CloseModal();
-            StateHasChanged();
         }
         catch (Exception ex)
         {
-            errorMessage = $"❌ Error saving user changes: {ex.Message}";
-            successMessage = null;
-            Console.WriteLine(errorMessage);
+            errorMessage = ex.Message;
         }
     }
 
-    private async Task ChangeRole(int userId, string? roleId)
+    private async Task ChangeRole(int userId, string? newRole)
     {
-        try
-        {
-            if (int.TryParse(roleId, out int rolId))
-            {
-                var userRol = Db.UsuarioRols.FirstOrDefault(ur => ur.UsuarioId == userId);
-                if (userRol is null)
-                    Db.UsuarioRols.Add(new UsuarioRol { UsuarioId = userId, RolId = rolId });
-                else
-                    userRol.RolId = rolId;
+        if (!int.TryParse(newRole, out int roleId)) return;
 
-                await Db.SaveChangesAsync();
-                successMessage = "Role updated successfully.";
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Error changing role: {ex.Message}";
-        }
+        var userRol = Db.UsuarioRols.FirstOrDefault(ur => ur.UsuarioId == userId);
+        if (userRol != null)
+            userRol.RolId = roleId;
+
+        await Db.SaveChangesAsync();
     }
 
     private async Task ToggleActive(int userId, bool isActive)
     {
-        try
+        var u = Db.Usuarios.FirstOrDefault(x => x.UsuarioId == userId);
+        if (u != null)
         {
-            var user = Db.Usuarios.FirstOrDefault(u => u.UsuarioId == userId);
-            if (user is not null)
-            {
-                user.Activo = isActive;
-                await Db.SaveChangesAsync();
-                successMessage = "User status updated.";
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Error updating status: {ex.Message}";
+            u.Activo = isActive;
+            await Db.SaveChangesAsync();
         }
     }
 
-    // --- helpers ---
-    private static string NormalizeRole(string? name)
+    private static string NormalizeRole(string? role)
     {
-        var n = name?.Trim().ToLowerInvariant();
-        return n switch
+        var s = role?.Trim().ToLower();
+        return s switch
         {
             "administrador" or "admin" => "admin",
             "agente" or "agent" => "agent",
             "vendedor" or "seller" => "seller",
             "comprador" or "buyer" or "cliente" => "buyer",
-            _ => string.Empty
-        };
-    }
-
-    // etiqueta en inglés para mostrar en UI
-    private static string RoleLabelEn(string nombreEs)
-    {
-        return (nombreEs?.Trim().ToLowerInvariant()) switch
-        {
-            "administrador" => "Admin",
-            "agente" => "Agent",
-            "vendedor" => "Seller",
-            "comprador" => "Buyer",
-            _ => nombreEs
+            _ => ""
         };
     }
 }
-
-    
-
 <style>
     .users-page {
         padding: 2rem;
@@ -347,10 +341,10 @@ else
         margin-bottom: 2rem;
     }
 
-    .page-header h1 {
-        margin: 0;
-        color: #0d505a;
-    }
+        .page-header h1 {
+            margin: 0;
+            color: #0d505a;
+        }
 
     .table-responsive {
         overflow-x: auto;
@@ -365,22 +359,22 @@ else
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
-    .table th,
-    .table td {
-        padding: 1rem;
-        text-align: left;
-        border-bottom: 1px solid #dee2e6;
-    }
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
 
-    .table th {
-        background-color: #0d505a;
-        color: white;
-        font-weight: 600;
-    }
+        .table th {
+            background-color: #0d505a;
+            color: white;
+            font-weight: 600;
+        }
 
-    .table tbody tr:hover {
-        background-color: #f8f9fa;
-    }
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
 
     .action-buttons {
         display: flex;
@@ -403,9 +397,9 @@ else
         border-color: #0d505a;
     }
 
-    .btn-primary:hover {
-        background-color: #093e47;
-    }
+        .btn-primary:hover {
+            background-color: #093e47;
+        }
 
     .btn-outline-primary {
         color: #0d505a;
@@ -413,10 +407,10 @@ else
         background-color: transparent;
     }
 
-    .btn-outline-primary:hover {
-        background-color: #0d505a;
-        color: white;
-    }
+        .btn-outline-primary:hover {
+            background-color: #0d505a;
+            color: white;
+        }
 
     .btn-sm {
         padding: 0.25rem 0.5rem;
