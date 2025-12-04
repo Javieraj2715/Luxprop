@@ -57,6 +57,26 @@ public partial class LuxpropContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<HistorialExpediente>()
+            .HasOne(h => h.Expediente)
+            .WithMany(e => e.HistorialExpedientes)
+            .HasForeignKey(h => h.ExpedienteId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Documento>()
+            .HasOne(d => d.Expediente)
+            .WithMany(e => e.Documentos)
+            .HasForeignKey(d => d.ExpedienteId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TareaTramite>()
+            .HasOne(t => t.Expediente)
+            .WithMany(e => e.TareaTramites)
+            .HasForeignKey(t => t.ExpedienteId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         modelBuilder.Entity<Agente>(entity =>
         {
             entity.HasKey(e => e.AgenteId).HasName("PK__Agente__29E28221EFB2DFD3");
