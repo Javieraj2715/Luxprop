@@ -162,6 +162,9 @@
     private string tagsInput = "";
     private DateTime? fechaVencimientoInput;
 
+    private List<Documento> baseDocuments = new();
+
+
     private List<string> estadosDisponibles = new()
     {
         "Activo",
@@ -194,19 +197,44 @@
 
     private async Task LoadDocuments()
     {
-        var role = await Session.GetUserRoleAsync();
+        var role = (await Session.GetUserRoleAsync())?.ToLower() ?? "";
         var userId = await Session.GetUserIdAsync();
 
-        var query = Db.Documentos.AsQueryable();
+        IQueryable<Documento> query = Db.Documentos
+            .Include(d => d.Expediente)
+                .ThenInclude(e => e.Cliente);
 
-        if (role == "buyer" || role == "seller")
-            query = query.Where(d => d.UsuarioId == userId);
+        switch (role)
+        {
+            case "admin":
+                break;
 
-        if (role == "agent")
-            query = query.Where(d => d.Expediente.AgenteId == userId);
+            case "agent":
+                query = query.Where(d =>
+                    d.Expediente != null &&
+                    d.Expediente.AgenteId == userId);
+                break;
+
+            case "seller":
+            case "buyer":
+                query = query.Where(d =>
+                    d.Expediente != null &&
+                    d.Expediente.Cliente != null &&
+                    d.Expediente.Cliente.UsuarioId == userId);
+                break;
+
+            default:
+                query = query.Where(d => false);
+                break;
+        }
 
         documents = await query.ToListAsync();
     }
+
+
+
+
+
 
     private void LoadDocumentTypes()
     {
@@ -235,15 +263,17 @@
         ApplyFilters();
     }
 
-    private void ApplyFilters()
+    private async void ApplyFilters()
     {
-        var query = Db.Documentos.AsQueryable();
+        await LoadDocuments(); // ← vuelve a cargar SOLO documentos permitidos
+
+        var query = documents.AsQueryable(); // ← filtras SOBRE los permitidos
 
         if (!string.IsNullOrEmpty(selectedType))
             query = query.Where(d => d.TipoDocumento == selectedType);
 
         if (!string.IsNullOrEmpty(selectedTag))
-            query = query.Where(d => d.Etiquetas.Contains(selectedTag));
+            query = query.Where(d => d.Etiquetas != null && d.Etiquetas.Contains(selectedTag));
 
         if (!string.IsNullOrEmpty(selectedEstado))
             query = query.Where(d => d.Estado == selectedEstado);
@@ -251,6 +281,8 @@
         documents = query.ToList();
         StateHasChanged();
     }
+
+
 
     private void OnFileSelected(InputFileChangeEventArgs e)
     {
@@ -287,6 +319,8 @@
         canUpload = false;
 
         await LoadDocuments();
+        ApplyFilters();
+
         LoadTags();
     }
 

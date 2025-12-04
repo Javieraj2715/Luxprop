@@ -21,7 +21,7 @@ namespace Luxprop.Business.Services
             {
                 "administrador" or "admin" => "admin",
                 "agente" or "agent" => "agent",
-                "vendedor" or "seller" => "seller",
+                "Seller" or "seller" => "seller",
                 "comprador" or "buyer" or "cliente" => "buyer",
                 _ => string.Empty
             };
