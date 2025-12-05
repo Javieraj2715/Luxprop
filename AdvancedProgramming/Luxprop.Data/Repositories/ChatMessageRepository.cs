@@ -14,9 +14,9 @@ namespace Luxprop.Data.Repositories
 
     public class ChatThreadRepository : RepositoryBase<ChatThread>, IChatThreadRepository
     {
-        public ChatThreadRepository()
+        public ChatThreadRepository(LuxpropContext context) : base(context)
         {
-            DbSet = DbContext.Set<ChatThread>();
+            
         }
 
         public async Task<IEnumerable<ChatThread>> GetOpenThreadsAsync()

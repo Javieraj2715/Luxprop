@@ -13,9 +13,9 @@ namespace Luxprop.Data.Repositories
     
     public class ClienteRepository : RepositoryBase<Cliente>, IClienteRepository
     {
-        public ClienteRepository()
+        public ClienteRepository(LuxpropContext context) : base(context)
         {
-            DbSet = DbContext.Set<Cliente>();
+            
         }
 
         public async Task<Cliente?> GetByCedulaAsync(string cedula)

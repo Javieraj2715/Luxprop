@@ -19,9 +19,9 @@ namespace Luxprop.Data.Repositories
 
     public class ExpedienteRepository : RepositoryBase<Expediente>, IExpedienteRepository
     {
-        public ExpedienteRepository()
+        public ExpedienteRepository(LuxpropContext context) : base(context)
         {
-            DbSet = DbContext.Set<Expediente>();
+            
         }
 
         private IQueryable<Expediente> IncludeAll()

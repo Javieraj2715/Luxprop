@@ -15,9 +15,9 @@ namespace Luxprop.Data.Repositories
     
     public class TareaTramiteRepository : RepositoryBase<TareaTramite>, ITareaTramiteRepository
     {
-        public TareaTramiteRepository()
+        public TareaTramiteRepository(LuxpropContext context) : base(context)
         {
-            DbSet = DbContext.Set<TareaTramite>();
+            
         }
 
         public async Task<IEnumerable<TareaTramite>> GetByExpedienteIdAsync(int expedienteId)

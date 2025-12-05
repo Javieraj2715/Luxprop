@@ -15,9 +15,9 @@ namespace Luxprop.Data.Repositories
     public class AlertasDocumentoRepository
         : RepositoryBase<AlertasDocumento>, IAlertasDocumentoRepository
     {
-        public AlertasDocumentoRepository()
+        public AlertasDocumentoRepository(LuxpropContext context) : base(context)
         {
-            DbSet = DbContext.Set<AlertasDocumento>();
+            
         }
 
         // -------------------------------------------------------------

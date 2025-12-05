@@ -13,9 +13,9 @@ namespace Luxprop.Data.Repositories
     
     public class UbicacionRepository : RepositoryBase<Ubicacion>, IUbicacionRepository
     {
-        public UbicacionRepository()
+        public UbicacionRepository(LuxpropContext context) : base(context)
         {
-            DbSet = DbContext.Set<Ubicacion>();
+            
         }
 
         public async Task<IEnumerable<Ubicacion>> GetByProvinciaAsync(string provincia)
