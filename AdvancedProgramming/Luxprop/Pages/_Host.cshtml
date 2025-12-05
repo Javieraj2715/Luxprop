@@ -11,21 +11,19 @@
     <base href="~/" />
     <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
     <link href="css/site.css" rel="stylesheet" />
-    <link href="css/nav.css" rel="stylesheet" />  
+    <link href="css/nav.css" rel="stylesheet" />
     <link href="Luxprop.styles.css" rel="stylesheet" />
-    <link rel="icon" type="image/png" href="favicon.png"/>
+    <link rel="icon" type="image/png" href="favicon.png" />
+
+    @* ❌ ELIMINADO para evitar crash en Azure
+       <link rel="stylesheet" href="https://unpkg.com/photo-sphere-viewer@latest/dist/photo-sphere-viewer.css" />
+    *@
+
     <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
 </head>
 
-<link rel="stylesheet" href="https://unpkg.com/photo-sphere-viewer@latest/dist/photo-sphere-viewer.css" />
-
-<script src="https://unpkg.com/three@latest/build/three.min.js"></script>
-<script src="https://unpkg.com/photo-sphere-viewer@latest/dist/photo-sphere-viewer.js"></script>
-<script src="js/tour360.js"></script>
-
 <body>
     <component type="typeof(App)" render-mode="Server" />
-
 
     <div id="blazor-error-ui">
         <environment include="Staging,Production">
@@ -38,9 +36,16 @@
         <a class="dismiss">🗙</a>
     </div>
 
+    @* ❌ Scripts externos eliminados para evitar falla global
+       <script src="https://unpkg.com/three@latest/build/three.min.js"></script>
+       <script src="https://unpkg.com/photo-sphere-viewer@latest/dist/photo-sphere-viewer.js"></script>
+    *@
+
+    @* ✔ Solo tu script local permanece, sin romper Blazor 
+    <><script src="js/tour360.js"></script>
+    *@
+
     <script src="_framework/blazor.server.js"></script>
     <script src="js/site.js"></script>
-
-
 </body>
 </html>
