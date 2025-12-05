@@ -18,13 +18,11 @@ namespace Luxprop.Data.Repositories
 
     public class HistorialExpedienteRepository : RepositoryBase<HistorialExpediente>, IHistorialExpedienteRepository
     {
-        private readonly LuxpropContext _context;
-        private readonly DbSet<HistorialExpediente> _dbSet;
+      
 
-        public HistorialExpedienteRepository(LuxpropContext context)
+        public HistorialExpedienteRepository(LuxpropContext context) : base(context)
         {
-            _context = context;
-            _dbSet = _context.Set<HistorialExpediente>();
+            
         }
 
         private IQueryable<HistorialExpediente> IncludeAll()

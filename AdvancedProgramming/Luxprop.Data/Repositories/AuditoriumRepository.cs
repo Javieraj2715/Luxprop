@@ -14,9 +14,9 @@ namespace Luxprop.Data.Repositories
     
     public class AuditoriumRepository : RepositoryBase<Auditorium>, IAuditoriumRepository
     {
-        public AuditoriumRepository()
+        public AuditoriumRepository(LuxpropContext context) : base(context)
         {
-            DbSet = DbContext.Set<Auditorium>();
+            
         }
 
         public async Task<IEnumerable<Auditorium>> GetByUsuarioIdAsync(int usuarioId)

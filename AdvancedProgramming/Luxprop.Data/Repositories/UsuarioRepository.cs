@@ -1,4 +1,4 @@
-using Luxprop.Data.Models;
+﻿using Luxprop.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Luxprop.Data.Repositories
@@ -20,9 +20,9 @@ namespace Luxprop.Data.Repositories
 
     public class UsuarioRepository : RepositoryBase<Usuario>, IUsuarioRepository
     {
-        public UsuarioRepository()
+        public UsuarioRepository(LuxpropContext context) : base(context)
         {
-            DbSet = DbContext.Set<Usuario>();
+            
         }
 
         public async Task<Usuario?> GetByEmailAsync(string email)
@@ -103,6 +103,6 @@ namespace Luxprop.Data.Repositories
                 .Where(u => u.UsuarioRols.Any(r => r.RolId == 4))
                 .ToListAsync();
         }
-
     }
+
 }

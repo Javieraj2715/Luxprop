@@ -13,10 +13,10 @@ namespace Luxprop.Data.Repositories
     
     public class UsuarioRolRepository : RepositoryBase<UsuarioRol>, IUsuarioRolRepository
     {
-        public UsuarioRolRepository()
+        public UsuarioRolRepository(LuxpropContext context) : base(context)
         {
-            DbSet = DbContext.Set<UsuarioRol>();
         }
+
 
         public async Task<IEnumerable<UsuarioRol>> GetByUsuarioIdAsync(int usuarioId)
         {

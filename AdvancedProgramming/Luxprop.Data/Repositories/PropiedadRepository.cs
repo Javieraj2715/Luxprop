@@ -14,9 +14,9 @@ namespace Luxprop.Data.Repositories
     
     public class PropiedadRepository : RepositoryBase<Propiedad>, IPropiedadRepository
     {
-        public PropiedadRepository()
+        public PropiedadRepository(LuxpropContext context) : base(context)
         {
-            DbSet = DbContext.Set<Propiedad>();
+            
         }
 
         public async Task<IEnumerable<Propiedad>> GetByAgenteIdAsync(int agenteId)

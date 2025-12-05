@@ -17,9 +17,9 @@ namespace Luxprop.Data.Repositories
 
     public class DocumentoRepository : RepositoryBase<Documento>, IDocumentoRepository
     {
-        public DocumentoRepository()
+        public DocumentoRepository(LuxpropContext context) : base(context)
         {
-            DbSet = DbContext.Set<Documento>();
+            
         }
 
         public async Task<IEnumerable<Documento>> GetByExpedienteIdAsync(int expedienteId)

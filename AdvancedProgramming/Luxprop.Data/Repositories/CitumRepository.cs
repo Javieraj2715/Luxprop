@@ -14,9 +14,9 @@ namespace Luxprop.Data.Repositories
     
     public class CitumRepository : RepositoryBase<Citum>, ICitumRepository
     {
-        public CitumRepository()
+        public CitumRepository(LuxpropContext context) : base(context)
         {
-            DbSet = DbContext.Set<Citum>();
+            
         }
 
         public async Task<IEnumerable<Citum>> GetByExpedienteIdAsync(int expedienteId)

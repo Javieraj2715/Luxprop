@@ -11,9 +11,9 @@ namespace Luxprop.Data.Repositories
     
     public class RolRepository : RepositoryBase<Rol>, IRolRepository
     {
-        public RolRepository()
+        public RolRepository(LuxpropContext context) : base(context)
         {
-            DbSet = DbContext.Set<Rol>();
+            
         }
 
         public async Task<Rol?> GetByNameAsync(string nombre)

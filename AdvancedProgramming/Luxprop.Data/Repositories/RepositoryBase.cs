@@ -1,12 +1,6 @@
 ﻿using Luxprop.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Luxprop.Data.Repositories;
-
-/// <summary>
-/// Interface for basic repository operations.
-/// </summary>
-/// <typeparam name="T">The type of entity.</typeparam>
 public interface IRepositoryBase<T>
 {
     /// <summary>
@@ -66,22 +60,15 @@ public interface IRepositoryBase<T>
     Task<bool> ExistsAsync(T entity);
 }
 
-/// <summary>
-/// Base class for repository operations.
-/// </summary>
-/// <typeparam name="T">Entity type.</typeparam>
 public abstract class RepositoryBase<T> : IRepositoryBase<T> where T : class
 {
-    private readonly LuxpropContext _context;
+    protected readonly LuxpropContext _context;
+    protected readonly DbSet<T> DbSet;
     protected LuxpropContext DbContext => _context;
-    protected DbSet<T> DbSet;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="RepositoryBase{T}"/> class.
-    /// </summary>
-    public RepositoryBase()
+    public RepositoryBase(LuxpropContext context)
     {
-        _context = new LuxpropContext();
+        _context = context;
         DbSet = _context.Set<T>();
     }
 
@@ -92,136 +79,48 @@ public abstract class RepositoryBase<T> : IRepositoryBase<T> where T : class
             : await CreateAsync(entity);
     }
 
-    /// <summary>
-    /// Creates an entity of type T asynchronously.
-    /// </summary>
-    /// <param name="entity">The entity to be saved in the database.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a boolean indicating success.</returns>
     public async Task<bool> CreateAsync(T entity)
     {
-        try
-        {
-            await _context.AddAsync(entity);
-            return await SaveAsync();
-        }
-        catch (Exception ex)
-        {
-            throw ex;
-        }
+        await DbSet.AddAsync(entity);
+        return await SaveAsync();
     }
 
-    /// <summary>
-    /// Updates an existing entity of type T asynchronously.
-    /// </summary>
-    /// <param name="entity">The entity to be updated.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a boolean indicating success.</returns>
     public async Task<bool> UpdateAsync(T entity)
     {
-        try
-        {
-            _context.Update(entity);
-            return await SaveAsync();
-        }
-        catch (Exception ex)
-        {
-            throw ex;
-        }
+        DbSet.Update(entity);
+        return await SaveAsync();
     }
 
-    /// <summary>
-    /// Updates multiple entities of type T asynchronously.
-    /// </summary>
-    /// <param name="entities">The collection of entities to be updated.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a boolean indicating success.</returns>
     public async Task<bool> UpdateManyAsync(IEnumerable<T> entities)
     {
-        try
-        {
-            _context.UpdateRange(entities);
-            return await SaveAsync();
-        }
-        catch (Exception ex)
-        {
-            throw ex;
-        }
+        DbSet.UpdateRange(entities);
+        return await SaveAsync();
     }
 
-    /// <summary>
-    /// Deletes an entity of type T asynchronously.
-    /// </summary>
-    /// <param name="entity">The entity to be deleted.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a boolean indicating success.</returns>
     public async Task<bool> DeleteAsync(T entity)
     {
-        try
-        {
-            _context.Remove(entity);
-            return await SaveAsync();
-        }
-        catch (Exception ex)
-        {
-            throw ex;
-        }
+        DbSet.Remove(entity);
+        return await SaveAsync();
     }
 
-    /// <summary>
-    /// Reads all entities of type T asynchronously.
-    /// </summary>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a collection of entities.</returns>
     public async Task<IEnumerable<T>> ReadAsync()
     {
-        try
-        {
-            return await _context.Set<T>().ToListAsync();
-        }
-        catch (Exception ex)
-        {
-            throw ex;
-        }
+        return await DbSet.ToListAsync();
     }
 
-    /// <summary>
-    /// Reads an entity of type T asynchronously.
-    /// </summary>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a collection of entities.</returns>
     public async Task<T> FindAsync(int id)
     {
-        try
-        {
-            return await _context.Set<T>().FindAsync(id);
-        }
-        catch (Exception ex)
-        {
-            throw ex;
-        }
+        return await DbSet.FindAsync(id);
     }
 
-    /// <summary>
-    /// Checks if an entity of type T exists asynchronously.
-    /// </summary>
-    /// <param name="entity">The entity to check for existence.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a boolean indicating if the entity exists.</returns>
     public async Task<bool> ExistsAsync(T entity)
     {
-        try
-        {
-            var items = await ReadAsync();
-            return items.Any(x => x.Equals(entity));
-        }
-        catch (Exception ex)
-        {
-            throw ex;
-        }
+        var items = await ReadAsync();
+        return items.Any(x => x.Equals(entity));
     }
 
-    /// <summary>
-    /// Saves changes to the database asynchronously.
-    /// </summary>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a boolean indicating success.</returns>
     protected async Task<bool> SaveAsync()
     {
-        var result = await _context.SaveChangesAsync();
-        return result > 0;
+        return await _context.SaveChangesAsync() > 0;
     }
-
 }

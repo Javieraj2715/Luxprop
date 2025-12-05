@@ -12,9 +12,9 @@ namespace Luxprop.Data.Repositories
     
     public class AgenteRepository : RepositoryBase<Agente>, IAgenteRepository
     {
-        public AgenteRepository()
+        public AgenteRepository(LuxpropContext context) : base(context)
         {
-            DbSet = DbContext.Set<Agente>();
+            
         }
 
         public async Task<Agente?> GetByUsuarioIdAsync(int usuarioId)
