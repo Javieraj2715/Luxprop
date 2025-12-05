@@ -24,7 +24,7 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddControllers();
 
 builder.Services.AddDbContextFactory<LuxpropContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Luxprop")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("LuxpropDb")));
 
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<SessionService>();
