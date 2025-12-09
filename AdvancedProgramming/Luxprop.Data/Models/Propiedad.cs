@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 
 namespace Luxprop.Data.Models;
-
+[Table("Propiedades")]
 public partial class Propiedad
 {
     public int PropiedadId { get; set; }
@@ -26,6 +27,9 @@ public partial class Propiedad
 
     public int? AgenteId { get; set; }
     public string Tipo_Propiedad { get; set; } = string.Empty;
+
+    public decimal ? Latitud { get; set; }
+    public decimal ? Longitud { get; set; }
 
 
     public int? UbicacionId { get; set; }

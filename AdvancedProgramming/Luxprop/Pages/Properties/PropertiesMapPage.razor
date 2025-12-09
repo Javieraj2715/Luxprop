@@ -1,0 +1,57 @@
+﻿@page "/map2"
+@using Luxprop.Business.Services
+@using Luxprop.Data.Models
+@inject IPropiedadService PropiedadService
+@inject IJSRuntime JS
+
+<h1 style="margin-bottom:15px;">Properties Map</h1>
+
+<div id="map" style="height: 600px; width: 100%; border-radius:10px; overflow:hidden;"></div>
+
+@code {
+    private List<Propiedad> props = new();
+    private bool mapInitialized = false;   // <- solo para no inicializar 2 veces
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Cargar propiedades
+        props = await PropiedadService.GetForMapAsync();
+
+        Console.WriteLine("------ PROPIEDADES PARA MAPA ------");
+        foreach (var p in props)
+        {
+            Console.WriteLine($"{p.PropiedadId} | {p.Titulo} | {p.Latitud},{p.Longitud}");
+        }
+
+        // Forzar un render después de tener datos
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Si ya inicializamos el mapa, no hacemos nada más
+        if (mapInitialized)
+            return;
+
+        // Si todavía no hay propiedades, esperamos al siguiente render
+        if (props == null || props.Count == 0)
+            return;
+
+        mapInitialized = true;   // a partir de aquí solo 1 vez
+
+        var mapaData = props
+            .Where(p => p.Latitud != null && p.Longitud != null)
+            .Select(p => new
+            {
+                id = p.PropiedadId,
+                titulo = p.Titulo,
+                precio = p.Precio ?? 0,
+                tipo = p.Tipo_Propiedad,
+                lat = Convert.ToDouble(p.Latitud),
+                lng = Convert.ToDouble(p.Longitud)
+            })
+            .ToList();
+
+        await JS.InvokeVoidAsync("initPropertiesMap", mapaData);
+    }
+}

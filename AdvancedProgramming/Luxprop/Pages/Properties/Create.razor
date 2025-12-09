@@ -116,6 +116,21 @@
                 <ValidationMessage For="@(() => property.UbicacionId)" />
             </div>
 
+            <div class="form-group">
+                <label>Latitude</label>
+                <InputNumber @bind-Value="property.Latitud" class="form-control" id="latInput" />
+            </div>
+
+            <div class="form-group">
+                <label>Longitude</label>
+                <InputNumber @bind-Value="property.Longitud" class="form-control" id="lngInput" />
+            </div>
+
+            <div id="map" style="height: 350px; width: 100%; margin-bottom: 20px;"></div>
+
+
+
+
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary" disabled="@isLoading">
                     @if (isLoading)
@@ -137,6 +152,9 @@
         </EditForm>
     </div>
 </div>
+
+
+
 
 @code {
     private string role = "";
@@ -176,6 +194,14 @@
     }
 
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            objRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("initCreateMap", objRef);
+        }
+    }
 
 
     private static string NormalizeRole(string? name)
@@ -230,7 +256,45 @@
     {
         return DateTime.Now.ToString("yyyyMMddHHmmss");
     }
+
+    private DotNetObjectReference<Luxprop.Pages.Properties.Create>? objRef;
+
+
+    [JSInvokable]
+    public void SetCoordinates(decimal lat, decimal lng)
+    {
+        property.Latitud = lat;
+        property.Longitud = lng;
+        InvokeAsync(StateHasChanged);
+    }
+
 }
+
+
+@inject IJSRuntime JS
+
+<script>
+    window.initCreateMap = (dotNetHelper) => {
+        let map = L.map('map').setView([9.9281, -84.0907], 8);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18
+        }).addTo(map);
+
+        let marker = null;
+
+        map.on('click', function (e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+
+            if (marker) map.removeLayer(marker);
+            marker = L.marker([lat, lng]).addTo(map);
+
+            dotNetHelper.invokeMethodAsync("SetCoordinates", lat, lng);
+        });
+    };
+</script>
+
 
 <style>
     .create-property-page {

@@ -7,6 +7,9 @@ namespace Luxprop.Business.Services
     public interface IPropiedadService
     {
         Task<List<Propiedad>> GetAllAsync();
+        Task<List<Propiedad>> GetForMapAsync();
+
+
         Task<bool> DeleteAsync(int id);
     }
 
@@ -27,6 +30,23 @@ namespace Luxprop.Business.Services
             return await _db.Propiedads
                 .Include(p => p.Expedientes)
                 .Include(p => p.Agente)
+                .Include(p => p.Ubicacion)
+
+                .ToListAsync();
+        }
+
+        public async Task<List<Propiedad>> GetForMapAsync()
+        {
+            return await _db.Propiedads
+                .Select(p => new Propiedad
+                {
+                    PropiedadId = p.PropiedadId,
+                    Titulo = p.Titulo,
+                    Precio = p.Precio,
+                    Tipo_Propiedad = p.Tipo_Propiedad,
+                    Latitud = p.Latitud,
+                    Longitud = p.Longitud
+                })
                 .ToListAsync();
         }
 

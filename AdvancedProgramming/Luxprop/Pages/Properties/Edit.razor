@@ -3,6 +3,8 @@
 @using Luxprop.Data.Models
 @inject LuxpropContext Db
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
+
 
 <PageTitle>Edit Property - Luxprop</PageTitle>
 
@@ -113,6 +115,18 @@
                     </InputSelect>
                 </div>
 
+                <div class="form-group">
+                    <label>Latitude</label>
+                    <InputNumber @bind-Value="property.Latitud" class="form-control" id="latInput" />
+                </div>
+
+                <div class="form-group">
+                    <label>Longitude</label>
+                    <InputNumber @bind-Value="property.Longitud" class="form-control" id="lngInput" />
+                </div>
+
+                <div id="map" style="height: 350px; width: 100%; margin-bottom: 20px;"></div>
+
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary" disabled="@isSaving">
                         @if (isSaving)
@@ -147,6 +161,8 @@
     private bool isLoading = true;
     private bool isSaving = false;
     private string errorMessage = string.Empty;
+    private DotNetObjectReference<Luxprop.Pages.Properties.Edit>? objRef;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -173,6 +189,23 @@
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && property != null)
+        {
+            objRef = DotNetObjectReference.Create(this);
+
+            await JS.InvokeVoidAsync(
+                "initEditMap",
+                objRef,
+                (double?)property.Latitud,
+                (double?)property.Longitud
+            );
+        }
+    }
+
+
+
     private async Task HandleSubmit()
     {
         isSaving = true;
@@ -194,6 +227,15 @@
             isSaving = false;
         }
     }
+
+    [JSInvokable]
+    public void SetCoordinates(decimal lat, decimal lng)
+    {
+        property.Latitud = lat;
+        property.Longitud = lng;
+        InvokeAsync(StateHasChanged);
+    }
+
 }
 
 <style>

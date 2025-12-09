@@ -20,7 +20,13 @@
     *@
 
     <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
+
+    
 </head>
+
+
+
+
 
 <body>
     <component type="typeof(App)" render-mode="Server" />
@@ -46,6 +52,10 @@
     *@
 
     <script src="_framework/blazor.server.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/js/propertiesMap.js?v=200"></script>
     <script src="js/site.js"></script>
 </body>
 </html>
