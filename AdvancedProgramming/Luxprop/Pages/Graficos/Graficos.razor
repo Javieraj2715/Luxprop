@@ -3,134 +3,298 @@
 @using Microsoft.EntityFrameworkCore
 @inject LuxpropContext Db
 
-<h2 class="mt-4 mb-4">General Summary</h2>
+<h2 class="main-title">General Summary</h2>
 
-<div class="row">
+<div class="row chart-dashboard-container">
 
-    <!-- DOCUMENTS -->
-    <div class="col-md-6">
-        <h4 class="title-section mb-3">Document Status</h4>
+    <div class="col-lg-8 col-md-12">
+        <div class="chart-card shadow task-card">
+            <h3 class="chart-subtitle">Task Status: Overall Progress</h3>
 
-        <div class="pie-chart-box">
-            <div class="pie"
-                 style="--p1:@porcCompCss; --p2:@porcPendCss; --p3:@porcVencCss;">
+            <div class="progress-container">
+                <div class="bar-progress">
+                    <div class="fill completed" style="width:@percTasksDoneRounded%">
+                        <span class="progress-label">@percTasksDoneRounded% COMPLETED</span>
+                    </div>
+                </div>
+
+                <div class="progress-totals-box">
+                    <p>Completed: <b class="completed-text">@tasksDone</b></p>
+                    <p>Pending: <b class="pending-text">@tasksPending</b></p>
+                    <p class="total-tasks">Total Tasks: <b>@(tasksDone + tasksPending)</b></p>
+                </div>
             </div>
         </div>
-
-        <ul class="legend">
-            <li><span class="color green"></span> Completed: @completed</li>
-            <li><span class="color yellow"></span> Pending: @pending</li>
-            <li><span class="color red"></span> Expired: @expired</li>
-        </ul>
     </div>
 
+    <div class="col-lg-4 col-md-12">
+        <div class="chart-card shadow document-card">
+            <h3 class="chart-subtitle">Document Status Distribution</h3>
 
-    <!-- TASKS -->
-    <div class="col-md-6">
-        <h4 class="title-section mb-3">Task Status</h4>
-
-        <div class="pie-chart-box">
-            <div class="pie"
-                 style="--p1:@porcTasksDoneCss; --p2:@porcTasksPendingCss; --p3:0deg;">
+            <div class="pie-wrapper">
+                <div class="pie-chart"
+                     style="--p1:@degCompleted; --p2:@degPending; --p3:@degExpired;">
+                    <div class="center-text">
+                        <span class="total-count">@(completed + pending + expired)</span>
+                        <span class="total-label">DOCS TOTAL</span>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <ul class="legend">
-            <li><span class="color green"></span> Completed: @tasksDone</li>
-            <li><span class="color yellow"></span> Pending: @tasksPending</li>
-        </ul>
+            <ul class="legend">
+                <li><span class="dot completed"></span> Completed (@completed)</li>
+                <li><span class="dot pending"></span> Pending (@pending)</li>
+                <li><span class="dot expired"></span> Expired (@expired)</li>
+            </ul>
+        </div>
     </div>
 
 </div>
 
+
 <style>
-
-    .title-section {
-        font-weight: 600;
-        color: #0d4651;
+    /* VARIABLES DE COLOR */
+    :root {
+        --color-primary: #0d505a; /* Azul Marino Oscuro */
+        --color-secondary: #1e4d58; /* Azul Oscuro */
+        --color-completed: #7ab942; /* Verde Lima */
+        --color-pending: #6f9096; /* Gris Azulado */
+        --color-expired: #838383; /* Gris */
+        --color-background-light: #f4f6f8;
     }
 
-    /* Chart container */
-    .pie-chart-box {
-        width: 260px;
-        height: 260px;
-        margin: 0 auto;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+    body {
+        background-color: var(--color-background-light);
     }
 
-    /* Pie chart */
-    .pie {
-        width: 230px;
-        height: 230px;
-        border-radius: 50%;
-        background: conic-gradient( #28a745 0deg var(--p1), #ffc107 var(--p1) calc(var(--p1) + var(--p2)), #dc3545 calc(var(--p1) + var(--p2)) calc(var(--p1) + var(--p2) + var(--p3)) );
+    /* TITULOS */
+    .main-title {
+        text-align: center;
+        font-weight: 800;
+        color: var(--color-primary);
+        margin-bottom: 40px;
+        letter-spacing: 1px;
+    }
+
+    .chart-subtitle {
+        text-align: center;
+        color: var(--color-secondary);
+        font-weight: 700;
+        margin-bottom: 25px;
+        border-bottom: 2px solid #e1e1e1;
+        padding-bottom: 10px;
+    }
+
+    /* TARJETAS */
+    .chart-card {
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 20px;
+        border: none;
+        margin-bottom: 30px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .chart-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+    .shadow {
+        box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+    }
+
+    /* ============================== */
+    /* 1️⃣ BARRA GRUESA (TASK STATUS) */
+    /* ============================== */
+
+    .progress-container {
+        padding: 10px 20px;
+    }
+
+    .bar-progress {
+        width: 100%;
+        height: 40px; /* Más grueso para impacto */
+        background: #e7ecef; /* Fondo (que representa el 100% o pending) */
+        border-radius: 20px;
+        overflow: hidden;
+        position: relative;
+        margin: 20px 0 25px 0;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+        .bar-progress .fill {
+            height: 100%;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end; /* Alinear el texto a la derecha */
+            padding-right: 20px;
+            transition: width 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Transición suave */
+        }
+
+    .progress-label {
+        color: #ffffff;
+        font-weight: 900;
+        font-size: 1.1em;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    }
+
+    .progress-totals-box {
         display: flex;
-        justify-content: center;
-        align-items: center;
+        justify-content: space-around;
+        padding: 10px 0;
+        border-top: 1px dashed #e1e1e1;
+    }
+
+        .progress-totals-box p {
+            margin: 0;
+            font-weight: 600;
+            color: var(--color-secondary);
+            font-size: 1.1em;
+        }
+
+    .completed-text {
+        color: var(--color-completed);
+    }
+
+    .pending-text {
+        color: var(--color-pending);
+    }
+
+    .total-tasks {
+        font-weight: 800 !important;
+        color: var(--color-primary) !important;
+    }
+
+
+    /* ============================== */
+    /* 2️⃣ PIE CHART (DOCUMENT STATUS) */
+    /* ============================== */
+
+    .pie-wrapper {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto 30px auto;
         position: relative;
     }
 
-        /* Donut hole */
-        .pie::before {
-            content: "";
-            width: 120px;
-            height: 120px;
-            background: #fff;
-            border-radius: 50%;
-            z-index: 10;
+    .pie-chart {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: conic-gradient( var(--color-completed) 0deg var(--p1), var(--color-pending) var(--p1) calc(var(--p1) + var(--p2)), var(--color-expired) calc(var(--p1) + var(--p2)) 360deg );
+        position: relative;
+        animation: pop 1.2s ease-out;
+    }
+
+    /* Animación para aparecer (más suave) */
+    @@keyframes pop {
+        from {
+            transform: scale(0.7) rotate(-30deg);
+            opacity: 0;
         }
 
-    /* Legend */
+        to {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+        }
+    }
+
+    .pie-chart::before {
+        content: "";
+        width: 100px; /* Tamaño del centro */
+        height: 100px;
+        background: white;
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    /* Contenido central */
+    .center-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10;
+        text-align: center;
+        color: var(--color-primary);
+    }
+
+    .total-count {
+        display: block;
+        font-size: 2.5em; /* Número grande */
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    .total-label {
+        display: block;
+        font-size: 0.8em;
+        font-weight: 600;
+        opacity: 0.8;
+        margin-top: -5px;
+    }
+
+    /* LEYENDA */
     .legend {
-        margin-top: 15px;
         list-style: none;
+        text-align: center;
+        margin-top: 10px;
         padding: 0;
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap; /* Para que se adapte mejor en móvil */
+        gap: 15px;
     }
 
         .legend li {
-            margin: 5px 0;
-            font-size: 16px;
-            font-weight: 500;
+            font-weight: 600;
+            color: var(--color-secondary);
+            font-size: 0.9em;
         }
 
-        .legend .color {
-            display: inline-block;
-            width: 18px;
-            height: 18px;
-            margin-right: 10px;
-            border-radius: 4px;
-        }
-
-    .color.green {
-        background: #28a745;
+    .dot {
+        width: 12px;
+        height: 12px;
+        display: inline-block;
+        margin-right: 6px;
+        border-radius: 50%;
+        vertical-align: middle;
     }
 
-    .color.yellow {
-        background: #ffc107;
+    /* Clases de colores (usando variables) */
+    .completed {
+        background: var(--color-completed);
     }
 
-    .color.red {
-        background: #dc3545;
+    .pending {
+        background: var(--color-pending);
+    }
+
+    .expired {
+        background: var(--color-expired);
     }
 
 </style>
 
 @code {
-
-    // ---------- DOCUMENTS ----------
+    // DOCUMENTOS
     int completed, pending, expired;
-    double percCompleted, percPending, percExpired;
-    string porcCompCss = "0deg";
-    string porcPendCss = "0deg";
-    string porcVencCss = "0deg";
+    int percCompletedRounded, percPendingRounded, percExpiredRounded;
 
-    // ---------- TASKS ----------
+    // ANGULOS DEL PIE CHART
+    string degCompleted = "0deg";
+    string degPending = "0deg";
+    string degExpired = "0deg";
+
+    // TAREAS
     int tasksDone, tasksPending;
-    double percTasksDone, percTasksPending;
-    string porcTasksDoneCss = "0deg";
-    string porcTasksPendingCss = "0deg";
+    int percTasksDoneRounded, percTasksPendingRounded;
 
     protected override async Task OnInitializedAsync()
     {
@@ -138,10 +302,10 @@
         await LoadTasks();
     }
 
-    // Load documents and calculate percentages
     private async Task LoadDocuments()
     {
         var today = DateTime.Today;
+        // La conexión a la DB y la lógica de conteo es la misma.
         var docs = await Db.Set<Documento>().ToListAsync();
 
         completed = docs.Count(d => d.Estado == "Completado");
@@ -151,18 +315,22 @@
         int total = completed + pending + expired;
         if (total == 0) total = 1;
 
-        percCompleted = completed * 360.0 / total;
-        percPending = pending * 360.0 / total;
-        percExpired = expired * 360.0 / total;
+        percCompletedRounded = (int)Math.Round(completed * 100.0 / total);
+        percPendingRounded = (int)Math.Round(pending * 100.0 / total);
+        percExpiredRounded = (int)Math.Round(expired * 100.0 / total);
 
-        porcCompCss = percCompleted + "deg";
-        porcPendCss = percPending + "deg";
-        porcVencCss = percExpired + "deg";
+        double d1 = (completed * 360.0) / total;
+        double d2 = (pending * 360.0) / total;
+        double d3 = (expired * 360.0) / total;
+
+        degCompleted = $"{d1}deg";
+        degPending = $"{d2}deg";
+        degExpired = $"{d3}deg";
     }
 
-    // Load tasks and calculate percentages
     private async Task LoadTasks()
     {
+        // La conexión a la DB y la lógica de conteo es la misma.
         var tasks = await Db.Set<TareaTramite>().ToListAsync();
 
         tasksDone = tasks.Count(t => t.Estado == "Done");
@@ -171,10 +339,7 @@
         int totalTasks = tasksDone + tasksPending;
         if (totalTasks == 0) totalTasks = 1;
 
-        percTasksDone = tasksDone * 360.0 / totalTasks;
-        percTasksPending = tasksPending * 360.0 / totalTasks;
-
-        porcTasksDoneCss = percTasksDone + "deg";
-        porcTasksPendingCss = percTasksPending + "deg";
+        percTasksDoneRounded = (int)Math.Round(tasksDone * 100.0 / totalTasks);
+        percTasksPendingRounded = (int)Math.Round(tasksPending * 100.0 / totalTasks);
     }
 }
