@@ -1,5 +1,6 @@
 ﻿@using Luxprop.Business.Services
 @using Luxprop.Services
+@using System.Threading
 @inherits LayoutComponentBase
 @inject SessionService SessionService
 @inject NavigationManager Navigation
@@ -9,15 +10,11 @@
 {
     <div class="layout-wrapper">
 
-        
-
-
-
         <!-- TOP BAR -->
         <header class="top-bar">
 
             <!-- LEFT BRAND -->
-            <div class="brand-left">
+            <div class="brand-left brand-clickable" @onclick="GoToDashboard">
                 <img src="https://i.imgur.com/nmN7x14.png" class="brand-logo" />
                 <span class="brand-title">2CRRE Docs</span>
             </div>
@@ -25,18 +22,16 @@
             <!-- RIGHT SIDE -->
             <div class="header-right">
 
-                <!-- NOTIFICATION ICON -->
-                <!-- FIXED NOTIFICATION BUTTON -->
-                <div class="notif-container" @onclick="GoToChat">
-                    <i class="bi bi-chat-dots notif-icon"></i>
-
+                <!-- MARTY CHAT BUTTON (reemplaza el botón blanco) -->
+                <button type="button" class="marty-btn" title="Chat" @onclick="GoToChat">
+                    <img src="/img/marty.png" alt="Marty" />
                     @if (unreadChats > 0)
                     {
                         <span class="notif-count">@unreadChats</span>
                     }
-                </div>
+                </button>
 
-                <!-- USER MENU -->
+                <!-- USER MENU (se deja como estaba) -->
                 <div class="user-menu">
                     <div class="user-info" @onclick="ToggleMenu">
                         <span>@userName (@role)</span>
@@ -48,19 +43,18 @@
                         <div class="user-dropdown">
                             <a href="/profile">My Profile</a>
                             <a href="" @onclick="Logout">Logout</a>
-
                         </div>
                     }
                 </div>
 
             </div>
-
         </header>
 
         <!-- MAIN MENU -->
         <nav class="menu-bar">
             <NavLink href="@dashboardHref" class="menu-link">Dashboard</NavLink>
             <NavLink href="/documents" class="menu-link">Documents</NavLink>
+
             @if (role == "admin" || role == "agent")
             {
                 <NavLink href="/documentsVencidos" class="menu-link">Expired Documents</NavLink>
@@ -70,15 +64,13 @@
                 <NavLink href="/expedientes" class="menu-link"><i class="bi bi-folder2-open"></i> Expedientes</NavLink>
                 <NavLink href="/tramites" class="menu-link">Tasks</NavLink>
             }
-            
-            
+
             <NavLink href="/properties" class="menu-link">Properties</NavLink>
 
             @if (role == "admin" || role == "agent")
             {
                 <NavLink href="/chatadmin" class="menu-link"><i class="bi bi-headset"></i> Chat Panel</NavLink>
                 <NavLink href="/map2" class="menu-link">Map View</NavLink>
-
             }
             else
             {
@@ -95,6 +87,26 @@
             @Body
         </main>
 
+        <!-- FOOTER -->
+        <footer class="app-footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <img src="https://i.imgur.com/nmN7x14.png" class="footer-logo" alt="2 Costa Rica Real Estate" />
+                    <div class="footer-brand-text">
+                        <div class="footer-title">2 Costa Rica Real Estate</div>
+                        <div class="footer-subtitle">© @DateTime.Now.Year · Internal Platform</div>
+                    </div>
+                </div>
+
+                <div class="footer-links">
+                    <a href="https://www.2costaricarealestate.com/" target="_blank" rel="noopener noreferrer">Website</a>
+                    <a href="https://www.2costaricarealestate.com/areas/" target="_blank" rel="noopener noreferrer">Areas</a>
+                    <a href="https://www.2costaricarealestate.com/buy/" target="_blank" rel="noopener noreferrer">Buy</a>
+                    <a href="https://www.2costaricarealestate.com/contact/" target="_blank" rel="noopener noreferrer">Contact</a>
+                </div>
+            </div>
+        </footer>
+
     </div>
 }
 else
@@ -103,7 +115,6 @@ else
 }
 
 @code {
-
     private bool isAuthenticated;
     private string? userName;
     private string? roleRaw;
@@ -113,6 +124,10 @@ else
 
     private int unreadChats = 0;
     private Timer? chatTimer;
+    private void GoToDashboard()
+    {
+        Navigation.NavigateTo(dashboardHref);
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -140,20 +155,18 @@ else
         if (!isAuthenticated)
         {
             var uri = Navigation.Uri.ToLowerInvariant();
-            var isPublic = uri.EndsWith("/login") || uri.EndsWith("/user/create") || uri.EndsWith("/forgot-password"); ;
+            var isPublic = uri.EndsWith("/login") || uri.EndsWith("/user/create") || uri.EndsWith("/forgot-password");
 
             if (!isPublic)
             {
                 Navigation.NavigateTo("/login");
             }
 
-            // Si no está autenticado, asegurarse de que no se esté contando chat
             chatTimer?.Dispose();
             chatTimer = null;
         }
         else
         {
-            // 4) Si SÍ está autenticado, arrancar el polling de chat si aún no está
             if (chatTimer == null)
             {
                 StartChatPolling();
@@ -188,31 +201,25 @@ else
         TimeSpan.FromSeconds(5));
     }
 
-
     private void ToggleMenu()
     {
         menuOpen = !menuOpen;
     }
 
+    // ✅ NO SE CAMBIA la manera de hacer logout (como pediste)
     private async Task Logout()
     {
-        // 1) Limpiar sesión
         await SessionService.LogoutAsync();
 
-        // 2) Actualizar estado local
         isAuthenticated = false;
         userName = null;
         role = "";
         menuOpen = false;
 
-        // 3) Detener timer de chat
         chatTimer?.Dispose();
         chatTimer = null;
 
-        // 4) Navegar al login
         Navigation.NavigateTo("/login", forceLoad: true);
-
-        // 5) Forzar re-render inmediato por si sigue en la misma página
         await InvokeAsync(StateHasChanged);
     }
 
@@ -230,37 +237,42 @@ else
     }
 }
 
-
 <style>
-
     .header-right {
         display: flex;
         align-items: center;
-        gap: 25px;
+        gap: 18px;
     }
 
-    /* Contenedor redondo */
-    .notif-container {
-        width: 38px;
-        height: 38px;
-        background: #ffffff;
+    /* MARTY BUTTON */
+    .marty-btn {
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
-        display: flex;
-        justify-content: center;
+        border: none;
+        background: #ffffff;
+        display: inline-flex;
         align-items: center;
+        justify-content: center;
         cursor: pointer;
         position: relative;
-        margin-right: 15px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+        padding: 0;
+        transition: transform .15s ease;
     }
 
-    .notif-icon {
-        font-size: 20px;
-        color: #0d505a !important;
-        font-weight: bold;
-    }
+        .marty-btn img {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+            display: block;
+        }
 
-    /* Burbujita de número */
+        .marty-btn:hover {
+            transform: translateY(-1px);
+        }
+
+    /* contador rojo */
     .notif-count {
         position: absolute;
         top: -4px;
@@ -273,10 +285,10 @@ else
         font-weight: bold;
         min-width: 18px;
         text-align: center;
+        line-height: 1.2;
     }
 
-
-    /* USER MENU */
+    /* USER MENU (igual) */
     .user-menu {
         position: relative;
     }
@@ -321,5 +333,77 @@ else
             .user-dropdown a:hover {
                 background-color: #f2f2f2;
             }
+
+    /* FOOTER */
+    .app-footer {
+        margin-top: 28px;
+        background: #0d505a;
+        color: rgba(255,255,255,.9);
+        padding: 18px 0;
+    }
+
+    .footer-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 22px;
+        flex-wrap: wrap;
+    }
+
+    .footer-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 280px;
+    }
+
+    .footer-logo {
+        height: 42px; /* más ancho/visible */
+        width: auto;
+        opacity: .95;
+    }
+
+    .footer-title {
+        font-weight: 700;
+        letter-spacing: .2px;
+    }
+
+    .footer-subtitle {
+        font-size: 13px;
+        opacity: .85;
+    }
+
+    .footer-links {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+        .footer-links a {
+            color: rgba(255,255,255,.92);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            opacity: .9;
+        }
+
+            .footer-links a:hover {
+                opacity: 1;
+                text-decoration: underline;
+            }
+
+    .brand-clickable {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+        .brand-clickable:hover {
+            opacity: 0.9;
+        }
 
 </style>
