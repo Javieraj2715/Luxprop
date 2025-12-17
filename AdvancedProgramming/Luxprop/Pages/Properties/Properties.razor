@@ -9,11 +9,11 @@
 @inject NavigationManager Navigation
 @inject Luxprop.Services.SessionService Session
 
-<PageTitle>Properties - Luxprop</PageTitle>
-
+<DashboardHero Title="Properties"
+               Subtitle="" />
 <div class="properties-page">
     <div class="page-header">
-        <h1>Properties</h1>
+        
         @if (role == "admin" || role == "agent")
         {
             <a href="/properties/create" class="btn btn-primary">Create Property</a>
