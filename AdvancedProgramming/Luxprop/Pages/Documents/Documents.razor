@@ -9,26 +9,27 @@
 
 <PageTitle>Documents</PageTitle>
 
+<!-- HERO HEADER -->
+<DashboardHero Title="Documents"
+               Subtitle="Manage and upload case files, contracts, and related documentation."
+               
+               PrimaryUrl="/documents/create"
+               
+               SecondaryUrl="/expired-documents" />
+
 <div class="documents-page">
 
-    <!-- HEADER -->
-    <div class="page-head">
-        <div class="page-title">
-            <h1>Documents</h1>
-            <p class="subtitle">Manage, upload and organize internal documents</p>
-        </div>
-
-        <div class="filters">
-            <select class="form-select">
-                <option>-- All Types --</option>
-            </select>
-            <select class="form-select">
-                <option>-- All Tags --</option>
-            </select>
-            <select class="form-select">
-                <option>-- All Status --</option>
-            </select>
-        </div>
+    <!-- FILTERS -->
+    <div class="filters">
+        <select class="form-select">
+            <option>-- All Types --</option>
+        </select>
+        <select class="form-select">
+            <option>-- All Tags --</option>
+        </select>
+        <select class="form-select">
+            <option>-- All Status --</option>
+        </select>
     </div>
 
     <!-- UPLOAD CARD -->
@@ -51,17 +52,21 @@
 
             <div class="field-cell">
                 <label class="field-label">Tags</label>
-                <input class="form-control" placeholder="comma separated" @bind="tags" />
+                <input class="form-control"
+                       placeholder="comma separated"
+                       @bind="tags" />
             </div>
 
             <div class="field-cell">
                 <label class="field-label">Expiration</label>
-                <input type="date" class="form-control" @bind="expiration" />
+                <input type="date"
+                       class="form-control"
+                       @bind="expiration" />
             </div>
 
             <div class="btn-cell">
                 <button class="btn-2cr"
-                        @onclick="@UploadDocument"
+                        @onclick="UploadDocument"
                         disabled="@(!canUpload)">
                     Upload Document
                 </button>
@@ -71,7 +76,7 @@
         </div>
     </div>
 
-    <!-- TABLE -->
+    <!-- DOCUMENTS TABLE -->
     <div class="table-wrap">
         <table class="table docs-table">
             <thead>
@@ -88,7 +93,9 @@
                 {
                     <tr>
                         <td colspan="4">
-                            <div class="state-box muted">Loading documents…</div>
+                            <div class="state-box muted">
+                                Loading documents…
+                            </div>
                         </td>
                     </tr>
                 }
@@ -96,7 +103,9 @@
                 {
                     <tr>
                         <td colspan="4">
-                            <div class="state-box">No documents found</div>
+                            <div class="state-box">
+                                No documents found
+                            </div>
                         </td>
                     </tr>
                 }
@@ -105,17 +114,15 @@
                     @foreach (var doc in documents)
                     {
                         <tr>
-                            <td>
-                                <div class="doc-name">@doc.Nombre</div>
-                            </td>
+                            <td class="doc-name">@doc.Nombre</td>
                             <td>
                                 <span class="tag-pill">General</span>
                             </td>
                             <td>Active</td>
                             <td class="actions-col">
                                 <div class="row-actions">
-                                    <button class="btn btn-sm btn-2cr-outline" type="button">View</button>
-                                    <button class="btn btn-sm btn-2cr-danger" type="button">Delete</button>
+                                    <button class="btn btn-sm btn-2cr-outline">View</button>
+                                    <button class="btn btn-sm btn-2cr-danger">Delete</button>
                                 </div>
                             </td>
                         </tr>
@@ -130,8 +137,8 @@
 @code {
     private List<Documento>? documents;
 
-    private string? selectedFileName;
     private IBrowserFile? selectedFile;
+    private string? selectedFileName;
 
     private string? tags;
     private DateTime? expiration;
@@ -151,8 +158,7 @@
 
     private async Task UploadDocument()
     {
-        // ✅ Aquí conectás tu lógica real de upload.
-        // Por ahora solo ejemplo para que NO falle.
+        // 🔹 Aquí va tu lógica real de upload
         await Task.CompletedTask;
     }
 }
@@ -164,39 +170,21 @@
         margin: 0 auto;
     }
 
-    .page-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        gap: 1.5rem;
-        flex-wrap: wrap;
-    }
-
-    .page-title h1 {
-        margin: 0;
-        font-size: 3rem;
-        font-weight: 800;
-        color: #0d505a;
-    }
-
-    .subtitle {
-        margin: .4rem 0 0;
-        color: #6b7b80;
-    }
-
+    /* FILTERS */
     .filters {
         display: flex;
         gap: .75rem;
         flex-wrap: wrap;
-        min-width: 320px;
+        margin-bottom: 1.5rem;
     }
 
+    /* UPLOAD CARD */
     .upload-card {
         background: #fff;
         border-radius: 18px;
         box-shadow: 0 12px 28px rgba(0,0,0,.08);
         overflow: hidden;
-        margin: 1.8rem 0;
+        margin-bottom: 2rem;
     }
 
     .upload-bar {
@@ -206,8 +194,6 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 1rem;
-        flex-wrap: wrap;
     }
 
     .upload-title {
@@ -227,7 +213,6 @@
         align-items: end;
     }
 
-    /* ✅ OJO: en Razor es @@media */
     @@media (max-width: 1000px) {
         .upload-grid {
             grid-template-columns: 1fr 1fr;
@@ -238,91 +223,16 @@
         .upload-grid {
             grid-template-columns: 1fr;
         }
-
-        .filters {
-            width: 100%;
-        }
     }
 
-    .file-label, .field-label {
-        font-weight: 700;
-        color: #0d505a;
-        margin-bottom: .35rem;
-        display: block;
-    }
-
-    .file-name {
-        margin-top: .25rem;
-        font-size: .9rem;
-        color: #44565b;
-    }
-
+    /* BUTTONS */
     .btn-2cr {
         background: #0d505a;
-        border: 1px solid #0d505a;
         color: #fff;
         border-radius: 14px;
         padding: .9rem 1.2rem;
         font-weight: 800;
-        cursor: pointer;
         width: 100%;
-    }
-
-        .btn-2cr:hover {
-            background: #093e47;
-            border-color: #093e47;
-        }
-
-        .btn-2cr:disabled {
-            opacity: .45;
-            cursor: not-allowed;
-        }
-
-    .btn-note {
-        margin-top: .35rem;
-        font-size: .8rem;
-        color: #6b7b80;
-        text-align: center;
-    }
-
-    .table-wrap {
-        background: #fff;
-        border-radius: 18px;
-        box-shadow: 0 10px 24px rgba(0,0,0,.06);
-        overflow: hidden;
-    }
-
-    .docs-table thead th {
-        background: #0d505a;
-        color: #fff;
-        text-transform: uppercase;
-        font-size: .75rem;
-        letter-spacing: .6px;
-    }
-
-    .doc-name {
-        font-weight: 700;
-    }
-
-    .tag-pill {
-        background: rgba(13,80,90,.12);
-        color: #0d505a;
-        padding: .25rem .6rem;
-        border-radius: 999px;
-        font-size: .75rem;
-        font-weight: 700;
-        display: inline-block;
-    }
-
-    .actions-col {
-        width: 1%;
-        white-space: nowrap;
-    }
-
-    .row-actions {
-        display: flex;
-        gap: .5rem;
-        justify-content: flex-end;
     }
 
     .btn-2cr-outline {
@@ -339,6 +249,45 @@
         background: none;
         border-radius: 10px;
         font-weight: 700;
+    }
+
+    /* TABLE */
+    .table-wrap {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 10px 24px rgba(0,0,0,.06);
+        overflow: hidden;
+    }
+
+    .docs-table thead th {
+        background: #0d505a;
+        color: #fff;
+        font-size: .75rem;
+        text-transform: uppercase;
+    }
+
+    .doc-name {
+        font-weight: 700;
+    }
+
+    .tag-pill {
+        background: rgba(13,80,90,.12);
+        color: #0d505a;
+        padding: .25rem .6rem;
+        border-radius: 999px;
+        font-size: .75rem;
+        font-weight: 700;
+    }
+
+    .actions-col {
+        width: 1%;
+        white-space: nowrap;
+    }
+
+    .row-actions {
+        display: flex;
+        gap: .5rem;
+        justify-content: flex-end;
     }
 
     .state-box {

@@ -4,8 +4,9 @@
 @inject NavigationManager Nav
 @inject Luxprop.Services.SessionService Session
 
-<h3>Agent Inbox</h3>
-
+<DashboardHero Title="Agent Inbox"
+               Subtitle="Manage your conversations." />
+               
 @if (notifications.Count == 0)
 {
     <p>No new chats yet.</p>

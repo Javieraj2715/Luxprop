@@ -451,3 +451,30 @@ input[type="text"], select {
     margin-right: 10px;
     font-size: 14px;
 }
+.login-hero {
+    background: linear-gradient(135deg, #0f4e56, #159d7f);
+    border-radius: 14px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-logo {
+    max-width: 110px;
+    margin-bottom: 1.2rem;
+}
+
+.login-hero-title {
+    color: #ffffff; /* 🔥 BLANCO */
+    font-size: 1.9rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: 0.4px;
+}
+
+.login-hero-subtitle {
+    color: rgba(255,255,255,0.85); /* 🔥 BLANCO SUAVE */
+    font-size: 0.95rem;
+    margin-top: 0.6rem;
+    line-height: 1.4;
+}
