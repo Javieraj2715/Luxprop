@@ -1,9 +1,15 @@
 ﻿@page "/documents"
 
+@using Luxprop.Business.Services
 @using Luxprop.Data
 @using Luxprop.Data.Models
+@using Luxprop.Services
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.Forms
+@inject DocumentoService DocumentoService
+@inject SessionService Session
+
+
 
 @inject LuxpropContext Db
 
@@ -44,6 +50,8 @@
             <div class="file-cell">
                 <label class="file-label">File</label>
                 <InputFile OnChange="OnFileSelected" class="file-input" />
+
+
                 @if (!string.IsNullOrWhiteSpace(selectedFileName))
                 {
                     <div class="file-name">@selectedFileName</div>
@@ -82,6 +90,7 @@
             <thead>
                 <tr>
                     <th>Name</th>
+                    <th>Case File</th>
                     <th>Tags</th>
                     <th>Status</th>
                     <th class="actions-col"></th>
@@ -115,6 +124,22 @@
                     {
                         <tr>
                             <td class="doc-name">@doc.Nombre</td>
+
+                            <td>
+                                @if (doc.Expediente != null)
+                                {
+                                    <a class="link-2cr"
+                                       href="/expedientes/details/@doc.ExpedienteId">
+                                        @doc.Expediente.Codigo
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+
+
                             <td>
                                 <span class="tag-pill">General</span>
                             </td>
@@ -122,7 +147,11 @@
                             <td class="actions-col">
                                 <div class="row-actions">
                                     <button class="btn btn-sm btn-2cr-outline">View</button>
-                                    <button class="btn btn-sm btn-2cr-danger">Delete</button>
+                                    <button class="btn btn-sm btn-2cr-danger"
+                                            @onclick="() => DeleteDocument(doc.DocumentoId)">
+                                        Delete
+                                    </button>
+
                                 </div>
                             </td>
                         </tr>
@@ -147,10 +176,24 @@
 
     protected override async Task OnInitializedAsync()
     {
-        documents = await Db.Documentos.ToListAsync();
-    }
+        documents = await Db.Documentos
+    .Include(d => d.Expediente)
+    .OrderByDescending(d => d.FechaCarga)
+    .ToListAsync();
 
-    private void OnFileSelected(InputFileChangeEventArgs e)
+    }
+    private async Task LoadDocuments()
+    {
+        try
+        {
+            documents = await Task.Run(() => Db.Documentos.ToList());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading documents: {ex.Message}");
+        }
+    }
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
         selectedFile = e.File;
         selectedFileName = e.File.Name;
@@ -158,12 +201,83 @@
 
     private async Task UploadDocument()
     {
-        // 🔹 Aquí va tu lógica real de upload
-        await Task.CompletedTask;
+
+        if (selectedFile == null) return;
+
+        try
+        {
+            using var stream = selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // máx 10MB
+            var url = await DocumentoService.UploadFileAsync(stream, selectedFile.Name, selectedFile.ContentType);
+
+            var newDoc = new Documento
+            {
+                Nombre = selectedFile.Name,
+                TipoDocumento = selectedFile.ContentType,
+                Estado = "Activo",
+                FechaCarga = DateOnly.FromDateTime(DateTime.UtcNow),
+                FechaVencimiento = expiration,
+        
+                UrlArchivo = url
+            };
+
+
+            Db.Documentos.Add(newDoc);
+            await Db.SaveChangesAsync();
+
+            selectedFile = null;
+            
+            await LoadDocuments();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error uploading document: {ex.Message}");
+        }
     }
+
+
+    private async Task DeleteDocument(int id)
+    {
+        try
+        {
+            var doc = Db.Documentos.Find(id);
+            if (doc != null)
+            {
+                if (!string.IsNullOrEmpty(doc.UrlArchivo))
+                {
+                    var usuarioId = await Session.GetUserIdAsync();
+
+                    await DocumentoService.DeleteFileAsync(
+                        doc.UrlArchivo,
+                        doc.ExpedienteId,
+                        usuarioId
+                    );
+                }
+
+                Db.Documentos.Remove(doc);
+                await Db.SaveChangesAsync();
+                await LoadDocuments();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting document: {ex.Message}");
+        }
+    }
+
 }
 
 <style>
+
+    .link-2cr {
+        color: #0d505a;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+        .link-2cr:hover {
+            text-decoration: underline;
+        }
+
     .documents-page {
         padding: 2rem;
         max-width: 1400px;

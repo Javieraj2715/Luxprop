@@ -137,9 +137,24 @@ else
                 <div class="col-md-5">
                     <InputText class="form-control" @bind-Value="nuevaTarea.Estado" placeholder="Status (Pending, Done…)" />
                 </div>
+
+                <div class="col-md-3">
+                    <InputDate class="form-control"
+                               @bind-Value="nuevaTarea.FechaCompromiso"
+                               placeholder="Due date" />
+                </div>
+
+                <div class="col-md-3">
+                    <InputDate class="form-control"
+                               @bind-Value="nuevaTarea.FechaCierre"
+                               placeholder="Closing date" />
+                </div>
+
                 <div class="col-md-2">
                     <button class="btn btn-success w-100">Add</button>
                 </div>
+
+
             </div>
         </EditForm>
 
@@ -150,6 +165,8 @@ else
                     <tr>
                         <th>Title</th>
                         <th>Status</th>
+                        <th>Closed</th>
+
                         <th style="width:100px;">Actions</th>
                     </tr>
                 </thead>
@@ -158,7 +175,17 @@ else
                     {
                         <tr>
                             <td>@t.Titulo</td>
-                            <td>@t.Estado</td>
+                            <td style="width:180px;">
+                                <InputSelect class="form-select form-select-sm"
+                                             @bind-Value="t.Estado"
+                                             @onchange="() => UpdateTaskStatus(t)">
+                                    <option value="Pending">Pending</option>
+                                    <option value="Done">Done</option>
+                                </InputSelect>
+                            </td>
+                            <td>@(t.FechaCierre?.ToString("yyyy-MM-dd") ?? "—")</td>
+
+
                             <td>
                                 <button class="btn btn-sm btn-danger" @onclick="() => EliminarTarea(t.TareaId)">Delete</button>
                             </td>
@@ -300,6 +327,25 @@ else
         Navigation.NavigateTo($"/expedientes/details/{expediente.ExpedienteId}");
     }
 
+    private async Task UpdateTaskStatus(TareaTramite task)
+    {
+        // Si se marca como Done y no tiene fecha
+        if (task.Estado == "Done" && task.FechaCierre == null)
+        {
+            task.FechaCierre = DateTime.Now;
+        }
+
+        // Si se devuelve a Pending, limpiar cierre (opcional)
+        if (task.Estado == "Pending")
+        {
+            task.FechaCierre = null;
+        }
+
+        Db.TareaTramites.Update(task);
+        await Db.SaveChangesAsync();
+    }
+
+
     private async Task EliminarDocumento(int id)
     {
         int usuarioId = await Session.GetUserIdAsync();
@@ -328,12 +374,22 @@ else
         nuevaTarea.ExpedienteId = ExpedienteId;
         nuevaTarea.FechaInicio = DateTime.Now;
 
+        // 🔹 Regla automática
+        if (nuevaTarea.Estado == "Done" && nuevaTarea.FechaCierre == null)
+        {
+            nuevaTarea.FechaCierre = DateTime.Now;
+        }
+
         Db.TareaTramites.Add(nuevaTarea);
         await Db.SaveChangesAsync();
 
-        tareas = await Db.TareaTramites.Where(t => t.ExpedienteId == ExpedienteId).ToListAsync();
+        tareas = await Db.TareaTramites
+            .Where(t => t.ExpedienteId == ExpedienteId)
+            .ToListAsync();
+
         nuevaTarea = new();
     }
+
 
     private async Task EliminarTarea(int id)
     {

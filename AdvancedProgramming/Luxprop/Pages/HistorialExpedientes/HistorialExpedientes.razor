@@ -206,100 +206,341 @@
     /* EXPORT EXCEL */
     public async Task ExportToExcel(List<HistorialExpediente> history)
     {
+        if (history == null || !history.Any())
+        {
+            await JS.InvokeVoidAsync("alert", "No history records to export.");
+            return;
+        }
+
         using var wb = new XLWorkbook();
-        var ws = wb.Worksheets.Add("History");
+        var ws = wb.Worksheets.Add("Case File History");
 
-        ws.Cell(1, 1).Value = "History ID";
-        ws.Cell(1, 2).Value = "Case ID";
-        ws.Cell(1, 3).Value = "User";
-        ws.Cell(1, 4).Value = "Date";
-        ws.Cell(1, 5).Value = "Status";
-        ws.Cell(1, 6).Value = "Description";
+        // =======================
+        // HEADER AREA
+        // =======================
+        ws.Range("A1:F3").Merge();
+        ws.Range("A1:F3").Style
+            .Fill.SetBackgroundColor(XLColor.FromHtml("#0D505A"))
+            .Alignment.SetVertical(XLAlignmentVerticalValues.Center);
 
-        int row = 2;
+        ws.Row(1).Height = 35;
+        ws.Row(2).Height = 35;
+        ws.Row(3).Height = 35;
+
+        // =======================
+        // LOGO
+        // =======================
+        var logoPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "wwwroot",
+            "img",
+            "logo-2crre.png"
+        );
+
+        if (File.Exists(logoPath))
+        {
+            ws.AddPicture(logoPath)
+                .MoveTo(ws.Cell("A1"), 10, 5)
+                .Scale(0.35);
+        }
+
+        // =======================
+        // TITLE TEXT
+        // =======================
+        ws.Cell("A1").Value = "CASE FILE HISTORY";
+        ws.Cell("A1").Style
+            .Font.SetBold()
+            .Font.SetFontSize(18)
+            .Font.SetFontColor(XLColor.White)
+            .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right)
+            .Alignment.SetVertical(XLAlignmentVerticalValues.Center)
+            .Alignment.SetIndent(4);
+
+        ws.Cell("A2").Value = $"Generated on {DateTime.Now:yyyy-MM-dd HH:mm}";
+        ws.Cell("A2").Style
+            .Font.SetFontSize(11)
+            .Font.SetFontColor(XLColor.FromHtml("#E0F2F4"))
+            .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right)
+            .Alignment.SetIndent(4);
+
+        // =======================
+        // TABLE HEADER
+        // =======================
+        int headerRow = 5;
+
+        ws.Cell(headerRow, 1).Value = "History ID";
+        ws.Cell(headerRow, 2).Value = "Case ID";
+        ws.Cell(headerRow, 3).Value = "User";
+        ws.Cell(headerRow, 4).Value = "Date";
+        ws.Cell(headerRow, 5).Value = "Status";
+        ws.Cell(headerRow, 6).Value = "Description";
+
+        ws.Range(headerRow, 1, headerRow, 6).Style
+            .Font.SetBold()
+            .Font.SetFontColor(XLColor.White)
+            .Fill.SetBackgroundColor(XLColor.FromHtml("#0D505A"))
+            .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+
+        // =======================
+        // DATA ROWS
+        // =======================
+        int row = headerRow + 1;
+        bool alternate = false;
 
         foreach (var h in history)
         {
+            var bgColor = alternate
+                ? XLColor.FromHtml("#F1F7F8")
+                : XLColor.White;
+
             ws.Cell(row, 1).Value = h.HistorialId;
             ws.Cell(row, 2).Value = h.ExpedienteId;
             ws.Cell(row, 3).Value = $"{h.Usuario?.Nombre} {h.Usuario?.Apellido}";
             ws.Cell(row, 4).Value = h.FechaModificacion?.ToString("yyyy-MM-dd HH:mm");
-            ws.Cell(row, 5).Value = h.EstadoNuevo;
-            ws.Cell(row, 6).Value = h.Descripcion;
+            ws.Cell(row, 5).Value = h.EstadoNuevo ?? "-";
+            ws.Cell(row, 6).Value = h.Descripcion ?? "-";
+
+            ws.Range(row, 1, row, 6).Style
+                .Fill.SetBackgroundColor(bgColor)
+                .Border.SetOutsideBorder(XLBorderStyleValues.Thin);
+
+            alternate = !alternate;
             row++;
         }
 
+        // =======================
+        // FINAL STYLING
+        // =======================
+        // Column widths
+        ws.Column(1).Width = 14;
+        ws.Column(2).Width = 14;
+        ws.Column(3).Width = 26;
+        ws.Column(4).Width = 22;
+        ws.Column(5).Width = 14;
+        ws.Column(6).Width = 45;
+
+        // Wrap text
+        ws.Column(5).Style.Alignment.SetWrapText(true);
+        ws.Column(6).Style.Alignment.SetWrapText(true);
+
+        // Auto row height
+        ws.Rows(headerRow + 1, row - 1).AdjustToContents();
+
+
+        ws.Range(headerRow, 1, row - 1, 6)
+            .Style.Border.SetOutsideBorder(XLBorderStyleValues.Medium);
+
+        // =======================
+        // EXPORT
+        // =======================
         using var stream = new MemoryStream();
         wb.SaveAs(stream);
+
         var base64 = Convert.ToBase64String(stream.ToArray());
 
-        await JS.InvokeVoidAsync("downloadFile",
-            $"History_{DateTime.Now:yyyyMMdd}.xlsx",
+        await JS.InvokeVoidAsync(
+            "downloadFile",
+            $"CaseFileHistory_{DateTime.Now:yyyyMMdd}.xlsx",
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            base64);
+            base64
+        );
     }
+
 
     /* EXPORT PDF */
     public async Task ExportToPdf(List<HistorialExpediente> history)
     {
         var items = history ?? new();
 
+        var logoPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "wwwroot", "img", "logo-2crre.png"
+        );
+
+        var primaryColor = "#0d505a";
+        var lightBg = "#f3f8f8";
+        var borderColor = "#cfdede";
+
         var pdfBytes = Document.Create(container =>
         {
             container.Page(page =>
             {
                 page.Size(PageSizes.A4);
-                page.Margin(20);
+                page.Margin(30);
                 page.DefaultTextStyle(x => x.FontSize(11));
 
+                /* ================= HEADER ================= */
                 page.Header()
-                    .AlignCenter()
-                    .Text("Case File History")
-                    .FontSize(16)
-                    .SemiBold();
+                    .Background(primaryColor)
+                    .PaddingVertical(16)
+                    .PaddingHorizontal(24)
+                    .Row(row =>
+                    {
+                        row.ConstantItem(100)
+                            .AlignMiddle()
+                            .Height(40)
+                            .Image(logoPath);
 
-                page.Content().PaddingVertical(10).Table(table =>
+                        row.RelativeItem()
+                            .AlignMiddle()
+                            .Column(col =>
+                            {
+                                col.Item().Text("CASE FILE HISTORY")
+                                    .FontSize(20)
+                                    .Bold()
+                                    .FontColor(Colors.White);
+
+                                col.Item().Text("Historical Changes")
+                                    .FontSize(12)
+                                    .FontColor("#E0F2F4");
+                            });
+                    });
+
+                /* ================= CONTENT ================= */
+                page.Content().PaddingVertical(20).Column(column =>
                 {
-                    table.ColumnsDefinition(columns =>
-                    {
-                        columns.ConstantColumn(70);
-                        columns.ConstantColumn(80);
-                        columns.ConstantColumn(120);
-                        columns.ConstantColumn(120);
-                        columns.ConstantColumn(90);
-                        columns.RelativeColumn();
-                    });
+                    column.Item().Text("History Records")
+                        .FontSize(14)
+                        .Bold()
+                        .FontColor(primaryColor);
 
-                    table.Header(header =>
-                    {
-                        header.Cell().Element(c => c.Padding(6).Background("#eeeeee").Text("History ID").Bold());
-                        header.Cell().Element(c => c.Padding(6).Background("#eeeeee").Text("Case ID").Bold());
-                        header.Cell().Element(c => c.Padding(6).Background("#eeeeee").Text("User").Bold());
-                        header.Cell().Element(c => c.Padding(6).Background("#eeeeee").Text("Date").Bold());
-                        header.Cell().Element(c => c.Padding(6).Background("#eeeeee").Text("Status").Bold());
-                        header.Cell().Element(c => c.Padding(6).Background("#eeeeee").Text("Description").Bold());
-                    });
+                    column.Item().LineHorizontal(1)
+                        .LineColor(primaryColor);
 
-                    foreach (var h in items)
+                    column.Item().PaddingTop(10);
+
+                    column.Item().Table(table =>
                     {
-                        table.Cell().Element(c => c.Padding(6).Text(h.HistorialId));
-                        table.Cell().Element(c => c.Padding(6).Text(h.ExpedienteId));
-                        table.Cell().Element(c => c.Padding(6).Text($"{h.Usuario?.Nombre} {h.Usuario?.Apellido}"));
-                        table.Cell().Element(c => c.Padding(6).Text(h.FechaModificacion?.ToString("yyyy-MM-dd HH:mm")));
-                        table.Cell().Element(c => c.Padding(6).Text(h.EstadoNuevo ?? "-"));
-                        table.Cell().Element(c => c.Padding(6).Text(h.Descripcion ?? ""));
-                    }
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.ConstantColumn(70);
+                            columns.ConstantColumn(70);
+                            columns.ConstantColumn(120);
+                            columns.ConstantColumn(120);
+                            columns.ConstantColumn(90);
+                            columns.RelativeColumn();
+                        });
+
+                        /* ===== HEADER ===== */
+                        table.Header(header =>
+{
+    header.Cell().Element(c => c
+        .Padding(6)
+        .Background("#0d505a")
+        .AlignCenter()
+        .Text("History ID")
+        .Bold()
+        .FontColor(Colors.White)
+    );
+
+    header.Cell().Element(c => c
+        .Padding(6)
+        .Background("#0d505a")
+        .AlignCenter()
+        .Text("Case ID")
+        .Bold()
+        .FontColor(Colors.White)
+    );
+
+    header.Cell().Element(c => c
+        .Padding(6)
+        .Background("#0d505a")
+        .AlignCenter()
+        .Text("User")
+        .Bold()
+        .FontColor(Colors.White)
+    );
+
+    header.Cell().Element(c => c
+        .Padding(6)
+        .Background("#0d505a")
+        .AlignCenter()
+        .Text("Date")
+        .Bold()
+        .FontColor(Colors.White)
+    );
+
+    header.Cell().Element(c => c
+        .Padding(6)
+        .Background("#0d505a")
+        .AlignCenter()
+        .Text("Status")
+        .Bold()
+        .FontColor(Colors.White)
+    );
+
+    header.Cell().Element(c => c
+        .Padding(6)
+        .Background("#0d505a")
+        .AlignCenter()
+        .Text("Description")
+        .Bold()
+        .FontColor(Colors.White)
+    );
+});
+
+
+                        /* ===== ROWS ===== */
+                        bool alternate = false;
+
+                        foreach (var h in items)
+                        {
+                            var bg = alternate ? lightBg : "#FFFFFF";
+                            alternate = !alternate;
+
+                            DataCell(table, bg, h.HistorialId.ToString());
+                            DataCell(table, bg, h.ExpedienteId.ToString());
+                            DataCell(table, bg, $"{h.Usuario?.Nombre} {h.Usuario?.Apellido}");
+                            DataCell(table, bg, h.FechaModificacion?.ToString("yyyy-MM-dd HH:mm"));
+                            DataCell(table, bg, h.EstadoNuevo ?? "-");
+                            DataCell(table, bg, h.Descripcion ?? "-");
+                        }
+                    });
                 });
+
+                /* ================= FOOTER ================= */
+                page.Footer()
+                    .AlignCenter()
+                    .Text(txt =>
+                    {
+                        txt.Span("2CRRE Docs • ")
+                           .FontSize(9)
+                           .FontColor(Colors.Grey.Medium);
+
+                        txt.Span(DateTime.Now.ToString("yyyy-MM-dd HH:mm"))
+                           .FontSize(9)
+                           .FontColor(Colors.Grey.Medium);
+                    });
             });
         }).GeneratePdf();
 
         var base64 = Convert.ToBase64String(pdfBytes);
 
-        await JS.InvokeVoidAsync("downloadFile",
+        await JS.InvokeVoidAsync(
+            "downloadFile",
             $"History_{DateTime.Now:yyyyMMdd}.pdf",
             "application/pdf",
-            base64);
+            base64
+        );
     }
+
+
+
+    
+
+
+    static void DataCell(TableDescriptor table, string bg, string? text)
+    {
+        table.Cell().Element(c => c
+            .Padding(6)
+            .Background(bg)
+            .BorderBottom(1)
+            .BorderColor("#cfdede")
+            .Text(text ?? "-")
+        );
+    }
+
+
 }
 <style>
     .history-page {
