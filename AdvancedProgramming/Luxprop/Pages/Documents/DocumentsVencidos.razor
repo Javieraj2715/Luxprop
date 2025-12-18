@@ -3,11 +3,13 @@
 @using Microsoft.EntityFrameworkCore
 @inject LuxpropContext Db
 
-<PageTitle>Expired Documents</PageTitle>
 
+<DashboardHero Title="Expired Documents"
+               Subtitle="Manage expired documents." />
+               
 <div class="documents-page">
     <div class="page-header">
-        <h1>Expired Documents</h1>
+      
     </div>
 
     @if (expiredDocuments.Any())
