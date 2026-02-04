@@ -25,7 +25,7 @@
 
 <div class="documents-page">
 
-    <!-- FILTERS -->
+    <!-- FILTERS 
     <div class="filters">
         <select class="form-select">
             <option>-- All Types --</option>
@@ -37,7 +37,7 @@
             <option>-- All Status --</option>
         </select>
     </div>
-
+    -->
     <!-- UPLOAD CARD -->
     <div class="upload-card">
         <div class="upload-bar">
@@ -49,7 +49,7 @@
 
             <div class="file-cell">
                 <label class="file-label">File</label>
-                <InputFile OnChange="OnFileSelected" class="file-input" />
+                <InputFile OnChange="@OnFileSelected" class="file-input" />
 
 
                 @if (!string.IsNullOrWhiteSpace(selectedFileName))
@@ -72,14 +72,12 @@
                        @bind="expiration" />
             </div>
 
-            <div class="btn-cell">
-                <button class="btn-2cr"
-                        @onclick="UploadDocument"
-                        disabled="@(!canUpload)">
-                    Upload Document
-                </button>
-                <div class="btn-note">PDF, JPG, PNG</div>
-            </div>
+            <button type="button"
+                    class="btn-2cr"
+                    @onclick="UploadDocument"
+                    disabled="@(!canUpload)">
+                Upload Document
+            </button>
 
         </div>
     </div>
@@ -184,19 +182,17 @@
     }
     private async Task LoadDocuments()
     {
-        try
-        {
-            documents = await Task.Run(() => Db.Documentos.ToList());
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading documents: {ex.Message}");
-        }
+        documents = await Db.Documentos
+            .Include(d => d.Expediente)
+            .OrderByDescending(d => d.FechaCarga)
+            .ToListAsync();
     }
-    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    private Task OnFileSelected(InputFileChangeEventArgs e)
     {
         selectedFile = e.File;
         selectedFileName = e.File.Name;
+        StateHasChanged();
+        return Task.CompletedTask;
     }
 
     private async Task UploadDocument()
