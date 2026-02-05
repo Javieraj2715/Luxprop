@@ -1,185 +1,96 @@
 ﻿@page "/documents"
-
-@using Luxprop.Business.Services
 @using Luxprop.Data
 @using Luxprop.Data.Models
-@using Luxprop.Services
 @using Microsoft.EntityFrameworkCore
-@using Microsoft.AspNetCore.Components.Forms
-@inject DocumentoService DocumentoService
-@inject SessionService Session
-
-
-
 @inject LuxpropContext Db
 
 <PageTitle>Documents</PageTitle>
 
-<!-- HERO HEADER -->
 <DashboardHero Title="Documents"
-               Subtitle="Manage and upload case files, contracts, and related documentation."
-               
-               PrimaryUrl="/documents/create"
-               
+               Subtitle="View and filter documents uploaded from case files."
+               PrimaryUrl="/expedientes"
                SecondaryUrl="/expired-documents" />
 
 <div class="documents-page">
 
-    <!-- FILTERS 
+    <!-- FILTERS -->
     <div class="filters">
-        <select class="form-select">
-            <option>-- All Types --</option>
+        <input class="form-control" placeholder="Search by name..." @bind="filterName" />
+        <input class="form-control" placeholder="Search by case file code..." @bind="filterCaseCode" />
+
+        <select class="form-select" @bind="filterStatus">
+            <option value="">-- All Status --</option>
+            <option value="Activo">Active</option>
+            <option value="Inactivo">Inactive</option>
+            <option value="Expired">Expired</option>
         </select>
-        <select class="form-select">
-            <option>-- All Tags --</option>
-        </select>
-        <select class="form-select">
-            <option>-- All Status --</option>
-        </select>
-    </div>
-    -->
-    <!-- UPLOAD CARD -->
-    <div class="upload-card">
-        <div class="upload-bar">
-            <span class="upload-title">Upload document</span>
-            <span class="upload-hint">Files are stored securely</span>
-        </div>
 
-        <div class="upload-grid">
-
-            <div class="file-cell">
-                <label class="file-label">File</label>
-                <InputFile OnChange="@OnFileSelected" class="file-input" />
-
-
-                @if (!string.IsNullOrWhiteSpace(selectedFileName))
-                {
-                    <div class="file-name">@selectedFileName</div>
-                }
-            </div>
-
-            <div class="field-cell">
-                <label class="field-label">Tags</label>
-                <input class="form-control"
-                       placeholder="comma separated"
-                       @bind="tags" />
-            </div>
-
-            <div class="field-cell">
-                <label class="field-label">Expiration</label>
-                <input type="date"
-                       class="form-control"
-                       @bind="expiration" />
-            </div>
-
-            <button type="button"
-                    class="btn-2cr"
-                    @onclick="UploadDocument"
-                    disabled="@(!canUpload)">
-                Upload Document
-            </button>
-
-        </div>
+        <button type="button" class="btn btn-primary" @onclick="ApplyFilters">Apply</button>
+        <button type="button" class="btn btn-secondary" @onclick="ClearFilters">Clear</button>
     </div>
 
-    <!-- DOCUMENTS TABLE -->
+    <!-- TABLE -->
     <div class="table-wrap">
         <table class="table docs-table">
             <thead>
                 <tr>
                     <th>Name</th>
                     <th>Case File</th>
-                    <th>Tags</th>
                     <th>Status</th>
-                    <th class="actions-col"></th>
+                    <th>Expiration</th>
+                    <th>Uploaded</th>
                 </tr>
             </thead>
-
             <tbody>
                 @if (documents == null)
                 {
-                    <tr>
-                        <td colspan="4">
-                            <div class="state-box muted">
-                                Loading documents…
-                            </div>
-                        </td>
-                    </tr>
+                    <tr><td colspan="4">Loading…</td></tr>
                 }
                 else if (!documents.Any())
                 {
-                    <tr>
-                        <td colspan="4">
-                            <div class="state-box">
-                                No documents found
-                            </div>
-                        </td>
-                    </tr>
+                    <tr><td colspan="4">No documents found</td></tr>
                 }
                 else
                 {
                     @foreach (var doc in documents)
                     {
                         <tr>
-                            <td class="doc-name">@doc.Nombre</td>
-
+                            <td>@doc.Nombre</td>
                             <td>
                                 @if (doc.Expediente != null)
                                 {
-                                    <a class="link-2cr"
-                                       href="/expedientes/details/@doc.ExpedienteId">
-                                        @doc.Expediente.Codigo
-                                    </a>
+                                    <a href="/expedientes/details/@doc.ExpedienteId">@doc.Expediente.Codigo</a>
                                 }
                                 else
                                 {
-                                    <span class="text-muted">—</span>
+                                    <span>—</span>
                                 }
                             </td>
+                            <td>@doc.Estado</td>
+                            <td>@doc.FechaCarga</td>
+                            <td>@(doc.FechaVencimiento?.ToString("yyyy-MM-dd") ?? "—")</td>
 
-
-                            <td>
-                                <span class="tag-pill">General</span>
-                            </td>
-                            <td>Active</td>
-                            <td class="actions-col">
-                                <div class="row-actions">
-                                    <button class="btn btn-sm btn-2cr-outline">View</button>
-                                    <button class="btn btn-sm btn-2cr-danger"
-                                            @onclick="() => DeleteDocument(doc.DocumentoId)">
-                                        Delete
-                                    </button>
-
-                                </div>
-                            </td>
                         </tr>
                     }
                 }
             </tbody>
         </table>
     </div>
-
 </div>
 
 @code {
     private List<Documento>? documents;
 
-    private IBrowserFile? selectedFile;
-    private string? selectedFileName;
-
-    private string? tags;
-    private DateTime? expiration;
-
-    private bool canUpload => selectedFile != null;
+    // filters
+    private string filterName = "";
+    private string filterCaseCode = "";
+    private string filterStatus = "";
 
     protected override async Task OnInitializedAsync()
     {
-        documents = await Db.Documentos
-    .Include(d => d.Expediente)
-    .OrderByDescending(d => d.FechaCarga)
-    .ToListAsync();
-
+        await LoadDocuments();
     }
+
     private async Task LoadDocuments()
     {
         documents = await Db.Documentos
@@ -187,80 +98,36 @@
             .OrderByDescending(d => d.FechaCarga)
             .ToListAsync();
     }
-    private Task OnFileSelected(InputFileChangeEventArgs e)
+
+    private async Task ApplyFilters()
     {
-        selectedFile = e.File;
-        selectedFileName = e.File.Name;
-        StateHasChanged();
-        return Task.CompletedTask;
+        var q = Db.Documentos
+            .Include(d => d.Expediente)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filterName))
+            q = q.Where(d => d.Nombre.Contains(filterName));
+
+        if (!string.IsNullOrWhiteSpace(filterCaseCode))
+            q = q.Where(d => d.Expediente != null && d.Expediente.Codigo.Contains(filterCaseCode));
+
+        if (!string.IsNullOrWhiteSpace(filterStatus))
+            q = q.Where(d => d.Estado == filterStatus);
+
+        documents = await q
+            .OrderByDescending(d => d.FechaCarga)
+            .ToListAsync();
     }
 
-    private async Task UploadDocument()
+    private async Task ClearFilters()
     {
-
-        if (selectedFile == null) return;
-
-        try
-        {
-            using var stream = selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // máx 10MB
-            var url = await DocumentoService.UploadFileAsync(stream, selectedFile.Name, selectedFile.ContentType);
-
-            var newDoc = new Documento
-            {
-                Nombre = selectedFile.Name,
-                TipoDocumento = selectedFile.ContentType,
-                Estado = "Activo",
-                FechaCarga = DateOnly.FromDateTime(DateTime.UtcNow),
-                FechaVencimiento = expiration,
-        
-                UrlArchivo = url
-            };
-
-
-            Db.Documentos.Add(newDoc);
-            await Db.SaveChangesAsync();
-
-            selectedFile = null;
-            
-            await LoadDocuments();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error uploading document: {ex.Message}");
-        }
+        filterName = "";
+        filterCaseCode = "";
+        filterStatus = "";
+        await LoadDocuments();
     }
-
-
-    private async Task DeleteDocument(int id)
-    {
-        try
-        {
-            var doc = Db.Documentos.Find(id);
-            if (doc != null)
-            {
-                if (!string.IsNullOrEmpty(doc.UrlArchivo))
-                {
-                    var usuarioId = await Session.GetUserIdAsync();
-
-                    await DocumentoService.DeleteFileAsync(
-                        doc.UrlArchivo,
-                        doc.ExpedienteId,
-                        usuarioId
-                    );
-                }
-
-                Db.Documentos.Remove(doc);
-                await Db.SaveChangesAsync();
-                await LoadDocuments();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error deleting document: {ex.Message}");
-        }
-    }
-
 }
+
 
 <style>
 

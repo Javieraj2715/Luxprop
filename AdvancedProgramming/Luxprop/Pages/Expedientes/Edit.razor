@@ -55,14 +55,26 @@ else
                 <h5 class="fw-bold text-primary">Documents</h5>
                 <hr />
 
-                <InputFile OnChange="GuardarArchivoTemporal" class="form-control mb-2" />
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-6">
+                        <label class="form-label">Select file</label>
+                        <InputFile OnChange="@GuardarArchivoTemporal" class="form-control" />
+                        @if (!string.IsNullOrEmpty(nombreArchivoTemporal))
+                        {
+                            <small class="text-success">
+                                File ready to upload: @nombreArchivoTemporal (will be saved on Save Changes)
+                            </small>
+                        }
+                    </div>
 
-                @if (!string.IsNullOrEmpty(nombreArchivoTemporal))
-                {
-                    <small class="text-success">
-                        File ready to upload: @nombreArchivoTemporal (will be saved on Save Changes)
-                    </small>
-                }
+                    <div class="col-md-3">
+                        <label class="form-label">Expiration date</label>
+                        <InputDate @bind-Value="fechaVencimiento" class="form-control" />
+
+                       
+                    </div>
+
+                </div>
 
                 @if (documentos != null && documentos.Any())
                 {
@@ -71,6 +83,7 @@ else
                             <tr>
                                 <th>Name</th>
                                 <th>Date</th>
+                                <th>Expiration</th>
                                 <th>Status</th>
                                 <th class="text-center" style="width:150px;">Actions</th>
                             </tr>
@@ -82,26 +95,25 @@ else
                                 <tr>
                                     <td>@d.Nombre</td>
                                     <td>@d.FechaCarga?.ToString("yyyy-MM-dd")</td>
+                                    <td>@(d.FechaVencimiento?.ToString("yyyy-MM-dd") ?? "—")</td>
                                     <td>
                                         <span class="badge status-badge">@d.Estado</span>
                                     </td>
 
                                     <td class="text-center">
                                         <div class="btn-group-docs">
-
                                             @if (!string.IsNullOrEmpty(d.UrlArchivo))
                                             {
-                                                <a href="@d.UrlArchivo" target="_blank"
-                                                   class="btn-doc btn-doc-download">
+                                                <a href="@d.UrlArchivo" target="_blank" class="btn-doc btn-doc-download">
                                                     <i class="bi bi-download"></i> Download
                                                 </a>
                                             }
 
-                                            <button class="btn-doc btn-doc-delete"
+                                            <button type="button"
+                                                    class="btn-doc btn-doc-delete"
                                                     @onclick="() => EliminarDocumento(d.DocumentoId)">
                                                 <i class="bi bi-trash"></i> Delete
                                             </button>
-
                                         </div>
                                     </td>
                                 </tr>
@@ -114,6 +126,7 @@ else
                     <p class="text-muted">No documents uploaded yet.</p>
                 }
             </div>
+
 
 
             <div class="mt-3 text-end">
@@ -240,6 +253,7 @@ else
     private List<Documento>? documentos;
     private List<HistorialExpediente>? historial;
     private List<TareaTramite>? tareas;
+    private DateTime? fechaVencimiento; // viene del input type="date"
 
     private string descripcionHistorial = "";
     private TareaTramite nuevaTarea = new();
@@ -261,6 +275,7 @@ else
                                                  .OrderByDescending(h => h.FechaModificacion)
                                                  .ToListAsync();
     }
+   
 
     private void GuardarArchivoTemporal(InputFileChangeEventArgs e)
     {
@@ -314,12 +329,17 @@ else
                 Estado = "Activo",
                 UrlArchivo = url,                // 🔥 URL pública
                 ExpedienteId = expediente.ExpedienteId,
-                FechaVencimiento = null          // opcional: puedes agregar campo input si quieres
+                FechaVencimiento = fechaVencimiento        // opcional: puedes agregar campo input si quieres
             };
 
             Db.Documentos.Add(nuevoDoc);
 
             await DocumentoService.UpdateExpedienteStatusAsync(expediente.ExpedienteId, usuarioId);
+
+            archivoTemporal = null;
+            nombreArchivoTemporal = null;
+            fechaVencimiento = null;
+
         }
 
 

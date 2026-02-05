@@ -86,7 +86,7 @@ builder.Services.AddSignalR();
 
 // (Opcional) Firebase credencial por variable de entorno
 //var credentialPath = @"C:\ProyectoFinalGrupal\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
-var credentialPath = @"C:\Users\pepon\Documents\GitHub\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
+var credentialPath = @"C:\Users\pepon\Desktop\FIDELITAS\I Cuatri 2026\Implantacion\FirebaseKey\luxprop-3fc09-4e976e655f51.json";
 Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialPath);
 
 // ***** QuestPDF: licencia *****
