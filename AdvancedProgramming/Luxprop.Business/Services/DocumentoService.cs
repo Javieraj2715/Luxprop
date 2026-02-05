@@ -18,18 +18,33 @@ namespace Luxprop.Business.Services
             _historialRepository = historialRepository;
         }
 
+        private async Task<GoogleCredential> GetGoogleCredentialAsync()
+        {
+            // 1) Azure: JSON completo en App Settings
+            var firebaseJson = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS_JSON");
+            firebaseJson = string.IsNullOrWhiteSpace(firebaseJson) ? null : firebaseJson.Trim();
+
+            if (!string.IsNullOrEmpty(firebaseJson))
+                return GoogleCredential.FromJson(firebaseJson);
+
+            // 2) Local: usa GOOGLE_APPLICATION_CREDENTIALS (ruta al .json) o ADC
+            return await GoogleCredential.GetApplicationDefaultAsync();
+        }
+
+
         public async Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType)
         {
-            var credential = await GoogleCredential.GetApplicationDefaultAsync();
+            var credential = await GetGoogleCredentialAsync();
             var storageClient = await StorageClient.CreateAsync(credential);
+
             var objectName = $"documentos/{Guid.NewGuid()}_{fileName}";
 
             await storageClient.UploadObjectAsync(_bucketName, objectName, contentType, fileStream);
 
-            string publicUrl = $"https://firebasestorage.googleapis.com/v0/b/{_bucketName}/o/{Uri.EscapeDataString(objectName)}?alt=media";
-
-            return publicUrl;
+            return $"https://firebasestorage.googleapis.com/v0/b/{_bucketName}/o/{Uri.EscapeDataString(objectName)}?alt=media";
         }
+
+
 
         public async Task DeleteFileAsync(string fileUrl, int? expedienteId, int usuarioId)
         {
@@ -47,7 +62,11 @@ namespace Luxprop.Business.Services
                     segments[1].Replace("?alt=media", string.Empty)
                 );
 
-                var storageClient = await StorageClient.CreateAsync();
+                var credential = await GetGoogleCredentialAsync();
+                var storageClient = await StorageClient.CreateAsync(credential);
+
+
+
                 await storageClient.DeleteObjectAsync(_bucketName, objectName);
 
                 Console.WriteLine($"Deleted file: {objectName}");

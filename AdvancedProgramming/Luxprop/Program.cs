@@ -84,10 +84,30 @@ builder.Services.AddScoped<EmailService>();
 // SignalR
 builder.Services.AddSignalR();
 
-// (Opcional) Firebase credencial por variable de entorno
-//var credentialPath = @"C:\ProyectoFinalGrupal\Luxprop\AdvancedProgramming\Luxprop\App_Data\firebase-config.json";
-var credentialPath = @"C:\Users\pepon\Desktop\FIDELITAS\I Cuatri 2026\Implantacion\FirebaseKey\luxprop-3fc09-4e976e655f51.json";
-Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialPath);
+
+
+if (FirebaseApp.DefaultInstance == null)
+{
+    var firebaseJson = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS_JSON");
+
+    if (!string.IsNullOrWhiteSpace(firebaseJson))
+    {
+        // AZURE: JSON completo en App Settings
+        FirebaseApp.Create(new AppOptions
+        {
+            Credential = GoogleCredential.FromJson(firebaseJson)
+        });
+    }
+    else
+    {
+        // LOCAL: usa GOOGLE_APPLICATION_CREDENTIALS (ruta al archivo)
+        FirebaseApp.Create(new AppOptions
+        {
+            Credential = GoogleCredential.GetApplicationDefault()
+        });
+    }
+}
+
 
 // ***** QuestPDF: licencia *****
 QuestPDF.Settings.License = LicenseType.Community;
