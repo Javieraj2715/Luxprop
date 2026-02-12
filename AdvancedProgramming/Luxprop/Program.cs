@@ -101,16 +101,16 @@ if (FirebaseApp.DefaultInstance == null)
     else
     {
         // LOCAL: usa GOOGLE_APPLICATION_CREDENTIALS (ruta al archivo)
-        FirebaseApp.Create(new AppOptions
-        {
-            Credential = GoogleCredential.GetApplicationDefault()
-        });
+        //  FirebaseApp.Create(new AppOptions
+        //  {
+        //   Credential = GoogleCredential.GetApplicationDefault()
+        // });
+        }
     }
-}
 
 
-// ***** QuestPDF: licencia *****
-QuestPDF.Settings.License = LicenseType.Community;
+    // ***** QuestPDF: licencia *****
+    QuestPDF.Settings.License = LicenseType.Community;
 
 // 2) Construcción de la app
 var app = builder.Build();

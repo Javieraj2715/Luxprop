@@ -478,3 +478,6 @@ input[type="text"], select {
     margin-top: 0.6rem;
     line-height: 1.4;
 }
+.login-header .title {
+    white-space: nowrap;
+}
