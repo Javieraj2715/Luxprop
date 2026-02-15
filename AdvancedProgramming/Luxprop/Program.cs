@@ -100,11 +100,11 @@ if (FirebaseApp.DefaultInstance == null)
     }
     else
     {
-        // LOCAL: usa GOOGLE_APPLICATION_CREDENTIALS (ruta al archivo)
-        //  FirebaseApp.Create(new AppOptions
-        //  {
-        //   Credential = GoogleCredential.GetApplicationDefault()
-        // });
+         //LOCAL: usa GOOGLE_APPLICATION_CREDENTIALS (ruta al archivo)
+          FirebaseApp.Create(new AppOptions
+          {
+           Credential = GoogleCredential.GetApplicationDefault()
+         });
         }
     }
 
