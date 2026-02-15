@@ -3,7 +3,8 @@ using Google.Cloud.Storage.V1;
 using Luxprop.Data.Models;
 using Luxprop.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
-
+using Google.Apis.Auth.OAuth2.Responses;
+using System.Net.Http;
 namespace Luxprop.Business.Services
 {
     public class DocumentoService : IDocumentoService
@@ -29,6 +30,54 @@ namespace Luxprop.Business.Services
 
             // 2) Local: usa GOOGLE_APPLICATION_CREDENTIALS (ruta al .json) o ADC
             return await GoogleCredential.GetApplicationDefaultAsync();
+        }
+        private static ServiceAccountCredential GetServiceAccountCredential(GoogleCredential credential)
+        {
+            // Si viene como "GoogleCredential" envolviendo un "ServiceAccountCredential"
+            if (credential.UnderlyingCredential is ServiceAccountCredential sa)
+                return sa;
+
+            throw new InvalidOperationException(
+                "Signed URLs require a Service Account credential (JSON with private_key).");
+        }
+
+        public async Task<string> GetSignedDownloadUrlAsync(string fileUrlOrObjectName, int minutes = 10)
+        {
+            // 1) Obtener objectName (ej: documentos/uuid_archivo.pdf)
+            string objectName;
+
+            if (fileUrlOrObjectName.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                // Formato típico guardado por vos:
+                // https://firebasestorage.googleapis.com/v0/b/<bucket>/o/<objectName>?alt=media
+                var uri = new Uri(fileUrlOrObjectName);
+                var parts = uri.AbsolutePath.Split("/o/");
+                if (parts.Length < 2)
+                    throw new InvalidOperationException("Invalid Firebase file URL format.");
+
+                objectName = Uri.UnescapeDataString(parts[1]);
+            }
+            else
+            {
+                objectName = fileUrlOrObjectName;
+            }
+
+            // 2) Credencial (Azure JSON o local ADC)
+            var credential = await GetGoogleCredentialAsync();
+
+            // 3) Firmador: requiere ServiceAccountCredential
+            var saCredential = GetServiceAccountCredential(credential);
+            var signer = UrlSigner.FromServiceAccountCredential(saCredential);
+
+            // 4) Firmar (usar POSICIONAL para evitar el error del nombre del parámetro)
+            var signedUrl = signer.Sign(
+                 _bucketName,
+                 objectName,
+                 TimeSpan.FromMinutes(minutes),
+                 HttpMethod.Get
+            );
+
+            return signedUrl;
         }
 
 

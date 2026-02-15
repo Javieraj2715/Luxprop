@@ -2,7 +2,8 @@
 @using Luxprop.Data
 @using Luxprop.Data.Models
 @using Microsoft.EntityFrameworkCore
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
+
 
 <PageTitle>Documents</PageTitle>
 
@@ -93,7 +94,8 @@
 
     private async Task LoadDocuments()
     {
-        documents = await Db.Documentos
+        await using var db = await DbFactory.CreateDbContextAsync();
+        documents = await db.Documentos
             .Include(d => d.Expediente)
             .OrderByDescending(d => d.FechaCarga)
             .ToListAsync();
@@ -101,7 +103,8 @@
 
     private async Task ApplyFilters()
     {
-        var q = Db.Documentos
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var q = db.Documentos
             .Include(d => d.Expediente)
             .AsQueryable();
 

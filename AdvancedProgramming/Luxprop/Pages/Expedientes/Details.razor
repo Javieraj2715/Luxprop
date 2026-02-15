@@ -110,10 +110,11 @@ else
                                             <!-- Download -->
                                             @if (!string.IsNullOrWhiteSpace(d.UrlArchivo))
                                             {
-                                                <a class="btn btn-sm btn-outline-info"
-                                                   href="@d.UrlArchivo" target="_blank">
+                                                <button class="btn btn-sm btn-outline-info"
+                                                        @onclick="() => DownloadFile(d.UrlArchivo)">
                                                     <i class="bi bi-download"></i> Download
-                                                </a>
+                                                </button>
+
                                             }
 
                                             <!-- Delete -->
@@ -305,6 +306,11 @@ else
     }
 
     private void CloseModal() => showTaskModal = false;
+
+    private async Task DownloadFile(string url)
+    {
+        await JS.InvokeVoidAsync("forceDownload", url);
+    }
 
 
     private async Task SaveTaskAsync()

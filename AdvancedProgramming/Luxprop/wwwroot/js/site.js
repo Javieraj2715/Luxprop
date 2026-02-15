@@ -12,3 +12,14 @@ window.downloadFile = (fileName, contentType, base64Data) => {
     link.click();
     document.body.removeChild(link);
 };
+
+window.forceDownload = (url) => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = ""; // fuerza intento de descarga
+    a.target = "_blank"; // respaldo si el browser bloquea download cross-domain
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+};
