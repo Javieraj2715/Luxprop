@@ -3,7 +3,7 @@
 @using Luxprop.Data.Models
 @using Luxprop.Services
 @using Microsoft.EntityFrameworkCore
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject NavigationManager Navigation
 @inject SessionService SessionService
 
@@ -171,13 +171,14 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         // Asignar a la variable global
         role = NormalizeRole(await SessionService.GetUserRoleAsync());
 
         // ADMIN → cargar agentes
         if (role == "admin")
         {
-            agentes = await Db.Usuarios
+            agentes = await db.Usuarios
                 .Where(u => u.UsuarioRols
                     .Any(ur => ur.Rol.Nombre.ToLower() == "agente"
                             || ur.Rol.Nombre.ToLower() == "agent"))
@@ -218,10 +219,11 @@
 
     private async Task LoadData()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         try
         {
-            agents = Db.Usuarios.ToList();
-            locations = Db.Ubicacions.ToList();
+            agents = db.Usuarios.ToList();
+            locations = db.Ubicacions.ToList();
         }
         catch (Exception ex)
         {
@@ -232,14 +234,15 @@
 
     private async Task HandleSubmit()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         isLoading = true;
         errorMessage = string.Empty;
 
         try
         {
             property.MlsId = GenerateMlsId();
-            Db.Propiedads.Add(property);
-            await Db.SaveChangesAsync();
+            db.Propiedads.Add(property);
+            await db.SaveChangesAsync();
             Navigation.NavigateTo("/properties");
         }
         catch (Exception ex)

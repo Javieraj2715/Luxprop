@@ -3,7 +3,7 @@
 @using Microsoft.EntityFrameworkCore
 @inject IReminderService ReminderSvc
 @inject NavigationManager Nav
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider AuthStateProvider
 @using System.Security.Claims;
@@ -81,7 +81,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        propiedades = await Db.Propiedads.ToListAsync();
+        await using var db = await DbFactory.CreateDbContextAsync();
+        propiedades = await db.Propiedads.ToListAsync();
     }
 
     private async Task HandleValidSubmit()

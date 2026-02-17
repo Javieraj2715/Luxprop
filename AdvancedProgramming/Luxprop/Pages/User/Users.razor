@@ -4,7 +4,7 @@
 @using Luxprop.Models
 @using Luxprop.Services
 @using Microsoft.EntityFrameworkCore
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject SessionService SessionService
 @inject NavigationManager Navigation
 <DashboardHero Title="Users"
@@ -171,6 +171,7 @@ else
     // ---------------------------------------
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         if (!firstRender || firstPass) return;
         firstPass = true;
 
@@ -189,7 +190,7 @@ else
             return;
         }
 
-        allRoles = await Db.Rols.ToListAsync();
+        allRoles = await db.Rols.ToListAsync();
         await LoadUsers();
         StateHasChanged();
     }
@@ -229,10 +230,11 @@ else
     // ---------------------------------------
     private async Task LoadUsers()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         users = await (
-            from u in Db.Usuarios
-            join ur in Db.UsuarioRols on u.UsuarioId equals ur.UsuarioId
-            join r in Db.Rols on ur.RolId equals r.RolId
+            from u in db.Usuarios
+            join ur in db.UsuarioRols on u.UsuarioId equals ur.UsuarioId
+            join r in db.Rols on ur.RolId equals r.RolId
             select new CreateUserVM
             {
                 UsuarioID = u.UsuarioId,
@@ -264,11 +266,12 @@ else
 
     private async Task SaveUserChanges()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         try
         {
             if (selectedUser == null) return;
 
-            var dbUser = await Db.Usuarios.FindAsync(selectedUser.UsuarioID);
+            var dbUser = await db.Usuarios.FindAsync(selectedUser.UsuarioID);
             if (dbUser == null) return;
 
             dbUser.Nombre = selectedUser.Nombre;
@@ -277,13 +280,13 @@ else
             dbUser.Activo = selectedUser.Activo;
 
             // Update role
-            var userRol = Db.UsuarioRols.FirstOrDefault(ur => ur.UsuarioId == dbUser.UsuarioId);
+            var userRol = db.UsuarioRols.FirstOrDefault(ur => ur.UsuarioId == dbUser.UsuarioId);
             if (userRol == null)
-                Db.UsuarioRols.Add(new UsuarioRol { UsuarioId = dbUser.UsuarioId, RolId = selectedUser.RolId });
+                db.UsuarioRols.Add(new UsuarioRol { UsuarioId = dbUser.UsuarioId, RolId = selectedUser.RolId });
             else
                 userRol.RolId = selectedUser.RolId;
 
-            await Db.SaveChangesAsync();
+            await db.SaveChangesAsync();
             await LoadUsers();
 
             successMessage = "User updated successfully.";
@@ -297,22 +300,24 @@ else
 
     private async Task ChangeRole(int userId, string? newRole)
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         if (!int.TryParse(newRole, out int roleId)) return;
 
-        var userRol = Db.UsuarioRols.FirstOrDefault(ur => ur.UsuarioId == userId);
+        var userRol = db.UsuarioRols.FirstOrDefault(ur => ur.UsuarioId == userId);
         if (userRol != null)
             userRol.RolId = roleId;
 
-        await Db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 
     private async Task ToggleActive(int userId, bool isActive)
     {
-        var u = Db.Usuarios.FirstOrDefault(x => x.UsuarioId == userId);
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var u = db.Usuarios.FirstOrDefault(x => x.UsuarioId == userId);
         if (u != null)
         {
             u.Activo = isActive;
-            await Db.SaveChangesAsync();
+            await db.SaveChangesAsync();
         }
     }
 

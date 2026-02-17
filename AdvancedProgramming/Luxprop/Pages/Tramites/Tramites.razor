@@ -1,7 +1,7 @@
 ﻿@page "/tramites"
 @using Luxprop.Data.Models
 @using Microsoft.EntityFrameworkCore
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 
 <DashboardHero Title="Tasks"
                Subtitle="" />
@@ -102,12 +102,14 @@
 
     private async Task LoadTasks()
     {
-        tasks = await Db.TareaTramites.ToListAsync();
+        await using var db = await DbFactory.CreateDbContextAsync();
+        tasks = await db.TareaTramites.ToListAsync();
     }
 
-    private void LoadCases()
+    private async void LoadCases()
     {
-        availableCases = Db.TareaTramites
+        await using var db = await DbFactory.CreateDbContextAsync();
+        availableCases = db.TareaTramites
             .Select(t => t.ExpedienteId)
             .Distinct()
             .OrderBy(x => x)
@@ -126,9 +128,10 @@
         ApplyFilters();
     }
 
-    private void ApplyFilters()
+    private async void ApplyFilters()
     {
-        var query = Db.TareaTramites.AsQueryable();
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var query = db.TareaTramites.AsQueryable();
 
         if (!string.IsNullOrEmpty(selectedStatus))
             query = query.Where(t => t.Estado == selectedStatus);

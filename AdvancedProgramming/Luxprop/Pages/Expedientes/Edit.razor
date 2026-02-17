@@ -2,7 +2,7 @@
 @using Luxprop.Business.Services
 @using Luxprop.Data.Models
 @using Microsoft.EntityFrameworkCore
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject NavigationManager Navigation
 @inject Luxprop.Services.SessionService Session
 @inject IDocumentoService DocumentoService
@@ -262,16 +262,17 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        expediente = await Db.Expedientes
+        await using var db = await DbFactory.CreateDbContextAsync();
+        expediente = await db.Expedientes
             .Include(e => e.Cliente).ThenInclude(c => c.Usuario)
             .Include(e => e.Documentos)
             .FirstOrDefaultAsync(e => e.ExpedienteId == ExpedienteId);
 
         documentos = expediente?.Documentos.ToList();
 
-        tareas = await Db.TareaTramites.Where(t => t.ExpedienteId == ExpedienteId).ToListAsync();
+        tareas = await db.TareaTramites.Where(t => t.ExpedienteId == ExpedienteId).ToListAsync();
 
-        historial = await Db.HistorialExpedientes.Where(h => h.ExpedienteId == ExpedienteId)
+        historial = await db.HistorialExpedientes.Where(h => h.ExpedienteId == ExpedienteId)
                                                  .OrderByDescending(h => h.FechaModificacion)
                                                  .ToListAsync();
     }
@@ -285,7 +286,7 @@ else
 
     private async Task GuardarCambios()
     {
-
+        await using var db = await DbFactory.CreateDbContextAsync();
         int usuarioId = await Session.GetUserIdAsync();
 
 
@@ -295,10 +296,10 @@ else
         }
 
         // Save expediente
-        Db.Expedientes.Update(expediente!);
+        db.Expedientes.Update(expediente!);
 
         // Save history
-        Db.HistorialExpedientes.Add(new HistorialExpediente
+        db.HistorialExpedientes.Add(new HistorialExpediente
         {
             ExpedienteId = expediente!.ExpedienteId,
             UsuarioId = usuarioId,
@@ -332,7 +333,7 @@ else
                 FechaVencimiento = fechaVencimiento        // opcional: puedes agregar campo input si quieres
             };
 
-            Db.Documentos.Add(nuevoDoc);
+            db.Documentos.Add(nuevoDoc);
 
             await DocumentoService.UpdateExpedienteStatusAsync(expediente.ExpedienteId, usuarioId);
 
@@ -343,12 +344,13 @@ else
         }
 
 
-        await Db.SaveChangesAsync();
+        await db.SaveChangesAsync();
         Navigation.NavigateTo($"/expedientes/details/{expediente.ExpedienteId}");
     }
 
     private async Task UpdateTaskStatus(TareaTramite task)
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         // Si se marca como Done y no tiene fecha
         if (task.Estado == "Done" && task.FechaCierre == null)
         {
@@ -361,16 +363,17 @@ else
             task.FechaCierre = null;
         }
 
-        Db.TareaTramites.Update(task);
-        await Db.SaveChangesAsync();
+        db.TareaTramites.Update(task);
+        await db.SaveChangesAsync();
     }
 
 
     private async Task EliminarDocumento(int id)
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         int usuarioId = await Session.GetUserIdAsync();
 
-        var doc = await Db.Documentos.FindAsync(id);
+        var doc = await db.Documentos.FindAsync(id);
         if (doc == null) return;
 
         if (!string.IsNullOrEmpty(doc.UrlArchivo))
@@ -378,10 +381,10 @@ else
             await DocumentoService.DeleteFileAsync(doc.UrlArchivo, doc.ExpedienteId, usuarioId);
         }
 
-        Db.Documentos.Remove(doc);
-        await Db.SaveChangesAsync();
+        db.Documentos.Remove(doc);
+        await db.SaveChangesAsync();
 
-        documentos = await Db.Documentos
+        documentos = await db.Documentos
             .Where(d => d.ExpedienteId == ExpedienteId)
             .ToListAsync();
 
@@ -391,6 +394,7 @@ else
 
     private async Task AgregarTarea()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         nuevaTarea.ExpedienteId = ExpedienteId;
         nuevaTarea.FechaInicio = DateTime.Now;
 
@@ -400,10 +404,10 @@ else
             nuevaTarea.FechaCierre = DateTime.Now;
         }
 
-        Db.TareaTramites.Add(nuevaTarea);
-        await Db.SaveChangesAsync();
+        db.TareaTramites.Add(nuevaTarea);
+        await db.SaveChangesAsync();
 
-        tareas = await Db.TareaTramites
+        tareas = await db.TareaTramites
             .Where(t => t.ExpedienteId == ExpedienteId)
             .ToListAsync();
 
@@ -413,12 +417,13 @@ else
 
     private async Task EliminarTarea(int id)
     {
-        var tarea = await Db.TareaTramites.FindAsync(id);
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var tarea = await db.TareaTramites.FindAsync(id);
         if (tarea != null)
         {
-            Db.TareaTramites.Remove(tarea);
-            await Db.SaveChangesAsync();
-            tareas = await Db.TareaTramites.Where(t => t.ExpedienteId == ExpedienteId).ToListAsync();
+            db.TareaTramites.Remove(tarea);
+            await db.SaveChangesAsync();
+            tareas = await db.TareaTramites.Where(t => t.ExpedienteId == ExpedienteId).ToListAsync();
         }
     }
 

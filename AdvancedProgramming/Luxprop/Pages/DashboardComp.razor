@@ -1,7 +1,8 @@
 ﻿@page "/dashboardcomp"
 @using Luxprop.Data
 @using Luxprop.Data.Models
-@inject LuxpropContext Db
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject Luxprop.Services.SessionService Session
 @inject NavigationManager Nav
 
@@ -117,6 +118,7 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         if (!firstRender || firstPass) return;
         firstPass = true;
 
@@ -141,7 +143,7 @@ else
         var userId = await Session.GetUserIdAsync();
 
         // 🔹 Obtener expedientes donde el buyer está asignado
-        var buyerExpedientes = Db.Expedientes
+        var buyerExpedientes = db.Expedientes
             .Where(e => e.ClienteId == userId && e.PropiedadId != null)
             .ToList();
 
@@ -158,7 +160,7 @@ else
         }
         else
         {
-            recentProperties = Db.Propiedads
+            recentProperties = db.Propiedads
                 .Where(p => buyerPropIds.Contains(p.PropiedadId))
                 .OrderByDescending(p => p.PropiedadId)
                 .ToList();

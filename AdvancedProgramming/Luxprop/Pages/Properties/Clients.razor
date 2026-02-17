@@ -3,7 +3,7 @@
 @using Microsoft.EntityFrameworkCore
 @using Luxprop.Services
 
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject SessionService Session
 
 <PageTitle>Clientes</PageTitle>
@@ -59,8 +59,9 @@ else
 
     private async Task LoadClientsAsync()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         // Admin ve todo; otros pueden filtrarse si tu modelo lo soporta
-        IQueryable<Cliente> q = Db.Clientes
+        IQueryable<Cliente> q = db.Clientes
             .Include(c => c.Usuario);
 
         // Si en tu esquema tienes relación con Agente, aquí aplicas el filtro

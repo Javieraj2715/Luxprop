@@ -1,7 +1,7 @@
 ﻿@page "/graficos"
 @using Luxprop.Data.Models
 @using Microsoft.EntityFrameworkCore
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 
 <DashboardHero Title="General Summary"
                Subtitle="" />
@@ -304,9 +304,10 @@
 
     private async Task LoadDocuments()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         var today = DateTime.Today;
         // La conexión a la DB y la lógica de conteo es la misma.
-        var docs = await Db.Set<Documento>().ToListAsync();
+        var docs = await db.Set<Documento>().ToListAsync();
 
         completed = docs.Count(d => d.Estado == "Completado");
         pending = docs.Count(d => d.Estado == "Activo" || d.Estado == "En revisión");
@@ -330,8 +331,9 @@
 
     private async Task LoadTasks()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         // La conexión a la DB y la lógica de conteo es la misma.
-        var tasks = await Db.Set<TareaTramite>().ToListAsync();
+        var tasks = await db.Set<TareaTramite>().ToListAsync();
 
         tasksDone = tasks.Count(t => t.Estado == "Done");
         tasksPending = tasks.Count(t => t.Estado == "Pending");

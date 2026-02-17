@@ -7,7 +7,7 @@
 @using Luxprop.Data.Models
 @using Luxprop.Models
 @using Luxprop.Services
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject PasswordHelper PasswordHelper
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
@@ -88,6 +88,7 @@
 
     private async Task HandleLogin()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         isLoading = true;
         errorMessage = string.Empty;
 
@@ -101,7 +102,7 @@
 
             var hashed = PasswordHelper.HashPassword(loginModel.Password);
 
-            var user = await Db.Usuarios
+            var user = await db.Usuarios
                 .Include(u => u.UsuarioRols)
                     .ThenInclude(ur => ur.Rol)
                 .FirstOrDefaultAsync(u => u.Email == loginModel.Email && u.Password == hashed);

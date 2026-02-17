@@ -3,7 +3,8 @@
 @using Luxprop.Data.Models
 @using Luxprop.Models
 @using Luxprop.Services
-@inject LuxpropContext Db
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject PasswordHelper PasswordHelper
 @inject AuditoriaService AuditoriaService
 @inject NavigationManager Navigation
@@ -174,21 +175,22 @@
 
     private async Task LoadRoles()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         try
         {
-            roles = Db.Rols.ToList();
+            roles = db.Rols.ToList();
 
             // If empty, seed in English
             if (roles.Count == 0)
             {
-                Db.Rols.AddRange(
+                db.Rols.AddRange(
                     new Rol { Nombre = "admin" },
                     new Rol { Nombre = "Agent" },
                     new Rol { Nombre = "Seller" },
                     new Rol { Nombre = "Buyer" }
                 );
-                await Db.SaveChangesAsync();
-                roles = Db.Rols.ToList();
+                await db.SaveChangesAsync();
+                roles = db.Rols.ToList();
             }
 
             // If you previously had Spanish names, normalize them to English once:
@@ -209,7 +211,7 @@
                     r.Nombre = en; changed = true;
                 }
             }
-            if (changed) { await Db.SaveChangesAsync(); roles = Db.Rols.ToList(); }
+            if (changed) { await db.SaveChangesAsync(); roles = db.Rols.ToList(); }
         }
         catch (Exception ex)
         {
@@ -223,6 +225,7 @@
 
     private async Task HandleSubmit()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         isLoading = true;
         errorMessage = string.Empty;
         successMessage = string.Empty;
@@ -241,7 +244,7 @@
             }
 
             // Email único
-            var exists = Db.Usuarios.Any(u => u.Email == userModel.Email);
+            var exists = db.Usuarios.Any(u => u.Email == userModel.Email);
             if (exists)
             {
                 errorMessage = "This email is already in use.";
@@ -259,20 +262,20 @@
                 Activo = userModel.Activo
             };
 
-            Db.Usuarios.Add(usuario);
-            await Db.SaveChangesAsync();
+            db.Usuarios.Add(usuario);
+            await db.SaveChangesAsync();
 
             // Asignar rol
-            Db.UsuarioRols.Add(new UsuarioRol
+            db.UsuarioRols.Add(new UsuarioRol
             {
                 UsuarioId = usuario.UsuarioId,
                 RolId = userModel.RolId
             });
 
-            await Db.SaveChangesAsync();
+            await db.SaveChangesAsync();
 
             // 🔥 SI EL ROL ES BUYER → CREAR CLIENTE AUTOMÁTICAMENTE
-            var buyerRoleId = Db.Rols.FirstOrDefault(r => r.Nombre.ToLower() == "buyer")?.RolId;
+            var buyerRoleId = db.Rols.FirstOrDefault(r => r.Nombre.ToLower() == "buyer")?.RolId;
 
             if (userModel.RolId == buyerRoleId)
             {
@@ -284,12 +287,12 @@
 
                 };
 
-                Db.Clientes.Add(cliente);
-                await Db.SaveChangesAsync();
+                db.Clientes.Add(cliente);
+                await db.SaveChangesAsync();
             }
 
             // Registrar auditoría
-            var rol = Db.Rols.Find(userModel.RolId);
+            var rol = db.Rols.Find(userModel.RolId);
             AuditoriaService.RegistrarAuditoria(
                 usuario.UsuarioId,
                 "Crear",

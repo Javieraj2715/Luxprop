@@ -23,3 +23,5 @@ window.forceDownload = (url) => {
     a.click();
     a.remove();
 };
+
+

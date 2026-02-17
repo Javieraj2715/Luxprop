@@ -1,7 +1,8 @@
 ﻿@page "/properties/edit/{id:int}"
 @using Luxprop.Data
 @using Luxprop.Data.Models
-@inject LuxpropContext Db
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -166,12 +167,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         try
         {
-            agents = Db.Usuarios.ToList();
-            locations = Db.Ubicacions.ToList();
+            agents = db.Usuarios.ToList();
+            locations = db.Ubicacions.ToList();
 
-            property = await Db.Propiedads.FindAsync(id);
+            property = await db.Propiedads.FindAsync(id);
 
             if (property == null)
             {
@@ -208,13 +210,14 @@
 
     private async Task HandleSubmit()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         isSaving = true;
         errorMessage = string.Empty;
 
         try
         {
-            Db.Propiedads.Update(property);
-            await Db.SaveChangesAsync();
+            db.Propiedads.Update(property);
+            await db.SaveChangesAsync();
             Navigation.NavigateTo("/properties");
         }
         catch (Exception ex)

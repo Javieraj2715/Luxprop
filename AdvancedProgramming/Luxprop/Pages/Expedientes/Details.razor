@@ -4,7 +4,7 @@
 @using Microsoft.EntityFrameworkCore
 @using QuestPDF.Fluent
 @using QuestPDF.Helpers
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -268,22 +268,23 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         // Load Case File + related data
-        expediente = await Db.Expedientes
+        expediente = await db.Expedientes
             .Include(e => e.Propiedad)
             .Include(e => e.Cliente).ThenInclude(c => c.Usuario)
             .Include(e => e.Agente)
             .Include(e => e.Documentos)
             .FirstOrDefaultAsync(e => e.ExpedienteId == ExpedienteId);
 
-        historial = await Db.HistorialExpedientes
+        historial = await db.HistorialExpedientes
             .Include(h => h.Usuario) 
             .Where(h => h.ExpedienteId == ExpedienteId)
             .OrderByDescending(h => h.FechaModificacion)
             .ToListAsync();
 
 
-        tasks = await Db.TareaTramites
+        tasks = await db.TareaTramites
             .Where(t => t.ExpedienteId == ExpedienteId)
             .OrderByDescending(t => t.FechaInicio)
             .ToListAsync();
@@ -338,10 +339,11 @@ else
 
     private async Task SaveDueDate(Documento d)
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         try
         {
-            Db.Documentos.Update(d);
-            await Db.SaveChangesAsync();
+            db.Documentos.Update(d);
+            await db.SaveChangesAsync();
 
             Console.WriteLine($"Due date updated for document {d.DocumentoId}");
         }
@@ -353,6 +355,7 @@ else
 
     private async Task ConfirmDeleteDocument(Documento d)
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         bool confirm = await JS.InvokeAsync<bool>("confirm",
             $"Are you sure you want to delete '{d.Nombre}'?");
 
@@ -370,8 +373,8 @@ else
             }
 
             // borrar registro DB
-            Db.Documentos.Remove(d);
-            await Db.SaveChangesAsync();
+            db.Documentos.Remove(d);
+            await db.SaveChangesAsync();
 
             // refrescar la data
             expediente.Documentos.Remove(d);

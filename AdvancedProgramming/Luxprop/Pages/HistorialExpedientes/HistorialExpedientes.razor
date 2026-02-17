@@ -5,7 +5,7 @@
 @using Microsoft.EntityFrameworkCore
 @using QuestPDF.Fluent
 @using QuestPDF.Helpers
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject IJSRuntime JS
 @inject Luxprop.Services.SessionService Session
 
@@ -118,13 +118,14 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         int userId = await Session.GetUserIdAsync();
 
         await Session.LoadUserAsync();
         var roleRaw = await Session.GetUserRoleAsync();
         var role = NormalizeRole(roleRaw);
 
-        var query = Db.HistorialExpedientes
+        var query = db.HistorialExpedientes
             .Include(h => h.Usuario)
             .OrderByDescending(h => h.FechaModificacion)
             .AsQueryable();
@@ -135,7 +136,7 @@
         history = await query.ToListAsync();
         filteredHistory = history;
 
-        users = await Db.Usuarios
+        users = await db.Usuarios
             .Where(u => history.Select(h => h.UsuarioId).Contains(u.UsuarioId))
             .ToListAsync();
 

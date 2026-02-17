@@ -1,7 +1,7 @@
 ﻿@page "/documentsVencidos"
 @using Luxprop.Data.Models
 @using Microsoft.EntityFrameworkCore
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 
 
 <DashboardHero Title="Expired Documents"
@@ -117,8 +117,8 @@
     private async Task LoadDocuments()
     {
         var today = DateTime.Today;
-
-        expiredDocuments = await Db.Documentos
+        await using var db = await DbFactory.CreateDbContextAsync();
+        expiredDocuments = await db.Documentos
             .Where(d => d.FechaVencimiento != null && d.FechaVencimiento < today)
             .OrderBy(d => d.FechaVencimiento)
             .ToListAsync();
@@ -126,24 +126,26 @@
 
     private async Task DeleteDocument(int id)
     {
-        var doc = await Db.Documentos.FindAsync(id);
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var doc = await db.Documentos.FindAsync(id);
 
         if (doc != null)
         {
-            Db.Documentos.Remove(doc);
-            await Db.SaveChangesAsync();
+            db.Documentos.Remove(doc);
+            await db.SaveChangesAsync();
             await LoadDocuments();
         }
     }
 
     private async Task ChangeStatus(int documentoId, string newStatus)
     {
-        var doc = await Db.Documentos.FindAsync(documentoId);
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var doc = await db.Documentos.FindAsync(documentoId);
 
         if (doc != null)
         {
             doc.Estado = newStatus;
-            await Db.SaveChangesAsync();
+            await db.SaveChangesAsync();
             await LoadDocuments();
         }
     }

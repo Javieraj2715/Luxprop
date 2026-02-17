@@ -1,6 +1,6 @@
 ﻿@page "/expedientes/create/{PropiedadId:int}"
 @using Luxprop.Data.Models
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject NavigationManager Navigation
 @inject Luxprop.Services.SessionService Session
 @using Microsoft.EntityFrameworkCore
@@ -97,8 +97,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         // 🔹 Cargar la propiedad con su agente asignado
-        var propiedad = await Db.Propiedads
+        var propiedad = await db.Propiedads
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.PropiedadId == PropiedadId);
 
@@ -125,7 +126,7 @@
         newCase.Prioridad = "Normal";
 
         // ▶️ Traer SOLO Buyeres desde la tabla Cliente
-        Buyers = await Db.Clientes
+        Buyers = await db.Clientes
             .Include(c => c.Usuario)
             .Where(c => c.Usuario.UsuarioRols.Any(r => r.RolId == 4))  // Rol Buyer
             .ToListAsync();
@@ -133,11 +134,12 @@
 
     private async Task SaveCase()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         if (string.IsNullOrWhiteSpace(newCase.Codigo) || newCase.ClienteId == 0)
             return;
 
-        Db.Expedientes.Add(newCase);
-        await Db.SaveChangesAsync();
+        db.Expedientes.Add(newCase);
+        await db.SaveChangesAsync();
 
         Navigation.NavigateTo($"/expedientes/details/{newCase.ExpedienteId}");
     }

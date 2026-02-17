@@ -1,7 +1,8 @@
 ﻿@page "/dashboardagent"
 @using Luxprop.Data
 @using Luxprop.Data.Models
-@inject LuxpropContext Db
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject Luxprop.Services.SessionService Session
 @inject NavigationManager Nav
 
@@ -196,6 +197,7 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         if (!firstRender || firstPass) return;
         firstPass = true;
 
@@ -228,7 +230,7 @@ else
 
 
         // 🟩 FILTRAR PROPIEDADES DEL AGENTE
-        var allProps = Db.Propiedads
+        var allProps = db.Propiedads
             .Where(p => p.AgenteId == userId)
             .OrderByDescending(p => p.PropiedadId)
             .ToList();
@@ -240,7 +242,7 @@ else
         // 🟧 FILTRAR CASOS SOLO DE PROPIEDADES DEL AGENTE
         var propIds = allProps.Select(p => p.PropiedadId).ToList();
 
-        var allCases = Db.Expedientes
+        var allCases = db.Expedientes
             .Where(e => propIds.Contains(e.PropiedadId ?? 0))
             .OrderByDescending(e => e.ExpedienteId)
             .ToList();
@@ -250,7 +252,7 @@ else
         recentCases = allCases;
 
         // 🟪 Documentos próximos a vencer
-        docsToExpire = Db.Documentos
+        docsToExpire = db.Documentos
             .Where(d => d.FechaVencimiento.HasValue &&
                         d.FechaVencimiento.Value.Date >= DateTime.Now.Date &&
                         d.FechaVencimiento.Value.Date <= DateTime.Now.AddDays(7).Date)
@@ -258,7 +260,7 @@ else
             .ToList();
 
         // 🟦 Reminders próximos
-        upcomingReminders = Db.Recordatorios
+        upcomingReminders = db.Recordatorios
             .Where(r =>
                 r.Inicio >= DateTime.Now &&
                 r.Inicio <= DateTime.Now.AddDays(7))

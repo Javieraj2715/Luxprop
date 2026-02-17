@@ -2,7 +2,7 @@
 @using Microsoft.EntityFrameworkCore
 @using Luxprop.Services
 
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject SessionService Session
 
 <PageTitle>Properties - Luxprop</PageTitle>
@@ -64,7 +64,8 @@
 
     private async Task LoadAsync()
     {
-        IQueryable<Propiedad> query = Db.Propiedads.AsNoTracking();
+        await using var db = await DbFactory.CreateDbContextAsync();
+        IQueryable<Propiedad> query = db.Propiedads.AsNoTracking();
 
         // Optional filtering by agent (if your model has agent assignment)
         // if (!string.Equals(currentRole, "Admin", StringComparison.OrdinalIgnoreCase) && currentUserId.HasValue)

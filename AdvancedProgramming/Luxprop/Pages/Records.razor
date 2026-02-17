@@ -5,7 +5,7 @@
 @using Microsoft.EntityFrameworkCore
 @using Luxprop.Services
 
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject SessionService Session
 @inject NavigationManager Nav
 
@@ -211,6 +211,7 @@
 
     private async Task LoadCases()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         isLoading = true;
         StateHasChanged();
 
@@ -221,7 +222,7 @@
             currentUserId = await Session.GetUserIdAsync();
         }
 
-        var q = Db.Expedientes
+        var q = db.Expedientes
             .Include(e => e.Propiedad)
             .Include(e => e.Cliente).ThenInclude(c => c.Usuario)
             .Include(e => e.Documentos)
