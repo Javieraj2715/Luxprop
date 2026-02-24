@@ -6,6 +6,7 @@
 @inject NavigationManager Navigation
 @inject Luxprop.Services.SessionService Session
 @inject IDocumentoService DocumentoService
+@inject IJSRuntime JS
 
 
 <h3 class="mb-3">Edit Case File</h3>
@@ -289,31 +290,35 @@ else
         await using var db = await DbFactory.CreateDbContextAsync();
         int usuarioId = await Session.GetUserIdAsync();
 
+        // 1) Traer el expediente real desde BD en ESTE contexto
+        var expDb = await db.Expedientes
+            .FirstOrDefaultAsync(e => e.ExpedienteId == ExpedienteId);
 
-        if (expediente != null)
+        if (expDb == null)
         {
-            expediente.UltimaActualizacion = DateTime.Now;
+            await JS.InvokeVoidAsync("alert", "The case file was modified or deleted. Please reload.");
+            return;
         }
 
-        // Save expediente
-        db.Expedientes.Update(expediente!);
+        // 2) Copiar SOLO campos editables desde tu modelo (expediente) a expDb
+        expDb.TipoOcupacion = expediente!.TipoOcupacion;
+        expDb.Estado = expediente!.Estado;
+        expDb.FechaCierre = expediente!.FechaCierre;
+        expDb.UltimaActualizacion = DateTime.Now;
 
-        // Save history
+        // 3) Historia
         db.HistorialExpedientes.Add(new HistorialExpediente
         {
-            ExpedienteId = expediente!.ExpedienteId,
+            ExpedienteId = expDb.ExpedienteId,
             UsuarioId = usuarioId,
             FechaModificacion = DateTime.Now,
-            EstadoNuevo = expediente.Estado,
+            EstadoNuevo = expDb.Estado,
             Descripcion = string.IsNullOrWhiteSpace(descripcionHistorial) ? "Case updated." : descripcionHistorial
         });
 
-        // Save document if exists
-        // 🔥 NUEVO: Subir documento a Firebase usando DocumentoService
+        // 4) Si hay archivo nuevo, lo subís y lo insertás
         if (archivoTemporal != null)
         {
-            
-
             using var stream = archivoTemporal.OpenReadStream(10_000_000);
 
             string url = await DocumentoService.UploadFileAsync(
@@ -322,30 +327,26 @@ else
                 archivoTemporal.ContentType
             );
 
-            var nuevoDoc = new Documento
+            db.Documentos.Add(new Documento
             {
                 Nombre = archivoTemporal.Name,
                 TipoDocumento = archivoTemporal.ContentType,
                 FechaCarga = DateOnly.FromDateTime(DateTime.Now),
                 Estado = "Activo",
-                UrlArchivo = url,                // 🔥 URL pública
-                ExpedienteId = expediente.ExpedienteId,
-                FechaVencimiento = fechaVencimiento        // opcional: puedes agregar campo input si quieres
-            };
+                UrlArchivo = url,
+                ExpedienteId = expDb.ExpedienteId,
+                FechaVencimiento = fechaVencimiento
+            });
 
-            db.Documentos.Add(nuevoDoc);
-
-            await DocumentoService.UpdateExpedienteStatusAsync(expediente.ExpedienteId, usuarioId);
+            await DocumentoService.UpdateExpedienteStatusAsync(expDb.ExpedienteId, usuarioId);
 
             archivoTemporal = null;
             nombreArchivoTemporal = null;
             fechaVencimiento = null;
-
         }
 
-
         await db.SaveChangesAsync();
-        Navigation.NavigateTo($"/expedientes/details/{expediente.ExpedienteId}");
+        Navigation.NavigateTo($"/expedientes/details/{expDb.ExpedienteId}");
     }
 
     private async Task UpdateTaskStatus(TareaTramite task)
@@ -389,6 +390,13 @@ else
             .ToListAsync();
 
         await DocumentoService.UpdateExpedienteStatusAsync(ExpedienteId, usuarioId);
+
+        expediente = await db.Expedientes
+    .Include(e => e.Cliente).ThenInclude(c => c.Usuario)
+    .Include(e => e.Documentos)
+    .FirstOrDefaultAsync(e => e.ExpedienteId == ExpedienteId);
+
+        documentos = expediente?.Documentos.ToList();
     }
 
 
