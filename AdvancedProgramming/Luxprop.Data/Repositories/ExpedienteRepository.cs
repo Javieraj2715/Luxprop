@@ -31,7 +31,7 @@ namespace Luxprop.Data.Repositories
 
                 // *** Cliente -> Usuario (importante) ***
                 .Include(e => e.Cliente)
-                    .ThenInclude(c => c.Usuario)
+                    
 
                 // Agente (que también es Usuario)
                 .Include(e => e.Agente)
