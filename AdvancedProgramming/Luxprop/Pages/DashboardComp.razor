@@ -42,7 +42,11 @@ else
                             @onclick="@(() => Nav.NavigateTo("/properties"))">
                         <i class="bi bi-search me-1"></i> Explore Properties
                     </button>
-                   
+
+                    <button class="btn btn-outline-light btn-sm px-3"
+                            @onclick="@(() => Nav.NavigateTo("/expedientes"))">
+                        <i class="bi bi-folder2-open me-1"></i> My Cases
+                    </button>
                 </div>
             </div>
         </div>
@@ -53,14 +57,15 @@ else
             <!-- Quick Actions -->
             <div class="col-lg-4">
                 <div class="dashboard-card h-100">
-                    <div class="card-header">
-                        <h3 class="h5 mb-0">Quick actions</h3>
-                    </div>
                     <div class="card-content d-grid gap-2">
                         <a href="/properties" class="btn btn-primary w-100">
                             <i class="bi bi-search me-1"></i> Search properties
                         </a>
-                        
+
+                        <a href="/expedientes" class="btn btn-outline-success w-100">
+                            <i class="bi bi-folder2-open me-1"></i> My Cases
+                        </a>
+
                         <a href="/chat" class="btn btn-outline-info w-100">
                             <i class="bi bi-chat-left-text me-1"></i> Contact agent
                         </a>
@@ -144,8 +149,11 @@ else
 
         // 🔹 Obtener expedientes donde el buyer está asignado
         var buyerExpedientes = db.Expedientes
-            .Where(e => e.ClienteId == userId && e.PropiedadId != null)
-            .ToList();
+    .Include(e => e.Cliente)
+    .Where(e => e.Cliente != null &&
+                e.Cliente.UsuarioId == userId &&
+                e.PropiedadId != null)
+    .ToList();
 
         // 🔹 Extraer IDs de propiedades asignadas al buyer
         var buyerPropIds = buyerExpedientes

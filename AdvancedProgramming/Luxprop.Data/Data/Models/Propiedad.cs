@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Luxprop.Data.Data.Models;
 
@@ -33,6 +34,10 @@ public partial class Propiedad
 
     public decimal? Longitud { get; set; }
 
+    public int? SellerId { get; set; }
+
+    [ForeignKey(nameof(SellerId))]
+    public virtual Usuario? Seller { get; set; }
     public virtual ICollection<Expediente> Expedientes { get; set; } = new List<Expediente>();
 
     public virtual ICollection<PropertyTour360> PropertyTour360s { get; set; } = new List<PropertyTour360>();

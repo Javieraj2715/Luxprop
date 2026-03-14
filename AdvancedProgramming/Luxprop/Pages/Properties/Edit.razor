@@ -1,11 +1,12 @@
 ﻿@page "/properties/edit/{id:int}"
 @using Luxprop.Data
 @using Luxprop.Data.Models
+@using Luxprop.Services
 @using Microsoft.EntityFrameworkCore
 @inject IDbContextFactory<LuxpropContext> DbFactory
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
-
+@inject SessionService SessionService
 
 <PageTitle>Edit Property - Luxprop</PageTitle>
 
@@ -18,6 +19,10 @@
     @if (isLoading)
     {
         <p>Loading property...</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <p class="error-message">@errorMessage</p>
     }
     else if (property == null)
     {
@@ -83,27 +88,58 @@
                     <ValidationMessage For="@(() => property.AreaTerreno)" />
                 </div>
 
-                <div class="form-group">
-                    <label for="estadoPublicacion">Publication Status</label>
-                    <InputSelect id="estadoPublicacion" @bind-Value="property.EstadoPublicacion" class="form-control">
-                        <option value="">Select Status</option>
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                        <option value="Pending">Pending</option>
-                    </InputSelect>
-                    <ValidationMessage For="@(() => property.EstadoPublicacion)" />
-                </div>
+                @if (role == "admin")
+                {
+                    <div class="form-group">
+                        <label for="estadoPublicacion">Publication Status</label>
+                        <InputSelect id="estadoPublicacion" @bind-Value="property.EstadoPublicacion" class="form-control">
+                            <option value="">Select Status</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Pending">Pending</option>
+                        </InputSelect>
+                        <ValidationMessage For="@(() => property.EstadoPublicacion)" />
+                    </div>
 
-                <div class="form-group">
-                    <label for="agenteId">Agent</label>
-                    <InputSelect id="agenteId" @bind-Value="property.AgenteId" class="form-control">
-                        <option value="">Select Agent</option>
-                        @foreach (var agent in agents)
-                        {
-                            <option value="@agent.UsuarioId">@agent.Nombre</option>
-                        }
-                    </InputSelect>
-                </div>
+                    <div class="form-group">
+                        <label for="agenteId">Agent</label>
+                        <InputSelect id="agenteId" @bind-Value="property.AgenteId" class="form-control">
+                            <option value="">Select Agent</option>
+                            @foreach (var agent in agents)
+                            {
+                                <option value="@agent.UsuarioId">@agent.Nombre @agent.Apellido</option>
+                            }
+                        </InputSelect>
+                    </div>
+                }
+                else if (role == "seller")
+                {
+                    <div class="form-group">
+                        <label>Publication Status</label>
+                        <InputText class="form-control" Value="@property.EstadoPublicacion" disabled />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Assigned Agent</label>
+                        <InputText class="form-control"
+                                   Value="@(assignedAgentName ?? "Not assigned")"
+                                   disabled />
+                    </div>
+                }
+                else if (role == "agent")
+                {
+                    <div class="form-group">
+                        <label>Publication Status</label>
+                        <InputText class="form-control" Value="@property.EstadoPublicacion" disabled />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Assigned Agent</label>
+                        <InputText class="form-control"
+                                   Value="@(assignedAgentName ?? "Not assigned")"
+                                   disabled />
+                    </div>
+                }
 
                 <div class="form-group">
                     <label for="ubicacionId">Location</label>
@@ -142,11 +178,6 @@
 
                     <a href="/properties" class="btn btn-secondary">Cancel</a>
                 </div>
-
-                @if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    <div class="error-message">@errorMessage</div>
-                }
             </EditForm>
         </div>
     }
@@ -164,20 +195,65 @@
     private string errorMessage = string.Empty;
     private DotNetObjectReference<Luxprop.Pages.Properties.Edit>? objRef;
 
+    private string role = "";
+    private int currentUserId;
+    private string? assignedAgentName;
 
     protected override async Task OnInitializedAsync()
     {
         await using var db = await DbFactory.CreateDbContextAsync();
+
         try
         {
-            agents = db.Usuarios.ToList();
-            locations = db.Ubicacions.ToList();
+            currentUserId = await SessionService.GetUserIdAsync();
+            role = NormalizeRole(await SessionService.GetUserRoleAsync());
 
-            property = await db.Propiedads.FindAsync(id);
+            locations = await db.Ubicacions.ToListAsync();
+
+            agents = await db.Usuarios
+                .Where(u =>
+                    u.Activo == true &&
+                    u.UsuarioRols.Any(ur =>
+                        ur.Rol.Nombre.ToLower() == "agente" ||
+                        ur.Rol.Nombre.ToLower() == "agent"))
+                .OrderBy(u => u.Nombre)
+                .ThenBy(u => u.Apellido)
+                .ToListAsync();
+
+            property = await db.Propiedads
+                .Include(p => p.Agente)
+                .FirstOrDefaultAsync(p => p.PropiedadId == id);
 
             if (property == null)
             {
                 errorMessage = "Property not found.";
+                return;
+            }
+
+            assignedAgentName = property.Agente != null
+                ? $"{property.Agente.Nombre} {property.Agente.Apellido}"
+                : null;
+
+            // Seguridad básica por rol
+            if (role == "seller" && property.SellerId != currentUserId)
+            {
+                errorMessage = "You do not have permission to edit this property.";
+                property = null;
+                return;
+            }
+
+            if (role == "agent" && property.AgenteId != currentUserId)
+            {
+                errorMessage = "You do not have permission to edit this property.";
+                property = null;
+                return;
+            }
+
+            if (role != "admin" && role != "seller" && role != "agent")
+            {
+                errorMessage = "You do not have permission to access this page.";
+                property = null;
+                return;
             }
         }
         catch (Exception ex)
@@ -206,8 +282,6 @@
         }
     }
 
-
-
     private async Task HandleSubmit()
     {
         await using var db = await DbFactory.CreateDbContextAsync();
@@ -216,7 +290,45 @@
 
         try
         {
-            db.Propiedads.Update(property);
+            var propertyDb = await db.Propiedads.FirstOrDefaultAsync(p => p.PropiedadId == id);
+
+            if (propertyDb == null)
+            {
+                errorMessage = "Property no longer exists.";
+                return;
+            }
+
+            // Seguridad al guardar
+            if (role == "seller" && propertyDb.SellerId != currentUserId)
+            {
+                errorMessage = "You do not have permission to edit this property.";
+                return;
+            }
+
+            if (role == "agent" && propertyDb.AgenteId != currentUserId)
+            {
+                errorMessage = "You do not have permission to edit this property.";
+                return;
+            }
+
+            // Campos editables para todos los roles permitidos
+            propertyDb.Titulo = property!.Titulo;
+            propertyDb.Descripcion = property.Descripcion;
+            propertyDb.Tipo_Propiedad = property.Tipo_Propiedad;
+            propertyDb.Precio = property.Precio;
+            propertyDb.AreaConstruccion = property.AreaConstruccion;
+            propertyDb.AreaTerreno = property.AreaTerreno;
+            propertyDb.UbicacionId = property.UbicacionId;
+            propertyDb.Latitud = property.Latitud;
+            propertyDb.Longitud = property.Longitud;
+
+            // Solo admin puede cambiar estado y asignar agente
+            if (role == "admin")
+            {
+                propertyDb.EstadoPublicacion = property.EstadoPublicacion;
+                propertyDb.AgenteId = property.AgenteId;
+            }
+
             await db.SaveChangesAsync();
             Navigation.NavigateTo("/properties");
         }
@@ -234,13 +346,24 @@
     [JSInvokable]
     public void SetCoordinates(decimal lat, decimal lng)
     {
-        property.Latitud = lat;
-        property.Longitud = lng;
-        InvokeAsync(StateHasChanged);
+        if (property != null)
+        {
+            property.Latitud = lat;
+            property.Longitud = lng;
+            InvokeAsync(StateHasChanged);
+        }
     }
 
+    private static string NormalizeRole(string? name)
+    {
+        var n = name?.Trim().ToLowerInvariant();
+        return n switch
+        {
+            "administrador" or "admin" => "admin",
+            "agente" or "agent" => "agent",
+            "seller" or "vendedor" => "seller",
+            "buyer" or "comprador" => "buyer",
+            _ => string.Empty
+        };
+    }
 }
-
-<style>
-    /* Usa el mismo CSS que tu Create */
-</style>

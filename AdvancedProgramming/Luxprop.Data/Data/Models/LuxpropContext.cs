@@ -360,6 +360,12 @@ public partial class LuxpropContext : DbContext
                 .HasColumnName("Tipo_Propiedad");
             entity.Property(e => e.Titulo).HasMaxLength(150);
             entity.Property(e => e.UbicacionId).HasColumnName("Ubicacion_ID");
+            entity.Property(e => e.SellerId).HasColumnName("Seller_ID");
+
+            entity.HasOne(d => d.Seller)
+                .WithMany()
+                .HasForeignKey(d => d.SellerId)
+                .HasConstraintName("FK_Propiedad_Seller");
         });
 
         modelBuilder.Entity<Recordatorio>(entity =>

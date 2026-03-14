@@ -31,7 +31,10 @@ public partial class Propiedad
     public decimal ? Latitud { get; set; }
     public decimal ? Longitud { get; set; }
 
+    public int? SellerId { get; set; }
 
+    [ForeignKey(nameof(SellerId))]
+    public virtual Usuario? Seller { get; set; }
     public int? UbicacionId { get; set; }
     public PropertyTour360? Tour360 { get; set; }
 

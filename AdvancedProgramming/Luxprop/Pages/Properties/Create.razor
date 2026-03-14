@@ -172,7 +172,7 @@
     protected override async Task OnInitializedAsync()
     {
         await using var db = await DbFactory.CreateDbContextAsync();
-        // Asignar a la variable global
+
         role = NormalizeRole(await SessionService.GetUserRoleAsync());
 
         // ADMIN → cargar agentes
@@ -191,6 +191,13 @@
         if (role == "agent")
         {
             property.AgenteId = await SessionService.GetUserIdAsync();
+        }
+
+        // SELLER → asignarse automáticamente como dueño de la propiedad
+        if (role == "seller")
+        {
+            property.SellerId = await SessionService.GetUserIdAsync();
+            property.EstadoPublicacion = "Pending";
         }
 
         await LoadData();
@@ -214,6 +221,8 @@
         {
             "administrador" or "admin" => "admin",
             "agente" or "agent" => "agent",
+            "seller" or "vendedor" => "seller",
+            "buyer" or "comprador" => "buyer",
             _ => string.Empty
         };
     }
@@ -242,9 +251,26 @@
 
         try
         {
+            var currentUserId = await SessionService.GetUserIdAsync();
+            var currentRole = NormalizeRole(await SessionService.GetUserRoleAsync());
+
             property.MlsId = GenerateMlsId();
+
+            if (currentRole == "seller")
+            {
+                property.SellerId = currentUserId;
+                property.AgenteId = null; // aún no asignado
+                property.EstadoPublicacion = "Pending";
+            }
+
+            if (currentRole == "agent")
+            {
+                property.AgenteId = currentUserId;
+            }
+
             db.Propiedads.Add(property);
             await db.SaveChangesAsync();
+
             Navigation.NavigateTo("/properties");
         }
         catch (Exception ex)

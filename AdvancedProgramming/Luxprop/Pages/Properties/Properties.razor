@@ -14,7 +14,7 @@
 <div class="properties-page">
     <div class="page-header">
         
-        @if (role == "admin" || role == "agent")
+        @if (role == "admin" || role == "agent" || role == "seller")
         {
             <a href="/properties/create" class="btn btn-primary">Create Property</a>
         }
@@ -84,7 +84,9 @@
                                     </a>
 
                                     <!-- Edit (solo admin o agent) -->
-                                    @if (role == "admin" || role == "agent")
+                                    @if (role == "admin" ||
+                                                                (role == "agent" && property.AgenteId == Session.CurrentUserId) ||
+                                                                (role == "seller" && property.SellerId == Session.CurrentUserId))
                                     {
                                         <a href="/properties/edit/@property.PropiedadId"
                                            class="btn btn-sm btn-outline-primary">
@@ -149,29 +151,27 @@
 
             properties = await PropiedadService.GetAllAsync();
 
-            if (role == "agent")
+            if (role == "admin")
+            {
+                properties = properties.ToList();
+            }
+            else if (role == "agent")
             {
                 properties = properties
                     .Where(p => p.AgenteId == userId)
                     .ToList();
             }
-
-            if (role == "buyer")
+            else if (role == "seller")
             {
-                cliente = await ExpedienteService.GetClientByIdAsync(userId);
-
-                expedientesCliente = await ExpedienteService.GetAllAsync();
-
-                expedientesCliente = expedientesCliente
-                    .Where(ec => ec.ClienteId == cliente.ClienteId)
-                    .ToList();
-
-                var propiedadesIds = expedientesCliente
-                    .Select(ec => ec.PropiedadId)
-                    .ToList();
-
                 properties = properties
-                    .Where(p => propiedadesIds.Contains(p.PropiedadId))
+                    .Where(p => p.SellerId == userId)
+                    .ToList();
+            }
+            else if (role == "buyer")
+            {
+                properties = properties
+                    .Where(p => p.EstadoPublicacion != null &&
+                                p.EstadoPublicacion.ToLower() == "active")
                     .ToList();
             }
         }

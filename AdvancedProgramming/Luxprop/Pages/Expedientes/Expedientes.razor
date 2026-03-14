@@ -2,13 +2,16 @@
 @using ClosedXML.Excel
 @using Luxprop.Data.Models
 @using Luxprop.Business.Services
+@using Microsoft.EntityFrameworkCore
 @using QuestPDF.Fluent
 @using QuestPDF.Helpers
 @using QuestPDF.Infrastructure
+@inject Luxprop.Services.SessionService SessionService
 @inject IExpedienteService ExpedienteService
 @inject NavigationManager Navigation
 @inject Luxprop.Services.SessionService Session
 @inject IJSRuntime JS
+@inject IDbContextFactory<LuxpropContext> DbFactory
 
 <DashboardHero Title="Case Files"
                Subtitle="Look into your files" />
@@ -121,10 +124,12 @@
     private List<Expediente>? cases;
 
     private int? selectedExpedienteId;
-
+    private List<Expediente> expedientes = new();
     private string filterStatus = "";
     private string filterProperty = "";
     private string filterClient = "";
+
+
 
     private IEnumerable<Expediente> filteredCases =>
         cases?
@@ -137,10 +142,12 @@
                         .Contains(filterClient, StringComparison.OrdinalIgnoreCase)))
             ) ?? Enumerable.Empty<Expediente>();
 
+ 
     protected override async Task OnInitializedAsync()
     {
         await LoadCases();
     }
+    
 
     private async Task LoadCases()
     {
@@ -150,9 +157,24 @@
 
         var all = await ExpedienteService.GetAllAsync();
 
-        cases = role == "agent"
-            ? all.Where(e => e.AgenteId == userId).ToList()
-            : all.ToList();
+        cases = role switch
+        {
+            "admin" => all.ToList(),
+
+            "agent" => all
+                .Where(e => e.AgenteId == userId)
+                .ToList(),
+
+            "seller" => all
+                .Where(e => e.Propiedad != null && e.Propiedad.SellerId == userId)
+                .ToList(),
+
+            "buyer" => all
+                .Where(e => e.Cliente != null && e.Cliente.UsuarioId == userId)
+                .ToList(),
+
+            _ => new List<Expediente>()
+        };
     }
 
     private async Task ExportSelectedToPDF()

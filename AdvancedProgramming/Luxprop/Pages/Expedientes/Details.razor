@@ -34,10 +34,13 @@ else
                 <button class="btn-outline" @onclick='() => Navigation.NavigateTo("/expedientes")'>
                     <i class="bi bi-arrow-left-circle"></i> Back
                 </button>
-                <button class="btn-primary"
-                        @onclick='() => Navigation.NavigateTo($"/expedientes/edit/{expediente.ExpedienteId}")'>
-                    <i class="bi bi-pencil-square"></i> Edit
-                </button>
+                @if (canEditCase)
+                {
+                    <button class="btn-primary"
+                            @onclick='() => Navigation.NavigateTo($"/expedientes/edit/{expediente.ExpedienteId}")'>
+                        <i class="bi bi-pencil-square"></i> Edit
+                    </button>
+                }
             </div>
         </div>
 
@@ -96,11 +99,18 @@ else
                                         <span class="badge">@d.Estado</span>
                                     </td>
 
-                                    <!-- 🔹 FECHA DE VENCIMIENTO EDITABLE -->
+                                    
                                     <td>
-                                        <InputDate @bind-Value="d.FechaVencimiento"
-                                                   class="form-control form-control-sm"
-                                                   @onchange="async (_) => await SaveDueDate(d)" />
+                                        @if (canManageDocuments)
+                                        {
+                                            <InputDate @bind-Value="d.FechaVencimiento"
+                                                       class="form-control form-control-sm"
+                                                       @onchange="async (_) => await SaveDueDate(d)" />
+                                        }
+                                        else
+                                        {
+                                            <span>@(d.FechaVencimiento?.ToString("yyyy-MM-dd") ?? "—")</span>
+                                        }
                                     </td>
 
                                     <!-- 🔹 BOTONES -->
@@ -118,10 +128,13 @@ else
                                             }
 
                                             <!-- Delete -->
-                                            <button class="btn btn-sm btn-outline-danger"
-                                                    @onclick="() => ConfirmDeleteDocument(d)">
-                                                <i class="bi bi-trash"></i> Delete
-                                            </button>
+                                            @if (canManageDocuments)
+                                            {
+                                                <button class="btn btn-sm btn-outline-danger"
+                                                        @onclick="() => ConfirmDeleteDocument(d)">
+                                                    <i class="bi bi-trash"></i> Delete
+                                                </button>
+                                            }
 
                                         </div>
                                     </td>
@@ -147,10 +160,13 @@ else
                     <div class="row-between mb16">
                         <h3 class="section-title">History</h3>
 
-                        <div>
-                            <button class="btn btn-secondary" @onclick="ExportHistoryExcel">Export Excel</button>
-                            <button class="btn btn-primary" @onclick="ExportHistoryPdf">Export PDF</button>
-                        </div>
+                        @if (canExportHistory)
+                        {
+                            <div>
+                                <button class="btn btn-secondary" @onclick="ExportHistoryExcel">Export Excel</button>
+                                <button class="btn btn-primary" @onclick="ExportHistoryPdf">Export PDF</button>
+                            </div>
+                        }
                     </div>
 
 
@@ -189,7 +205,10 @@ else
             <div class="card">
                 <div class="header-between">
                     <h4>Tasks</h4>
-                    <button class="btn-primary btn-sm" @onclick="() => ShowTaskModal(true)">+ Add Task</button>
+                    @if (canManageTasks)
+                    {
+                        <button class="btn-primary btn-sm" @onclick="() => ShowTaskModal(true)">+ Add Task</button>
+                    }
                 </div>
 
                 @if (expediente.TareaTramites?.Any() == true)
@@ -265,29 +284,75 @@ else
     
     private List<HistorialExpediente>? historial;
     private List<TareaTramite>? tasks;
+    private List<Documento> documentos = new();
+    private List<TareaTramite> tareas = new();
+    private string role = "";
+    private int currentUserId;
+    private bool canAccess = false;
+    private bool canEditCase = false;
+    private bool canManageDocuments = false;
+    private bool canManageTasks = false;
+    private bool canExportHistory = false;
 
     protected override async Task OnInitializedAsync()
     {
         await using var db = await DbFactory.CreateDbContextAsync();
-        // Load Case File + related data
+
+        currentUserId = await SessionService.GetUserIdAsync();
+        role = NormalizeRole(await SessionService.GetUserRoleAsync());
+
         expediente = await db.Expedientes
             .Include(e => e.Propiedad)
             .Include(e => e.Cliente).ThenInclude(c => c.Usuario)
             .Include(e => e.Agente)
             .Include(e => e.Documentos)
+            .Include(e => e.TareaTramites)
+            .Include(e => e.HistorialExpedientes)
+                .ThenInclude(h => h.Usuario)
             .FirstOrDefaultAsync(e => e.ExpedienteId == ExpedienteId);
 
-        historial = await db.HistorialExpedientes
-            .Include(h => h.Usuario) 
-            .Where(h => h.ExpedienteId == ExpedienteId)
-            .OrderByDescending(h => h.FechaModificacion)
-            .ToListAsync();
+        if (expediente == null)
+            return;
 
+        // Permisos de acceso
+        canAccess = role switch
+        {
+            "admin" => true,
+            "agent" => expediente.AgenteId == currentUserId,
+            "seller" => expediente.Propiedad != null && expediente.Propiedad.SellerId == currentUserId,
+            "buyer" => expediente.Cliente != null && expediente.Cliente.UsuarioId == currentUserId,
+            _ => false
+        };
 
-        tasks = await db.TareaTramites
-            .Where(t => t.ExpedienteId == ExpedienteId)
-            .OrderByDescending(t => t.FechaInicio)
-            .ToListAsync();
+        if (!canAccess)
+        {
+            expediente = null;
+            Navigation.NavigateTo("/expedientes");
+            return;
+        }
+
+        documentos = expediente.Documentos?.ToList() ?? new List<Documento>();
+        tareas = expediente.TareaTramites?.OrderByDescending(t => t.FechaInicio).ToList() ?? new List<TareaTramite>();
+        historial = expediente.HistorialExpedientes?.OrderByDescending(h => h.FechaModificacion).ToList() ?? new List<HistorialExpediente>();
+
+        // Permisos funcionales
+        canEditCase = role == "admin" || role == "agent";
+        canManageDocuments = role == "admin" || role == "agent";
+        canManageTasks = role == "admin" || role == "agent";
+        canExportHistory = role == "admin" || role == "agent";
+    }
+
+    private static string NormalizeRole(string? name)
+    {
+        var n = name?.Trim().ToLowerInvariant();
+        return n switch
+        {
+            "admin" or "administrador" => "admin",
+            "agent" or "agente" => "agent",
+            "seller" or "vendedor" => "seller",
+            "buyer" or "comprador" => "buyer",
+            _ => ""
+        };
     }
 
     private void Activate(string tab) => activeTab = tab;
@@ -316,6 +381,7 @@ else
 
     private async Task SaveTaskAsync()
     {
+        if (!canManageTasks) return;
         if (string.IsNullOrWhiteSpace(newTask.Titulo)) return;
 
         // 🔹 SI se crea ya como completada
@@ -339,6 +405,8 @@ else
 
     private async Task SaveDueDate(Documento d)
     {
+        if (!canManageDocuments) return;
+
         await using var db = await DbFactory.CreateDbContextAsync();
         try
         {
@@ -355,6 +423,8 @@ else
 
     private async Task ConfirmDeleteDocument(Documento d)
     {
+
+        if (!canManageDocuments) return;
         await using var db = await DbFactory.CreateDbContextAsync();
         bool confirm = await JS.InvokeAsync<bool>("confirm",
             $"Are you sure you want to delete '{d.Nombre}'?");

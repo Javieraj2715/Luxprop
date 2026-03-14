@@ -36,10 +36,9 @@ namespace Luxprop.Business.Services
         {
             return await _db.Expedientes
                 .Include(e => e.Propiedad)
-                .Include(e => e.Agente)
                 .Include(e => e.Cliente)
-                    .ThenInclude(c => c.Usuario)   // Cliente.Usuario
-                .Include(e => e.Agente)           // Agente es Usuario directamente
+                    .ThenInclude(c => c.Usuario)
+                .Include(e => e.Agente)
                 .Include(e => e.Documentos)
                 .Include(e => e.HistorialExpedientes)
                 .ToListAsync();
