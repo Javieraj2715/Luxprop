@@ -128,10 +128,14 @@
 
         // ✅ IMPORTANT: load from CLIENTES, not USUARIOS
         Buyers = await db.Clientes
-            .Include(c => c.Usuario)
-            .Where(c => c.TipoCliente != null && c.TipoCliente.ToLower() == "buyer")
-            .OrderBy(c => c.Usuario!.Nombre)
-            .ToListAsync();
+    .Include(c => c.Usuario)
+    .Where(c =>
+        c.TipoCliente != null &&
+        c.TipoCliente.ToLower() == "buyer" &&
+        c.Usuario != null &&
+        c.Usuario.Activo == true)
+    .OrderBy(c => c.Usuario!.Nombre)
+    .ToListAsync();
     }
 
     private async Task SaveCase()

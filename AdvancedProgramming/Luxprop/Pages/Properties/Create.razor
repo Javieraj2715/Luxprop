@@ -179,9 +179,11 @@
         if (role == "admin")
         {
             agentes = await db.Usuarios
-                .Where(u => u.UsuarioRols
-                    .Any(ur => ur.Rol.Nombre.ToLower() == "agente"
-                            || ur.Rol.Nombre.ToLower() == "agent"))
+                .Where(u =>
+                    u.Activo == true &&
+                    u.UsuarioRols.Any(ur =>
+                        ur.Rol.Nombre.ToLower() == "agente" ||
+                        ur.Rol.Nombre.ToLower() == "agent"))
                 .ToListAsync();
         }
 
