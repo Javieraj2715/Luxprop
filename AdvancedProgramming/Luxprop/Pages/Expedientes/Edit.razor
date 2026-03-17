@@ -33,7 +33,7 @@ else
                     }
                     else
                     {
-                        <InputText class="form-control" Value="@expediente.TipoOcupacion" disabled />
+                        <input class="form-control" value="@expediente.TipoOcupacion" disabled />
                     }
                 </div>
 
@@ -49,7 +49,7 @@ else
                     }
                     else
                     {
-                        <InputText class="form-control" Value="@expediente.Estado" disabled />
+                        <input class="form-control" value="@expediente.Estado" disabled />
                     }
                 </div>
             </div>
@@ -315,8 +315,8 @@ else
 
         canManageCase = role == "admin" || role == "agent";
         canManageDocuments = role == "admin" || role == "agent" || role == "seller" || role == "buyer";
-        canManageTasks = role == "admin" || role == "agent";
-        canDeleteDocuments = role == "admin" || role == "agent";
+        canManageTasks = role == "admin" || role == "agent" || role == "seller" || role == "buyer";
+        canDeleteDocuments = role == "admin" || role == "agent" || role == "seller" || role == "buyer";
 
         documentos = expediente.Documentos?.ToList() ?? new List<Documento>();
 
@@ -365,12 +365,17 @@ else
             return;
         }
 
-        if (!canManageCase && archivoTemporal == null)
+        if (!canManageCase && !canManageDocuments && !canManageTasks)
         {
             await JS.InvokeVoidAsync("alert", "You do not have permission to modify this case.");
             return;
         }
 
+        if (!canManageCase && archivoTemporal == null && string.IsNullOrWhiteSpace(descripcionHistorial))
+        {
+            await JS.InvokeVoidAsync("alert", "There are no changes to save.");
+            return;
+        }
         if (canManageCase)
         {
             expDb.TipoOcupacion = expediente!.TipoOcupacion;

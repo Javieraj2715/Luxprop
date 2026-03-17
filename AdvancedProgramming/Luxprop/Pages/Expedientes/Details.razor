@@ -34,7 +34,7 @@ else
                 <button class="btn-outline" @onclick='() => Navigation.NavigateTo("/expedientes")'>
                     <i class="bi bi-arrow-left-circle"></i> Back
                 </button>
-                @if (canEditCase)
+                @if (canManageDocuments || canManageTasks || canEditCase)
                 {
                     <button class="btn-primary"
                             @onclick='() => Navigation.NavigateTo($"/expedientes/edit/{expediente.ExpedienteId}")'>
@@ -211,14 +211,14 @@ else
                     }
                 </div>
 
-                @if (expediente.TareaTramites?.Any() == true)
+                @if (tareas != null && tareas.Any())
                 {
                     <table class="styled-table">
                         <thead>
                             <tr><th>Title</th><th>Status</th><th>Priority</th><th>Start</th><th>Due</th><th>Closed</th></tr>
                         </thead>
                         <tbody>
-                            @foreach (var t in expediente.TareaTramites.OrderByDescending(x => x.FechaInicio))
+                            @foreach (var t in tareas.OrderByDescending(x => x.FechaInicio))
                             {
                                 <tr>
                                     <td>@t.Titulo</td>
@@ -337,8 +337,8 @@ else
 
         // Permisos funcionales
         canEditCase = role == "admin" || role == "agent";
-        canManageDocuments = role == "admin" || role == "agent";
-        canManageTasks = role == "admin" || role == "agent";
+        canManageDocuments = role == "admin" || role == "agent" || role == "seller" || role == "buyer";
+        canManageTasks = role == "admin" || role == "agent" || role == "seller" || role == "buyer";
         canExportHistory = role == "admin" || role == "agent";
     }
 
@@ -384,19 +384,31 @@ else
         if (!canManageTasks) return;
         if (string.IsNullOrWhiteSpace(newTask.Titulo)) return;
 
-        // 🔹 SI se crea ya como completada
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        newTask.ExpedienteId = ExpedienteId;
+        newTask.FechaInicio = DateTime.Now;
+
         if (newTask.Estado == "Done" || newTask.Estado == "Completed")
         {
             newTask.FechaCierre = DateTime.Now;
         }
 
-        expediente?.TareaTramites?.Add(newTask);
+        db.TareaTramites.Add(newTask);
+        await db.SaveChangesAsync();
 
-        await ExpedienteService.UpdateAsync(
-            expediente!,
-            await SessionService.GetUserIdAsync(),
-            "Tarea agregada"
-        );
+        tareas = await db.TareaTramites
+            .Where(t => t.ExpedienteId == ExpedienteId)
+            .OrderByDescending(t => t.FechaInicio)
+            .ToListAsync();
+
+        newTask = new TareaTramite
+        {
+            ExpedienteId = ExpedienteId,
+            Estado = "Pending",
+            Prioridad = "Normal",
+            FechaInicio = DateTime.Now
+        };
 
         showTaskModal = false;
         activeTab = "tasks";

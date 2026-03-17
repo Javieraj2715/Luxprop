@@ -97,15 +97,41 @@
                                     <!-- Mostrar expediente si existe, si no permitir crear -->
                                     @if (property.Expedientes != null && property.Expedientes.Any())
                                     {
-                                        var expedienteId = property.Expedientes.First().ExpedienteId;
-                                        @if (role == "admin" || role == "agent")
+                                        Expediente? selectedCase = null;
+
+                                        if (role == "buyer")
                                         {
-                                            <a href="/expedientes/details/@expedienteId"
+                                            selectedCase = property.Expedientes
+                                            .FirstOrDefault(e => e.Cliente != null && e.Cliente.UsuarioId == Session.CurrentUserId);
+                                        }
+                                        else if (role == "seller")
+                                        {
+                                            selectedCase = property.Expedientes.FirstOrDefault();
+                                        }
+                                        else if (role == "agent")
+                                        {
+                                            selectedCase = property.Expedientes
+                                            .FirstOrDefault(e => e.AgenteId == Session.CurrentUserId);
+                                        }
+                                        else if (role == "admin")
+                                        {
+                                            selectedCase = property.Expedientes.FirstOrDefault();
+                                        }
+
+                                        if (selectedCase != null)
+                                        {
+                                            <a href="/expedientes/details/@selectedCase.ExpedienteId"
                                                class="btn btn-sm btn-outline-success">
                                                 <i class="bi bi-folder2-open"></i> View Case
                                             </a>
                                         }
-                                        
+                                        else if (role == "admin" || role == "agent")
+                                        {
+                                            <a href="/expedientes/create/@property.PropiedadId"
+                                               class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-folder-plus"></i> Create Case
+                                            </a>
+                                        }
                                     }
                                     else if (role == "admin" || role == "agent")
                                     {
@@ -169,10 +195,23 @@
             }
             else if (role == "buyer")
             {
-                properties = properties
-                    .Where(p => p.EstadoPublicacion != null &&
-                                p.EstadoPublicacion.ToLower() == "active")
+                var allCases = await ExpedienteService.GetAllAsync();
+
+                var buyerPropertyIds = allCases
+                    .Where(e => e.Cliente != null &&
+                                e.Cliente.UsuarioId == userId &&
+                                e.PropiedadId != null)
+                    .Select(e => e.PropiedadId!.Value)
+                    .Distinct()
                     .ToList();
+
+                properties = properties
+                    .Where(p => buyerPropertyIds.Contains(p.PropiedadId))
+                    .ToList();
+            }
+            else
+            {
+                properties = new List<Propiedad>();
             }
         }
         catch (Exception ex)
