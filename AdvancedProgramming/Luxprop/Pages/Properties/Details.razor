@@ -109,8 +109,14 @@ else
     private async Task DeleteTour()
     {
         await using var db = await DbFactory.CreateDbContextAsync();
-        property.Recorrido360Url = null;
+
+        var propDb = await db.Propiedads.FirstOrDefaultAsync(p => p.PropiedadId == id);
+        if (propDb == null) return;
+
+        propDb.Recorrido360Url = null;
         await db.SaveChangesAsync();
+
+        property.Recorrido360Url = null;
         StateHasChanged();
     }
 }
