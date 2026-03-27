@@ -38,8 +38,12 @@
                     <input class="form-control w-auto" placeholder="Case ID"
                            type="number" @bind-value="filters.ExpedienteId" />
 
-                    <input class="form-control w-auto" placeholder="Status"
-                           @bind-value="filters.Estado" />
+                    <InputSelect class="form-control w-auto" @bind-Value="filters.Estado">
+                        <option value="">All Status</option>
+                        <option value="Abierto">Open</option>
+                        <option value="En proceso">In Progress</option>
+                        <option value="Cerrado">Closed</option>
+                    </InputSelect>
 
                     <input class="form-control w-auto" placeholder="Search property or client"
                            @bind-value="filters.Search" />
