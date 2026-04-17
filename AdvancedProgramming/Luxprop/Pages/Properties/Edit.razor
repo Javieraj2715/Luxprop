@@ -116,28 +116,24 @@
                 {
                     <div class="form-group">
                         <label>Publication Status</label>
-                        <InputText class="form-control" Value="@property.EstadoPublicacion" disabled />
+                        <input class="form-control" value="@property.EstadoPublicacion" disabled />
                     </div>
 
                     <div class="form-group">
                         <label>Assigned Agent</label>
-                        <InputText class="form-control"
-                                   Value="@(assignedAgentName ?? "Not assigned")"
-                                   disabled />
+                        <input class="form-control" value="@(assignedAgentName ?? "Not assigned")" disabled />
                     </div>
                 }
                 else if (role == "agent")
                 {
                     <div class="form-group">
                         <label>Publication Status</label>
-                        <InputText class="form-control" Value="@property.EstadoPublicacion" disabled />
+                        <input class="form-control" value="@property.EstadoPublicacion" disabled />
                     </div>
 
                     <div class="form-group">
                         <label>Assigned Agent</label>
-                        <InputText class="form-control"
-                                   Value="@(assignedAgentName ?? "Not assigned")"
-                                   disabled />
+                        <input class="form-control" value="@(assignedAgentName ?? "Not assigned")" disabled />
                     </div>
                 }
 
