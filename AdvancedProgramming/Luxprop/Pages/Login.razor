@@ -7,7 +7,7 @@
 @using Luxprop.Data.Models
 @using Luxprop.Models
 @using Luxprop.Services
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject PasswordHelper PasswordHelper
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
@@ -24,7 +24,12 @@
             <div class="login-header">
                 <img src="https://i.imgur.com/nmN7x14.png" alt="2CRRE Logo" class="logo" />
                 
-                <span class="title">Docs Manager | Internal Management System</span>
+                <span class="title"
+                      style="white-space:nowrap; font-size:1.15rem; font-weight:600; display:block;">
+                    Docs Manager | Internal System
+                </span>
+
+
             </div>
 
             <h2>Login</h2>
@@ -83,6 +88,7 @@
 
     private async Task HandleLogin()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         isLoading = true;
         errorMessage = string.Empty;
 
@@ -96,7 +102,7 @@
 
             var hashed = PasswordHelper.HashPassword(loginModel.Password);
 
-            var user = await Db.Usuarios
+            var user = await db.Usuarios
                 .Include(u => u.UsuarioRols)
                     .ThenInclude(ur => ur.Rol)
                 .FirstOrDefaultAsync(u => u.Email == loginModel.Email && u.Password == hashed);
@@ -189,9 +195,12 @@
 
         .login-header .title {
             color: white;
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             font-weight: 600;
+            white-space: nowrap;
+            letter-spacing: 0.5px;
         }
+
 
     h2 {
         text-align: center;
@@ -294,7 +303,7 @@
 
         .login-header .title {
             display: block;
-            color: #ffffff; /* 🔴 ESTO ES LO CLAVE */
+            color: #ffffff; 
             font-size: 1.35rem;
             font-weight: 700;
             line-height: 1.35;

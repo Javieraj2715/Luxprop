@@ -1,7 +1,8 @@
 ﻿@page "/dashboardvend"
 @using Luxprop.Data
 @using Luxprop.Data.Models
-@inject LuxpropContext Db
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject Luxprop.Services.SessionService Session
 @inject NavigationManager Nav
 
@@ -27,18 +28,15 @@ else
 
         <!-- HEADER -->
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-            <div>
-                <h1 class="h3 mb-1">Seller dashboard</h1>
-                <p class="text-muted mb-0">
-                    Track the status of your listings and take action quickly.
-                </p>
-            </div>
             <div class="d-flex flex-wrap gap-2">
                 <a href="/properties/create" class="btn btn-primary">
                     <i class="bi bi-plus-circle me-1"></i> Add property
                 </a>
                 <a href="/properties" class="btn btn-outline-secondary">
                     <i class="bi bi-list-ul me-1"></i> View all
+                </a>
+                <a href="/expedientes" class="btn btn-outline-success">
+                    <i class="bi bi-folder2-open me-1"></i> Cases
                 </a>
             </div>
         </div>
@@ -96,15 +94,15 @@ else
             <!-- Quick actions -->
             <div class="col-lg-4">
                 <div class="dashboard-card h-100">
-                    <div class="card-header">
-                        <h3 class="h5 mb-0">Quick actions</h3>
-                    </div>
                     <div class="card-content d-grid gap-2">
                         <a href="/properties/create" class="btn btn-primary w-100">
                             <i class="bi bi-plus-circle me-1"></i> Add new property
                         </a>
                         <a href="/properties" class="btn btn-outline-secondary w-100">
                             <i class="bi bi-list-ul me-1"></i> View all listings
+                        </a>
+                        <a href="/expedientes" class="btn btn-outline-success w-100">
+                            <i class="bi bi-folder2-open me-1"></i> View my cases
                         </a>
                     </div>
                 </div>
@@ -159,6 +157,7 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         if (!firstRender || firstPass) return;
         firstPass = true;
 
@@ -187,7 +186,10 @@ else
         }
 
         // Later you can filter by current seller when that linkage exists.
-        var all = Db.Propiedads
+        var userId = await Session.GetUserIdAsync();
+
+        var all = db.Propiedads
+            .Where(p => p.SellerId == userId)
             .OrderByDescending(p => p.PropiedadId)
             .ToList();
 

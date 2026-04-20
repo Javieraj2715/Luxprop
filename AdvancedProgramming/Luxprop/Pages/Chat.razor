@@ -1,7 +1,8 @@
 @page "/chat"
 @using Luxprop.Data
 @using Luxprop.Data.Models
-@inject LuxpropContext Db
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject Luxprop.Services.SessionService Session
 @inject IJSRuntime JSRuntime
 @inject NavigationManager Navigation
@@ -103,6 +104,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         await Session.LoadUserAsync();
 
         if (!Session.IsAuthenticated)
@@ -117,7 +119,7 @@
 
         if (string.IsNullOrEmpty(userEmail))
         {
-            userEmail = Db.Usuarios
+            userEmail = db.Usuarios
                 .Where(u => u.UsuarioId == userId)
                 .Select(u => u.Email)
                 .FirstOrDefault() ?? "unknown@2crre.com";
@@ -128,7 +130,8 @@
 
     private async Task LoadOrCreateThread()
     {
-        var thread = Db.ChatThreads
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var thread = db.ChatThreads
             .Where(t => t.ClientEmail == userEmail)
             .OrderByDescending(t => t.CreatedUtc)
             .FirstOrDefault();
@@ -145,8 +148,8 @@
                 NeedsAgent = false
             };
 
-            Db.ChatThreads.Add(thread);
-            await Db.SaveChangesAsync();
+            db.ChatThreads.Add(thread);
+            await db.SaveChangesAsync();
 
             await AddBotMessage(thread.ChatThreadId, $"Hi {userName}! 👋 I'm Marty, your virtual assistant.");
             await AddBotMessage(thread.ChatThreadId, GetMainMenu());
@@ -165,6 +168,7 @@
 
     private async Task SendMessage()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         if (string.IsNullOrWhiteSpace(newMessage.Text)) return;
 
         var msg = new ChatMessage
@@ -176,8 +180,8 @@
             UsuarioId = userId
         };
 
-        Db.ChatMessages.Add(msg);
-        await Db.SaveChangesAsync();
+        db.ChatMessages.Add(msg);
+        await db.SaveChangesAsync();
 
         newMessage.Text = string.Empty;
 
@@ -199,6 +203,7 @@
 
     private async Task ProcessBotResponse(string input)
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         var response = GetBotResponse(input);
 
         if (response.Contains("agent"))
@@ -206,11 +211,11 @@
             isBotActive = false;
             waitingForAgent = true;
 
-            var thread = Db.ChatThreads.Find(currentThreadId);
+            var thread = db.ChatThreads.Find(currentThreadId);
             if (thread != null)
             {
                 thread.NeedsAgent = true;
-                await Db.SaveChangesAsync();
+                await db.SaveChangesAsync();
             }
         }
 
@@ -221,6 +226,7 @@
 
     private async Task AddBotMessage(int threadId, string text)
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         var botMsg = new ChatMessage
         {
             ChatThreadId = threadId,
@@ -229,13 +235,14 @@
             SentUtc = DateTime.UtcNow
         };
 
-        Db.ChatMessages.Add(botMsg);
-        await Db.SaveChangesAsync();
+        db.ChatMessages.Add(botMsg);
+        await db.SaveChangesAsync();
     }
 
     private async Task LoadMessages()
     {
-        messages = Db.ChatMessages
+        await using var db = await DbFactory.CreateDbContextAsync();
+        messages = db.ChatMessages
             .Where(m => m.ChatThreadId == currentThreadId)
             .OrderBy(m => m.ChatMessageId)
             .ToList();
@@ -256,8 +263,9 @@
 
     private async Task PollForNewMessages()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         var lastId = messages.LastOrDefault()?.ChatMessageId ?? 0;
-        var newMsgs = Db.ChatMessages
+        var newMsgs = db.ChatMessages
             .Where(m => m.ChatThreadId == currentThreadId && m.ChatMessageId > lastId)
             .OrderBy(m => m.ChatMessageId)
             .ToList();

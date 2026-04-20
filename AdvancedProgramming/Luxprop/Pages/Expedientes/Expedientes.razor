@@ -1,10 +1,17 @@
 ﻿@page "/expedientes"
+@using ClosedXML.Excel
 @using Luxprop.Data.Models
 @using Luxprop.Business.Services
+@using Microsoft.EntityFrameworkCore
+@using QuestPDF.Fluent
+@using QuestPDF.Helpers
+@using QuestPDF.Infrastructure
+@inject Luxprop.Services.SessionService SessionService
 @inject IExpedienteService ExpedienteService
 @inject NavigationManager Navigation
 @inject Luxprop.Services.SessionService Session
 @inject IJSRuntime JS
+@inject IDbContextFactory<LuxpropContext> DbFactory
 
 <DashboardHero Title="Case Files"
                Subtitle="Look into your files" />
@@ -20,18 +27,29 @@
             <option>Closed</option>
         </select>
 
-        <input type="text" class="form-control w-auto" placeholder="Search by property" @bind="filterProperty" />
-        <input type="text" class="form-control w-auto" placeholder="Search by client" @bind="filterClient" />
+        <input type="text" class="form-control w-auto"
+               placeholder="Search by property"
+               @bind="filterProperty" />
 
-        <button class="btn btn-export" @onclick="ExportToPDF">Export to PDF</button>
-        <button class="btn btn-export" @onclick="ExportToExcel">Export to Excel</button>
+        <input type="text" class="form-control w-auto"
+               placeholder="Search by client"
+               @bind="filterClient" />
+
+        <button class="btn btn-export" @onclick="ExportSelectedToPDF">
+            Export to PDF
+        </button>
+
+
+        <button class="btn btn-export" @onclick="ExportToExcel">
+            Export to Excel
+        </button>
     </div>
 
     @if (cases == null)
     {
         <div class="loading mt-4">Loading case files...</div>
     }
-    else if (!cases.Any())
+    else if (!filteredCases.Any())
     {
         <div class="no-data mt-4">No case files found.</div>
     }
@@ -41,6 +59,7 @@
             <table class="table">
                 <thead>
                     <tr>
+                        <th></th>
                         <th>Property</th>
                         <th>Type</th>
                         <th>Client</th>
@@ -55,37 +74,42 @@
                 <tbody>
                     @foreach (var c in filteredCases)
                     {
-                        <tr>
+                        <tr class="@(selectedExpedienteId == c.ExpedienteId ? "table-active" : "")">
+
+                            <!-- Selection -->
+                            <td>
+                                <input type="radio"
+                                       name="selectedCase"
+                                       checked="@(selectedExpedienteId == c.ExpedienteId)"
+                                       @onchange="() => selectedExpedienteId = c.ExpedienteId" />
+                            </td>
+
                             <td>@c.Propiedad?.Titulo</td>
                             <td>@c.Propiedad?.Tipo_Propiedad</td>
 
                             <td>@($"{c.Cliente?.Usuario?.Nombre} {c.Cliente?.Usuario?.Apellido}")</td>
-
                             <td>@($"{c.Agente?.Nombre} {c.Agente?.Apellido}")</td>
 
                             <td>
-                                <span class="badge @(GetBadgeClass(c.Estado))">@c.Estado</span>
+                                <span class="badge @(GetBadgeClass(c.Estado))">
+                                    @c.Estado
+                                </span>
                             </td>
 
                             <td>@c.FechaApertura?.ToString("yyyy-MM-dd")</td>
-
                             <td>@c.UltimaActualizacion?.ToString("yyyy-MM-dd")</td>
 
                             <td>
-                                <div class="action-buttons d-flex gap-1">
-
-                                    <!-- View Button -->
+                                <div class="d-flex gap-1">
                                     <a href="/expedientes/details/@c.ExpedienteId"
-                                       class="btn btn-sm btn-outline-success view-btn">
+                                       class="btn btn-sm btn-outline-success">
                                         <i class="bi bi-eye"></i> View
                                     </a>
 
-                                    <!-- Delete Button -->
                                     <button class="btn btn-sm btn-outline-danger"
                                             @onclick="() => ConfirmDelete(c.ExpedienteId)">
                                         <i class="bi bi-trash"></i> Delete
                                     </button>
-
                                 </div>
                             </td>
                         </tr>
@@ -98,9 +122,14 @@
 
 @code {
     private List<Expediente>? cases;
+
+    private int? selectedExpedienteId;
+    private List<Expediente> expedientes = new();
     private string filterStatus = "";
     private string filterProperty = "";
     private string filterClient = "";
+
+
 
     private IEnumerable<Expediente> filteredCases =>
         cases?
@@ -113,35 +142,334 @@
                         .Contains(filterClient, StringComparison.OrdinalIgnoreCase)))
             ) ?? Enumerable.Empty<Expediente>();
 
+ 
     protected override async Task OnInitializedAsync()
     {
         await LoadCases();
     }
+    
 
     private async Task LoadCases()
     {
         await Session.LoadUserAsync();
         int userId = await Session.GetUserIdAsync();
-        var rawRole = await Session.GetUserRoleAsync();
-        var role = NormalizeRole(rawRole);
+        var role = NormalizeRole(await Session.GetUserRoleAsync());
 
         var all = await ExpedienteService.GetAllAsync();
 
-        cases = role == "agent"
-            ? all.Where(e => e.AgenteId == userId).ToList()
-            : all.ToList();
+        cases = role switch
+        {
+            "admin" => all.ToList(),
+
+            "agent" => all
+                .Where(e => e.AgenteId == userId)
+                .ToList(),
+
+            "seller" => all
+                .Where(e => e.Propiedad != null && e.Propiedad.SellerId == userId)
+                .ToList(),
+
+            "buyer" => all
+                .Where(e => e.Cliente != null && e.Cliente.UsuarioId == userId)
+                .ToList(),
+
+            _ => new List<Expediente>()
+        };
     }
 
-    private string GetBadgeClass(string status) => status switch
+    private async Task ExportSelectedToPDF()
     {
-        "Open" => "bg-warning text-dark",
-        "In progress" => "bg-info text-dark",
-        "Closed" => "bg-success",
-        _ => "bg-secondary"
-    };
+        if (selectedExpedienteId == null)
+        {
+            await JS.InvokeVoidAsync("alert", "Please select a case to export.");
+            return;
+        }
 
-    private void ExportToPDF() => Console.WriteLine("Exporting PDF...");
-    private void ExportToExcel() => Console.WriteLine("Exporting Excel...");
+        var expediente = cases?
+            .FirstOrDefault(e => e.ExpedienteId == selectedExpedienteId);
+
+        if (expediente == null)
+        {
+            await JS.InvokeVoidAsync("alert", "Selected case not found.");
+            return;
+        }
+
+        await ExportToPDF(expediente);
+    }
+
+
+    private async Task ExportToPDF(Expediente expediente)
+    {
+        var logoPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "wwwroot", "img", "logo-2crre.png"
+        );
+
+        var primaryColor = "#0d505a";
+        var lightBg = "#f3f8f8";
+        var borderColor = "#cfdede";
+
+        var pdfBytes = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.Margin(30);
+                page.DefaultTextStyle(x => x.FontSize(11));
+
+                /* ================= HEADER ================= */
+                page.Header()
+    .Background("#0d505a")
+    .PaddingVertical(16)
+    .PaddingHorizontal(24)
+    .Row(row =>
+    {
+        row.ConstantItem(100)
+            .AlignMiddle()
+            .Height(40)
+            .Image(logoPath);
+
+        row.RelativeItem()
+            .AlignMiddle()
+            .Column(col =>
+            {
+                col.Item().Text("CASE FILE REPORT")
+                    .FontSize(20)
+                    .Bold()
+                    .FontColor(Colors.White);
+
+                col.Item().Text($"Case File #{expediente.ExpedienteId}")
+                    .FontSize(12)
+                    .FontColor("#E0F2F4");
+            });
+    });
+
+
+                page.Content().PaddingVertical(20).Column(column =>
+                {
+                    /* ===== SECTION TITLE ===== */
+                    column.Item().Text("Property Information")
+                        .FontSize(14)
+                        .Bold()
+                        .FontColor(primaryColor);
+
+                    column.Item().LineHorizontal(1)
+                        .LineColor(primaryColor);
+
+                    column.Item().PaddingTop(10);
+
+                    /* ===== INFO CARD ===== */
+                    column.Item().Background(lightBg)
+                        .Border(1)
+                        .BorderColor(borderColor)
+                        .Padding(15)
+                        .Column(info =>
+                        {
+                            InfoRow(info, "Property:", expediente.Propiedad?.Titulo);
+                            InfoRow(info, "Client:",
+                                $"{expediente.Cliente?.Usuario?.Nombre} {expediente.Cliente?.Usuario?.Apellido}");
+                            InfoRow(info, "Agent:",
+                                $"{expediente.Agente?.Nombre} {expediente.Agente?.Apellido}");
+                            InfoRow(info, "Status:", expediente.Estado);
+                            InfoRow(info, "Opened:",
+                                expediente.FechaApertura?.ToString("yyyy-MM-dd"));
+                            InfoRow(info, "Last Update:",
+                                expediente.UltimaActualizacion?.ToString("yyyy-MM-dd"));
+                        });
+                });
+
+                /* ================= FOOTER ================= */
+                page.Footer()
+    .AlignCenter()
+    .Text(txt =>
+    {
+        txt.Span("2CRRE Docs • ")
+           .FontSize(9)
+           .FontColor(Colors.Grey.Medium);
+
+        txt.Span(DateTime.Now.ToString("yyyy-MM-dd HH:mm"))
+           .FontSize(9)
+           .FontColor(Colors.Grey.Medium);
+    });
+
+            });
+        }).GeneratePdf();
+
+        var base64 = Convert.ToBase64String(pdfBytes);
+
+        await JS.InvokeVoidAsync("downloadFile",
+            $"CaseFile_{expediente.ExpedienteId}.pdf",
+            "application/pdf",
+            base64);
+    }
+
+    void InfoRow(ColumnDescriptor column, string label, string? value)
+    {
+        column.Item().Row(row =>
+        {
+            row.ConstantItem(110)
+                .Text(label)
+                .SemiBold()
+                .FontColor("#0d505a");
+
+            row.RelativeItem()
+                .Text(value ?? "-");
+        });
+    }
+
+
+
+
+    private async Task ExportToExcel()
+    {
+        if (selectedExpedienteId == null)
+        {
+            await JS.InvokeVoidAsync("alert", "Please select a case to export.");
+            return;
+        }
+
+        var expediente = cases!
+            .FirstOrDefault(e => e.ExpedienteId == selectedExpedienteId);
+
+        if (expediente == null)
+        {
+            await JS.InvokeVoidAsync("alert", "Case not found.");
+            return;
+        }
+
+        using var wb = new ClosedXML.Excel.XLWorkbook();
+        var ws = wb.Worksheets.Add("Case File");
+
+        // =======================
+        // HEADER AREA
+        // =======================
+        ws.Range("A1:B3").Merge();
+        ws.Range("A1:B3").Style
+            .Fill.SetBackgroundColor(XLColor.FromHtml("#0D505A"))
+            .Alignment.SetVertical(XLAlignmentVerticalValues.Center);
+
+        ws.Row(1).Height = 35;
+        ws.Row(2).Height = 35;
+        ws.Row(3).Height = 35;
+
+        // =======================
+        // LOGO
+        // =======================
+        var logoPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "wwwroot",
+            "img",
+            "logo-2crre.png"
+        );
+
+        if (File.Exists(logoPath))
+        {
+            ws.AddPicture(logoPath)
+                .MoveTo(ws.Cell("A1"), 10, 5)
+                .Scale(0.35);
+        }
+
+        // =======================
+        // TITLE TEXT
+        // =======================
+        ws.Cell("A1").Value = "CASE FILE REPORT";
+        ws.Cell("A1").Style
+            .Font.SetBold()
+            .Font.SetFontSize(18)
+            .Font.SetFontColor(XLColor.White)
+            .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right)
+            .Alignment.SetVertical(XLAlignmentVerticalValues.Center)
+            .Alignment.SetIndent(4);
+
+        ws.Cell("A2").Value = $"Case File #{expediente.ExpedienteId}";
+        ws.Cell("A2").Style
+            .Font.SetFontSize(11)
+            .Font.SetFontColor(XLColor.FromHtml("#E0F2F4"))
+            .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right)
+            .Alignment.SetIndent(4);
+
+
+        // =======================
+        // TABLE HEADER
+        // =======================
+        ws.Cell("A5").Value = "Field";
+        ws.Cell("B5").Value = "Value";
+
+        ws.Range("A5:B5").Style
+            .Font.SetBold()
+            .Font.SetFontColor(XLColor.White)
+            .Fill.SetBackgroundColor(XLColor.FromHtml("#0D505A"))
+            .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+
+        // =======================
+        // DATA
+        // =======================
+        int row = 6;
+
+        void AddRow(string label, string? value)
+        {
+            ws.Cell(row, 1).Value = label;
+            ws.Cell(row, 2).Value = value ?? "-";
+
+            ws.Cell(row, 1).Style.Font.SetBold();
+
+            ws.Range(row, 1, row, 2).Style
+                .Fill.SetBackgroundColor(XLColor.FromHtml("#F1F7F8"))
+                .Border.SetOutsideBorder(XLBorderStyleValues.Thin);
+
+            row++;
+        }
+
+        AddRow("Case ID", expediente.ExpedienteId.ToString());
+        AddRow("Property", expediente.Propiedad?.Titulo);
+        AddRow("Client", $"{expediente.Cliente?.Usuario?.Nombre} {expediente.Cliente?.Usuario?.Apellido}");
+        AddRow("Agent", $"{expediente.Agente?.Nombre} {expediente.Agente?.Apellido}");
+        AddRow("Status", expediente.Estado);
+        AddRow("Opened", expediente.FechaApertura?.ToString("yyyy-MM-dd"));
+        AddRow("Last Update", expediente.UltimaActualizacion?.ToString("yyyy-MM-dd"));
+
+        // =======================
+        // FINAL STYLING
+        // =======================
+        ws.Columns().AdjustToContents();
+        ws.Column(1).Width = 18;
+        ws.Column(2).Width = 42;
+
+        ws.Range($"A5:B{row - 1}")
+            .Style.Border.SetOutsideBorder(XLBorderStyleValues.Medium);
+
+        using var stream = new MemoryStream();
+        wb.SaveAs(stream);
+
+        var base64 = Convert.ToBase64String(stream.ToArray());
+
+        await JS.InvokeVoidAsync(
+            "downloadFile",
+            $"Case_{expediente.ExpedienteId}.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            base64
+        );
+    }
+
+
+
+
+
+
+
+    private async Task ConfirmDelete(int id)
+    {
+        bool confirm = await JS.InvokeAsync<bool>(
+            "confirm",
+            "Are you sure you want to delete this case file?");
+
+        if (!confirm)
+            return;
+
+        await ExpedienteService.DeleteAsync(id);
+        selectedExpedienteId = null;
+        await LoadCases();
+    }
 
     private static string NormalizeRole(string? name)
     {
@@ -156,33 +484,13 @@
         };
     }
 
-    private async Task ConfirmDelete(int id)
+    private static string GetBadgeClass(string status) => status switch
     {
-        bool confirm = await JS.InvokeAsync<bool>(
-            "confirm",
-            "Are you sure you want to delete this case file? This action cannot be undone.");
-
-        if (!confirm)
-            return;
-
-        try
-        {
-            var ok = await ExpedienteService.DeleteAsync(id);
-
-            if (!ok)
-            {
-                await JS.InvokeVoidAsync("alert", "The case could not be deleted. It may not exist.");
-                return;
-            }
-
-            await LoadCases();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Error deleting case: " + ex.Message);
-            await JS.InvokeVoidAsync("alert", "An error occurred while deleting the case file.");
-        }
-    }
+        "Open" => "bg-warning text-dark",
+        "In progress" => "bg-info text-dark",
+        "Closed" => "bg-success",
+        _ => "bg-secondary"
+    };
 }
 
 <style>

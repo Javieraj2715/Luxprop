@@ -1,9 +1,9 @@
 ﻿@page "/expedientes/create/{PropiedadId:int}"
 @using Luxprop.Data.Models
-@inject LuxpropContext Db
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject NavigationManager Navigation
 @inject Luxprop.Services.SessionService Session
-@using Microsoft.EntityFrameworkCore
 
 <PageTitle>Create Case File</PageTitle>
 
@@ -75,7 +75,9 @@
 
                     @foreach (var c in Buyers)
                     {
-                        <option value="@c.ClienteId">@c.Usuario.Nombre @c.Usuario.Apellido</option>
+                        <option value="@c.ClienteId">
+                            @c.Usuario?.Nombre @c.Usuario?.Apellido
+                        </option>
                     }
                 </InputSelect>
             </div>
@@ -85,21 +87,26 @@
                 <button type="submit" class="btn btn-primary">Create</button>
             </div>
 
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <div class="alert alert-danger mt-3">@errorMessage</div>
+            }
         </EditForm>
     </div>
 </div>
 
 @code {
     private List<Cliente> Buyers = new();
+    private string? errorMessage;
 
     [Parameter] public int PropiedadId { get; set; }
     private Expediente newCase = new();
 
     protected override async Task OnInitializedAsync()
     {
-        // 🔹 Cargar la propiedad con su agente asignado
-        var propiedad = await Db.Propiedads
-            .AsNoTracking()
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        var propiedad = await db.Propiedads.AsNoTracking()
             .FirstOrDefaultAsync(p => p.PropiedadId == PropiedadId);
 
         if (propiedad == null)
@@ -108,36 +115,57 @@
             return;
         }
 
-        // 📌 Siempre asignar el agente de la propiedad (si tiene)
+        newCase.PropiedadId = PropiedadId;
         newCase.AgenteId = propiedad.AgenteId;
 
-        // Si no tiene agente asignado, usar el usuario actual SOLO si es agente
-        var role = (await Session.GetUserRoleAsync())?.Trim().ToLower();
-
+        var role = (await Session.GetUserRoleAsync())?.Trim().ToLowerInvariant();
         if (newCase.AgenteId == null && (role == "agente" || role == "agent"))
-        {
             newCase.AgenteId = await Session.GetUserIdAsync();
-        }
 
-        newCase.PropiedadId = PropiedadId;
         newCase.Estado = "Abierto";
         newCase.FechaApertura = DateOnly.FromDateTime(DateTime.Now);
         newCase.Prioridad = "Normal";
 
-        // ▶️ Traer SOLO Buyeres desde la tabla Cliente
-        Buyers = await Db.Clientes
-            .Include(c => c.Usuario)
-            .Where(c => c.Usuario.UsuarioRols.Any(r => r.RolId == 4))  // Rol Buyer
-            .ToListAsync();
+        // ✅ IMPORTANT: load from CLIENTES, not USUARIOS
+        Buyers = await db.Clientes
+    .Include(c => c.Usuario)
+    .Where(c =>
+        c.TipoCliente != null &&
+        c.TipoCliente.ToLower() == "buyer" &&
+        c.Usuario != null &&
+        c.Usuario.Activo == true)
+    .OrderBy(c => c.Usuario!.Nombre)
+    .ToListAsync();
     }
 
     private async Task SaveCase()
     {
-        if (string.IsNullOrWhiteSpace(newCase.Codigo) || newCase.ClienteId == 0)
-            return;
+        errorMessage = null;
 
-        Db.Expedientes.Add(newCase);
-        await Db.SaveChangesAsync();
+        if (string.IsNullOrWhiteSpace(newCase.Codigo))
+        {
+            errorMessage = "Case Code is required.";
+            return;
+        }
+
+        if (newCase.ClienteId == null || newCase.ClienteId == 0)
+        {
+            errorMessage = "Please select a Buyer.";
+            return;
+        }
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        // ✅ Safety check: make sure Cliente exists (prevents FK crash)
+        bool clienteExiste = await db.Clientes.AnyAsync(c => c.ClienteId == newCase.ClienteId);
+        if (!clienteExiste)
+        {
+            errorMessage = "Selected Buyer is invalid (Client record not found). Create the client first.";
+            return;
+        }
+
+        db.Expedientes.Add(newCase);
+        await db.SaveChangesAsync();
 
         Navigation.NavigateTo($"/expedientes/details/{newCase.ExpedienteId}");
     }
@@ -145,9 +173,7 @@
     private void Cancel() => Navigation.NavigateTo("/properties");
 }
 
-
 <style>
-    /* === Layout general === */
     .create-container {
         display: flex;
         justify-content: center;
@@ -180,7 +206,6 @@
         margin-bottom: 1.8rem;
     }
 
-    /* === Formulario === */
     .form-group {
         margin-bottom: 1.2rem;
     }
@@ -213,7 +238,6 @@
         resize: vertical;
     }
 
-    /* === Botones === */
     .buttons {
         display: flex;
         justify-content: space-between;
@@ -246,7 +270,6 @@
             background-color: #f4f6f8;
         }
 
-    /* === Sombras suaves === */
     .shadow {
         box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
     }

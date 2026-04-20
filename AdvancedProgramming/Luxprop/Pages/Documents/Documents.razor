@@ -1,169 +1,149 @@
 ﻿@page "/documents"
-
 @using Luxprop.Data
 @using Luxprop.Data.Models
 @using Microsoft.EntityFrameworkCore
-@using Microsoft.AspNetCore.Components.Forms
+@inject IDbContextFactory<LuxpropContext> DbFactory
 
-@inject LuxpropContext Db
 
 <PageTitle>Documents</PageTitle>
 
-<!-- HERO HEADER -->
 <DashboardHero Title="Documents"
-               Subtitle="Manage and upload case files, contracts, and related documentation."
-               
-               PrimaryUrl="/documents/create"
-               
+               Subtitle="View and filter documents uploaded from case files."
+               PrimaryUrl="/expedientes"
                SecondaryUrl="/expired-documents" />
 
 <div class="documents-page">
 
     <!-- FILTERS -->
     <div class="filters">
-        <select class="form-select">
-            <option>-- All Types --</option>
+        <input class="form-control" placeholder="Search by name..." @bind="filterName" />
+        <input class="form-control" placeholder="Search by case file code..." @bind="filterCaseCode" />
+
+        <select class="form-select" @bind="filterStatus">
+            <option value="">-- All Status --</option>
+            <option value="Activo">Active</option>
+            <option value="Inactivo">Inactive</option>
+            <option value="Expired">Expired</option>
         </select>
-        <select class="form-select">
-            <option>-- All Tags --</option>
-        </select>
-        <select class="form-select">
-            <option>-- All Status --</option>
-        </select>
+
+        <button type="button" class="btn btn-primary" @onclick="ApplyFilters">Apply</button>
+        <button type="button" class="btn btn-secondary" @onclick="ClearFilters">Clear</button>
     </div>
 
-    <!-- UPLOAD CARD -->
-    <div class="upload-card">
-        <div class="upload-bar">
-            <span class="upload-title">Upload document</span>
-            <span class="upload-hint">Files are stored securely</span>
-        </div>
-
-        <div class="upload-grid">
-
-            <div class="file-cell">
-                <label class="file-label">File</label>
-                <InputFile OnChange="OnFileSelected" class="file-input" />
-                @if (!string.IsNullOrWhiteSpace(selectedFileName))
-                {
-                    <div class="file-name">@selectedFileName</div>
-                }
-            </div>
-
-            <div class="field-cell">
-                <label class="field-label">Tags</label>
-                <input class="form-control"
-                       placeholder="comma separated"
-                       @bind="tags" />
-            </div>
-
-            <div class="field-cell">
-                <label class="field-label">Expiration</label>
-                <input type="date"
-                       class="form-control"
-                       @bind="expiration" />
-            </div>
-
-            <div class="btn-cell">
-                <button class="btn-2cr"
-                        @onclick="UploadDocument"
-                        disabled="@(!canUpload)">
-                    Upload Document
-                </button>
-                <div class="btn-note">PDF, JPG, PNG</div>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- DOCUMENTS TABLE -->
+    <!-- TABLE -->
     <div class="table-wrap">
         <table class="table docs-table">
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th>Tags</th>
+                    <th>Case File</th>
                     <th>Status</th>
-                    <th class="actions-col"></th>
+                    <th>Uploaded</th>
+                    <th>Expiration</th>
                 </tr>
             </thead>
-
             <tbody>
                 @if (documents == null)
                 {
-                    <tr>
-                        <td colspan="4">
-                            <div class="state-box muted">
-                                Loading documents…
-                            </div>
-                        </td>
-                    </tr>
+                    <tr><td colspan="4">Loading…</td></tr>
                 }
                 else if (!documents.Any())
                 {
-                    <tr>
-                        <td colspan="4">
-                            <div class="state-box">
-                                No documents found
-                            </div>
-                        </td>
-                    </tr>
+                    <tr><td colspan="4">No documents found</td></tr>
                 }
                 else
                 {
                     @foreach (var doc in documents)
                     {
                         <tr>
-                            <td class="doc-name">@doc.Nombre</td>
+                            <td>@doc.Nombre</td>
                             <td>
-                                <span class="tag-pill">General</span>
+                                @if (doc.Expediente != null)
+                                {
+                                    <a href="/expedientes/details/@doc.ExpedienteId">@doc.Expediente.Codigo</a>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
                             </td>
-                            <td>Active</td>
-                            <td class="actions-col">
-                                <div class="row-actions">
-                                    <button class="btn btn-sm btn-2cr-outline">View</button>
-                                    <button class="btn btn-sm btn-2cr-danger">Delete</button>
-                                </div>
-                            </td>
+                            <td>@doc.Estado</td>
+                            <td>@doc.FechaCarga</td>
+                            <td>@(doc.FechaVencimiento?.ToString("yyyy-MM-dd") ?? "—")</td>
+
                         </tr>
                     }
                 }
             </tbody>
         </table>
     </div>
-
 </div>
 
 @code {
     private List<Documento>? documents;
 
-    private IBrowserFile? selectedFile;
-    private string? selectedFileName;
-
-    private string? tags;
-    private DateTime? expiration;
-
-    private bool canUpload => selectedFile != null;
+    // filters
+    private string filterName = "";
+    private string filterCaseCode = "";
+    private string filterStatus = "";
 
     protected override async Task OnInitializedAsync()
     {
-        documents = await Db.Documentos.ToListAsync();
+        await LoadDocuments();
     }
 
-    private void OnFileSelected(InputFileChangeEventArgs e)
+    private async Task LoadDocuments()
     {
-        selectedFile = e.File;
-        selectedFileName = e.File.Name;
+        await using var db = await DbFactory.CreateDbContextAsync();
+        documents = await db.Documentos
+            .Include(d => d.Expediente)
+            .OrderByDescending(d => d.FechaCarga)
+            .ToListAsync();
     }
 
-    private async Task UploadDocument()
+    private async Task ApplyFilters()
     {
-        // 🔹 Aquí va tu lógica real de upload
-        await Task.CompletedTask;
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var q = db.Documentos
+            .Include(d => d.Expediente)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filterName))
+            q = q.Where(d => d.Nombre.Contains(filterName));
+
+        if (!string.IsNullOrWhiteSpace(filterCaseCode))
+            q = q.Where(d => d.Expediente != null && d.Expediente.Codigo.Contains(filterCaseCode));
+
+        if (!string.IsNullOrWhiteSpace(filterStatus))
+            q = q.Where(d => d.Estado == filterStatus);
+
+        documents = await q
+            .OrderByDescending(d => d.FechaCarga)
+            .ToListAsync();
+    }
+
+    private async Task ClearFilters()
+    {
+        filterName = "";
+        filterCaseCode = "";
+        filterStatus = "";
+        await LoadDocuments();
     }
 }
 
+
 <style>
+
+    .link-2cr {
+        color: #0d505a;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+        .link-2cr:hover {
+            text-decoration: underline;
+        }
+
     .documents-page {
         padding: 2rem;
         max-width: 1400px;

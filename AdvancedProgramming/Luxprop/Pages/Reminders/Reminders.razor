@@ -2,7 +2,7 @@
 @using Luxprop.Data.Models
 @using Microsoft.EntityFrameworkCore
 @inject IReminderService ReminderSvc
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject NavigationManager Nav
 @inject IEmailService EmailService
 
@@ -127,7 +127,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        propiedades = await Db.Propiedads.ToListAsync();
+        await using var db = await DbFactory.CreateDbContextAsync();
+        propiedades = await db.Propiedads.ToListAsync();
 
         await Load();
         await LoadMonth(); // 👈 NECESARIO para que se vea el calendario

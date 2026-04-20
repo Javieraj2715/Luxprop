@@ -1,7 +1,8 @@
 ﻿@page "/properties/{propertyId:int}/tour360/edit"
 @using Luxprop.Data.Models
+@using Microsoft.EntityFrameworkCore
 
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject NavigationManager Navigation
 
 <h2>Edit 360° Tour</h2>
@@ -19,7 +20,7 @@ else
         </div>
 
         <button type="submit" class="btn btn-primary">Save</button>
-        <button class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+        <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
     </EditForm>
 }
 
@@ -31,12 +32,22 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        property = await Db.Propiedads.FindAsync(propertyId);
+        await using var db = await DbFactory.CreateDbContextAsync();
+        property = await db.Propiedads.FirstOrDefaultAsync(p => p.PropiedadId == propertyId);
     }
 
     private async Task Save()
     {
-        await Db.SaveChangesAsync();
+        if (property == null) return;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        var propDb = await db.Propiedads.FirstOrDefaultAsync(p => p.PropiedadId == propertyId);
+        if (propDb == null) return;
+
+        propDb.Recorrido360Url = property.Recorrido360Url;
+
+        await db.SaveChangesAsync();
         Navigation.NavigateTo($"/properties/details/{propertyId}");
     }
 

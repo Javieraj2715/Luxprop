@@ -5,7 +5,7 @@
 @using Microsoft.EntityFrameworkCore
 @using Luxprop.Services
 
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject SessionService Session
 @inject NavigationManager Nav
 
@@ -38,8 +38,12 @@
                     <input class="form-control w-auto" placeholder="Case ID"
                            type="number" @bind-value="filters.ExpedienteId" />
 
-                    <input class="form-control w-auto" placeholder="Status"
-                           @bind-value="filters.Estado" />
+                    <InputSelect class="form-control w-auto" @bind-Value="filters.Estado">
+                        <option value="">All Status</option>
+                        <option value="Abierto">Open</option>
+                        <option value="En proceso">In Progress</option>
+                        <option value="Cerrado">Closed</option>
+                    </InputSelect>
 
                     <input class="form-control w-auto" placeholder="Search property or client"
                            @bind-value="filters.Search" />
@@ -211,6 +215,7 @@
 
     private async Task LoadCases()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         isLoading = true;
         StateHasChanged();
 
@@ -221,7 +226,7 @@
             currentUserId = await Session.GetUserIdAsync();
         }
 
-        var q = Db.Expedientes
+        var q = db.Expedientes
             .Include(e => e.Propiedad)
             .Include(e => e.Cliente).ThenInclude(c => c.Usuario)
             .Include(e => e.Documentos)

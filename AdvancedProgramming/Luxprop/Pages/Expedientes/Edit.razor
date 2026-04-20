@@ -2,11 +2,11 @@
 @using Luxprop.Business.Services
 @using Luxprop.Data.Models
 @using Microsoft.EntityFrameworkCore
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject NavigationManager Navigation
 @inject Luxprop.Services.SessionService Session
 @inject IDocumentoService DocumentoService
-
+@inject IJSRuntime JS
 
 <h3 class="mb-3">Edit Case File</h3>
 
@@ -20,7 +20,6 @@ else
         <DataAnnotationsValidator />
         <ValidationSummary />
 
-        <!-- Case Info -->
         <div class="card p-4 shadow-sm mb-4">
             <h5 class="fw-bold text-primary">Case File Information</h5>
             <hr />
@@ -28,19 +27,34 @@ else
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label">Type of Occupation</label>
-                    <InputText class="form-control" @bind-Value="expediente.TipoOcupacion" />
+                    @if (canManageCase)
+                    {
+                        <InputText class="form-control" @bind-Value="expediente.TipoOcupacion" />
+                    }
+                    else
+                    {
+                        <input class="form-control" value="@expediente.TipoOcupacion" disabled />
+                    }
                 </div>
+
                 <div class="col-md-6">
                     <label class="form-label">Status</label>
-                    <InputSelect class="form-select" @bind-Value="expediente.Estado">
-                        <option value="Abierto">Open</option>
-                        <option value="En proceso">In Progress</option>
-                        <option value="Cerrado">Closed</option>
-                    </InputSelect>
+                    @if (canManageCase)
+                    {
+                        <InputSelect class="form-select" @bind-Value="expediente.Estado">
+                            <option value="Abierto">Open</option>
+                            <option value="En proceso">In Progress</option>
+                            <option value="Cerrado">Closed</option>
+                        </InputSelect>
+                    }
+                    else
+                    {
+                        <input class="form-control" value="@expediente.Estado" disabled />
+                    }
                 </div>
             </div>
 
-            @if (expediente.Estado == "Cerrado")
+            @if (canManageCase && expediente.Estado == "Cerrado")
             {
                 <div class="mb-3">
                     <label class="form-label">Closing Date</label>
@@ -55,13 +69,25 @@ else
                 <h5 class="fw-bold text-primary">Documents</h5>
                 <hr />
 
-                <InputFile OnChange="GuardarArchivoTemporal" class="form-control mb-2" />
-
-                @if (!string.IsNullOrEmpty(nombreArchivoTemporal))
+                @if (canManageDocuments)
                 {
-                    <small class="text-success">
-                        File ready to upload: @nombreArchivoTemporal (will be saved on Save Changes)
-                    </small>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-6">
+                            <label class="form-label">Select file</label>
+                            <InputFile OnChange="@GuardarArchivoTemporal" class="form-control" />
+                            @if (!string.IsNullOrEmpty(nombreArchivoTemporal))
+                            {
+                                <small class="text-success">
+                                    File ready to upload: @nombreArchivoTemporal (will be saved on Save Changes)
+                                </small>
+                            }
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Expiration date</label>
+                            <InputDate @bind-Value="fechaVencimiento" class="form-control" />
+                        </div>
+                    </div>
                 }
 
                 @if (documentos != null && documentos.Any())
@@ -71,6 +97,7 @@ else
                             <tr>
                                 <th>Name</th>
                                 <th>Date</th>
+                                <th>Expiration</th>
                                 <th>Status</th>
                                 <th class="text-center" style="width:150px;">Actions</th>
                             </tr>
@@ -82,26 +109,28 @@ else
                                 <tr>
                                     <td>@d.Nombre</td>
                                     <td>@d.FechaCarga?.ToString("yyyy-MM-dd")</td>
+                                    <td>@(d.FechaVencimiento?.ToString("yyyy-MM-dd") ?? "—")</td>
                                     <td>
                                         <span class="badge status-badge">@d.Estado</span>
                                     </td>
 
                                     <td class="text-center">
                                         <div class="btn-group-docs">
-
                                             @if (!string.IsNullOrEmpty(d.UrlArchivo))
                                             {
-                                                <a href="@d.UrlArchivo" target="_blank"
-                                                   class="btn-doc btn-doc-download">
+                                                <a href="@d.UrlArchivo" target="_blank" class="btn-doc btn-doc-download">
                                                     <i class="bi bi-download"></i> Download
                                                 </a>
                                             }
 
-                                            <button class="btn-doc btn-doc-delete"
-                                                    @onclick="() => EliminarDocumento(d.DocumentoId)">
-                                                <i class="bi bi-trash"></i> Delete
-                                            </button>
-
+                                            @if (canDeleteDocuments)
+                                            {
+                                                <button type="button"
+                                                        class="btn-doc btn-doc-delete"
+                                                        @onclick="() => EliminarDocumento(d.DocumentoId)">
+                                                    <i class="bi bi-trash"></i> Delete
+                                                </button>
+                                            }
                                         </div>
                                     </td>
                                 </tr>
@@ -115,65 +144,87 @@ else
                 }
             </div>
 
-
             <div class="mt-3 text-end">
                 <button class="btn btn-primary me-2">Save Changes</button>
                 <button type="button" class="btn btn-secondary" @onclick="Volver">Cancel</button>
             </div>
         </div>
-
     </EditForm>
 
-    <!-- TASKS -->
-    <div class="card p-4 shadow-sm mb-4">
-        <h5 class="fw-bold text-primary">Process Tasks</h5>
-        <hr />
+    @if (canManageTasks)
+    {
+        <div class="card p-4 shadow-sm mb-4">
+            <h5 class="fw-bold text-primary">Process Tasks</h5>
+            <hr />
 
-        <EditForm Model="nuevaTarea" OnValidSubmit="AgregarTarea">
-            <div class="row g-2 mb-3">
-                <div class="col-md-5">
-                    <InputText class="form-control" @bind-Value="nuevaTarea.Titulo" placeholder="Task Title" />
-                </div>
-                <div class="col-md-5">
-                    <InputText class="form-control" @bind-Value="nuevaTarea.Estado" placeholder="Status (Pending, Done…)" />
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-success w-100">Add</button>
-                </div>
-            </div>
-        </EditForm>
+            <EditForm Model="nuevaTarea" OnValidSubmit="AgregarTarea">
+                <div class="row g-2 mb-3">
+                    <div class="col-md-5">
+                        <InputText class="form-control" @bind-Value="nuevaTarea.Titulo" placeholder="Task Title" />
+                    </div>
+                    <div class="col-md-5">
+                        <InputText class="form-control" @bind-Value="nuevaTarea.Estado" placeholder="Status (Pending, Done…)" />
+                    </div>
 
-        @if (tareas != null && tareas.Any())
-        {
-            <table class="table table-striped">
-                <thead class="table-light">
-                    <tr>
-                        <th>Title</th>
-                        <th>Status</th>
-                        <th style="width:100px;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var t in tareas)
-                    {
+                    <div class="col-md-3">
+                        <InputDate class="form-control"
+                                   @bind-Value="nuevaTarea.FechaCompromiso"
+                                   placeholder="Due date" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <InputDate class="form-control"
+                                   @bind-Value="nuevaTarea.FechaCierre"
+                                   placeholder="Closing date" />
+                    </div>
+
+                    <div class="col-md-2">
+                        <button class="btn btn-success w-100">Add</button>
+                    </div>
+                </div>
+            </EditForm>
+
+            @if (tareas != null && tareas.Any())
+            {
+                <table class="table table-striped">
+                    <thead class="table-light">
                         <tr>
-                            <td>@t.Titulo</td>
-                            <td>@t.Estado</td>
-                            <td>
-                                <button class="btn btn-sm btn-danger" @onclick="() => EliminarTarea(t.TareaId)">Delete</button>
-                            </td>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Closed</th>
+                            <th style="width:100px;">Actions</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        }
-        else
-        {
-            <p>No tasks registered.</p>
-        }
-    </div>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in tareas)
+                        {
+                            <tr>
+                                <td>@t.Titulo</td>
+                                <td style="width:180px;">
+                                    <InputSelect class="form-select form-select-sm"
+                                                 @bind-Value="t.Estado"
+                                                 @onchange="() => UpdateTaskStatus(t)">
+                                        <option value="Pending">Pending</option>
+                                        <option value="Done">Done</option>
+                                    </InputSelect>
+                                </td>
+                                <td>@(t.FechaCierre?.ToString("yyyy-MM-dd") ?? "—")</td>
 
-    <!-- HISTORY -->
+                                <td>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => EliminarTarea(t.TareaId)">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p>No tasks registered.</p>
+            }
+        </div>
+    }
+
     <div class="card p-4 shadow-sm">
         <h5 class="fw-bold text-primary">History Log</h5>
         <hr />
@@ -209,68 +260,142 @@ else
 
 @code {
     [Parameter] public int ExpedienteId { get; set; }
+
     private Expediente? expediente;
-    private List<Documento>? documentos;
+    private List<Documento> documentos = new();
     private List<HistorialExpediente>? historial;
-    private List<TareaTramite>? tareas;
+    private List<TareaTramite> tareas = new();
+    private DateTime? fechaVencimiento;
 
     private string descripcionHistorial = "";
     private TareaTramite nuevaTarea = new();
     private IBrowserFile? archivoTemporal;
     private string? nombreArchivoTemporal;
 
+    private string role = "";
+    private int currentUserId;
+    private bool canAccess = false;
+    private bool canManageCase = false;
+    private bool canManageDocuments = false;
+    private bool canManageTasks = false;
+    private bool canDeleteDocuments = false;
+
     protected override async Task OnInitializedAsync()
     {
-        expediente = await Db.Expedientes
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        currentUserId = await Session.GetUserIdAsync();
+        role = NormalizeRole(await Session.GetUserRoleAsync());
+
+        expediente = await db.Expedientes
+            .Include(e => e.Propiedad)
             .Include(e => e.Cliente).ThenInclude(c => c.Usuario)
+            .Include(e => e.Agente)
             .Include(e => e.Documentos)
             .FirstOrDefaultAsync(e => e.ExpedienteId == ExpedienteId);
 
-        documentos = expediente?.Documentos.ToList();
+        if (expediente == null)
+            return;
 
-        tareas = await Db.TareaTramites.Where(t => t.ExpedienteId == ExpedienteId).ToListAsync();
+        canAccess = role switch
+        {
+            "admin" => true,
+            "agent" => expediente.AgenteId == currentUserId,
+            "seller" => expediente.Propiedad != null && expediente.Propiedad.SellerId == currentUserId,
+            "buyer" => expediente.Cliente != null && expediente.Cliente.UsuarioId == currentUserId,
+            _ => false
+        };
 
-        historial = await Db.HistorialExpedientes.Where(h => h.ExpedienteId == ExpedienteId)
-                                                 .OrderByDescending(h => h.FechaModificacion)
-                                                 .ToListAsync();
+        if (!canAccess)
+        {
+            expediente = null;
+            Navigation.NavigateTo("/expedientes");
+            return;
+        }
+
+        canManageCase = role == "admin" || role == "agent";
+        canManageDocuments = role == "admin" || role == "agent" || role == "seller" || role == "buyer";
+        canManageTasks = role == "admin" || role == "agent" || role == "seller" || role == "buyer";
+        canDeleteDocuments = role == "admin" || role == "agent" || role == "seller" || role == "buyer";
+
+        documentos = expediente.Documentos?.ToList() ?? new List<Documento>();
+
+        tareas = await db.TareaTramites
+            .Where(t => t.ExpedienteId == ExpedienteId)
+            .ToListAsync();
+
+        historial = await db.HistorialExpedientes
+            .Where(h => h.ExpedienteId == ExpedienteId)
+            .OrderByDescending(h => h.FechaModificacion)
+            .ToListAsync();
+    }
+
+    private static string NormalizeRole(string? name)
+    {
+        var n = name?.Trim().ToLowerInvariant();
+        return n switch
+        {
+            "admin" or "administrador" => "admin",
+            "agent" or "agente" => "agent",
+            "seller" or "vendedor" => "seller",
+            "buyer" or "comprador" => "buyer",
+            _ => ""
+        };
     }
 
     private void GuardarArchivoTemporal(InputFileChangeEventArgs e)
     {
+        if (!canManageDocuments) return;
+
         archivoTemporal = e.File;
         nombreArchivoTemporal = archivoTemporal.Name;
     }
 
     private async Task GuardarCambios()
     {
-
+        await using var db = await DbFactory.CreateDbContextAsync();
         int usuarioId = await Session.GetUserIdAsync();
 
+        var expDb = await db.Expedientes
+            .FirstOrDefaultAsync(e => e.ExpedienteId == ExpedienteId);
 
-        if (expediente != null)
+        if (expDb == null)
         {
-            expediente.UltimaActualizacion = DateTime.Now;
+            await JS.InvokeVoidAsync("alert", "The case file was modified or deleted. Please reload.");
+            return;
         }
 
-        // Save expediente
-        Db.Expedientes.Update(expediente!);
-
-        // Save history
-        Db.HistorialExpedientes.Add(new HistorialExpediente
+        if (!canManageCase && !canManageDocuments && !canManageTasks)
         {
-            ExpedienteId = expediente!.ExpedienteId,
+            await JS.InvokeVoidAsync("alert", "You do not have permission to modify this case.");
+            return;
+        }
+
+        if (!canManageCase && archivoTemporal == null && string.IsNullOrWhiteSpace(descripcionHistorial))
+        {
+            await JS.InvokeVoidAsync("alert", "There are no changes to save.");
+            return;
+        }
+        if (canManageCase)
+        {
+            expDb.TipoOcupacion = expediente!.TipoOcupacion;
+            expDb.Estado = expediente!.Estado;
+            expDb.FechaCierre = expediente!.FechaCierre;
+        }
+
+        expDb.UltimaActualizacion = DateTime.Now;
+
+        db.HistorialExpedientes.Add(new HistorialExpediente
+        {
+            ExpedienteId = expDb.ExpedienteId,
             UsuarioId = usuarioId,
             FechaModificacion = DateTime.Now,
-            EstadoNuevo = expediente.Estado,
+            EstadoNuevo = expDb.Estado,
             Descripcion = string.IsNullOrWhiteSpace(descripcionHistorial) ? "Case updated." : descripcionHistorial
         });
 
-        // Save document if exists
-        // 🔥 NUEVO: Subir documento a Firebase usando DocumentoService
         if (archivoTemporal != null)
         {
-            
-
             using var stream = archivoTemporal.OpenReadStream(10_000_000);
 
             string url = await DocumentoService.UploadFileAsync(
@@ -279,32 +404,56 @@ else
                 archivoTemporal.ContentType
             );
 
-            var nuevoDoc = new Documento
+            db.Documentos.Add(new Documento
             {
                 Nombre = archivoTemporal.Name,
                 TipoDocumento = archivoTemporal.ContentType,
                 FechaCarga = DateOnly.FromDateTime(DateTime.Now),
                 Estado = "Activo",
-                UrlArchivo = url,                // 🔥 URL pública
-                ExpedienteId = expediente.ExpedienteId,
-                FechaVencimiento = null          // opcional: puedes agregar campo input si quieres
-            };
+                UrlArchivo = url,
+                ExpedienteId = expDb.ExpedienteId,
+                FechaVencimiento = fechaVencimiento
+            });
 
-            Db.Documentos.Add(nuevoDoc);
+            await DocumentoService.UpdateExpedienteStatusAsync(expDb.ExpedienteId, usuarioId);
 
-            await DocumentoService.UpdateExpedienteStatusAsync(expediente.ExpedienteId, usuarioId);
+            archivoTemporal = null;
+            nombreArchivoTemporal = null;
+            fechaVencimiento = null;
         }
 
+        await db.SaveChangesAsync();
+        Navigation.NavigateTo($"/expedientes/details/{expDb.ExpedienteId}");
+    }
 
-        await Db.SaveChangesAsync();
-        Navigation.NavigateTo($"/expedientes/details/{expediente.ExpedienteId}");
+    private async Task UpdateTaskStatus(TareaTramite task)
+    {
+        if (!canManageTasks) return;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        if (task.Estado == "Done" && task.FechaCierre == null)
+        {
+            task.FechaCierre = DateTime.Now;
+        }
+
+        if (task.Estado == "Pending")
+        {
+            task.FechaCierre = null;
+        }
+
+        db.TareaTramites.Update(task);
+        await db.SaveChangesAsync();
     }
 
     private async Task EliminarDocumento(int id)
     {
+        if (!canDeleteDocuments) return;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
         int usuarioId = await Session.GetUserIdAsync();
 
-        var doc = await Db.Documentos.FindAsync(id);
+        var doc = await db.Documentos.FindAsync(id);
         if (doc == null) return;
 
         if (!string.IsNullOrEmpty(doc.UrlArchivo))
@@ -312,44 +461,70 @@ else
             await DocumentoService.DeleteFileAsync(doc.UrlArchivo, doc.ExpedienteId, usuarioId);
         }
 
-        Db.Documentos.Remove(doc);
-        await Db.SaveChangesAsync();
+        db.Documentos.Remove(doc);
+        await db.SaveChangesAsync();
 
-        documentos = await Db.Documentos
+        documentos = await db.Documentos
             .Where(d => d.ExpedienteId == ExpedienteId)
             .ToListAsync();
 
         await DocumentoService.UpdateExpedienteStatusAsync(ExpedienteId, usuarioId);
-    }
 
+        expediente = await db.Expedientes
+            .Include(e => e.Propiedad)
+            .Include(e => e.Cliente).ThenInclude(c => c.Usuario)
+            .Include(e => e.Agente)
+            .Include(e => e.Documentos)
+            .FirstOrDefaultAsync(e => e.ExpedienteId == ExpedienteId);
+
+        documentos = expediente?.Documentos?.ToList() ?? new List<Documento>();
+    }
 
     private async Task AgregarTarea()
     {
+        if (!canManageTasks) return;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
         nuevaTarea.ExpedienteId = ExpedienteId;
         nuevaTarea.FechaInicio = DateTime.Now;
 
-        Db.TareaTramites.Add(nuevaTarea);
-        await Db.SaveChangesAsync();
+        if (nuevaTarea.Estado == "Done" && nuevaTarea.FechaCierre == null)
+        {
+            nuevaTarea.FechaCierre = DateTime.Now;
+        }
 
-        tareas = await Db.TareaTramites.Where(t => t.ExpedienteId == ExpedienteId).ToListAsync();
+        db.TareaTramites.Add(nuevaTarea);
+        await db.SaveChangesAsync();
+
+        tareas = await db.TareaTramites
+            .Where(t => t.ExpedienteId == ExpedienteId)
+            .ToListAsync();
+
         nuevaTarea = new();
     }
 
     private async Task EliminarTarea(int id)
     {
-        var tarea = await Db.TareaTramites.FindAsync(id);
+        if (!canManageTasks) return;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var tarea = await db.TareaTramites.FindAsync(id);
         if (tarea != null)
         {
-            Db.TareaTramites.Remove(tarea);
-            await Db.SaveChangesAsync();
-            tareas = await Db.TareaTramites.Where(t => t.ExpedienteId == ExpedienteId).ToListAsync();
+            db.TareaTramites.Remove(tarea);
+            await db.SaveChangesAsync();
+
+            tareas = await db.TareaTramites
+                .Where(t => t.ExpedienteId == ExpedienteId)
+                .ToListAsync();
         }
     }
 
     private void Volver() => Navigation.NavigateTo("/expedientes");
 }
+
 <style>
-    /* Tabla moderna */
     .modern-doc-table {
         border-collapse: separate;
         border-spacing: 0 6px;
@@ -370,7 +545,6 @@ else
             vertical-align: middle;
         }
 
-    /* Badges para estados */
     .status-badge {
         background-color: #0d505a;
         color: white;
@@ -379,14 +553,12 @@ else
         font-size: 0.75rem;
     }
 
-    /* Contenedor de botones */
     .btn-group-docs {
         display: flex;
         gap: 8px;
         justify-content: center;
     }
 
-    /* Botón base */
     .btn-doc {
         padding: 5px 12px;
         font-size: 0.78rem;
@@ -400,7 +572,6 @@ else
         gap: 4px;
     }
 
-    /* Botón verde corporativo: Download */
     .btn-doc-download {
         color: #0d505a;
         border-color: #0d505a;
@@ -412,7 +583,6 @@ else
             color: white;
         }
 
-    /* Botón rojo: Delete */
     .btn-doc-delete {
         color: #a01d1d;
         border-color: #a01d1d;
@@ -423,6 +593,4 @@ else
             background: #a01d1d;
             color: white;
         }
-
-
 </style>

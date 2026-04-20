@@ -356,3 +356,16 @@
         width: 1px;
         background: rgba(255,255,255,0.35);
     }
+.login-container {
+    width: 480px;
+}
+
+.login-container {
+    width: 480px;
+}
+
+.login-header .title {
+    white-space: nowrap;
+}
+
+

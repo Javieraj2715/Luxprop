@@ -14,7 +14,7 @@
 <div class="properties-page">
     <div class="page-header">
         
-        @if (role == "admin" || role == "agent")
+        @if (role == "admin" || role == "agent" || role == "seller")
         {
             <a href="/properties/create" class="btn btn-primary">Create Property</a>
         }
@@ -84,7 +84,9 @@
                                     </a>
 
                                     <!-- Edit (solo admin o agent) -->
-                                    @if (role == "admin" || role == "agent")
+                                    @if (role == "admin" ||
+                                                                (role == "agent" && property.AgenteId == Session.CurrentUserId) ||
+                                                                (role == "seller" && property.SellerId == Session.CurrentUserId))
                                     {
                                         <a href="/properties/edit/@property.PropiedadId"
                                            class="btn btn-sm btn-outline-primary">
@@ -95,15 +97,41 @@
                                     <!-- Mostrar expediente si existe, si no permitir crear -->
                                     @if (property.Expedientes != null && property.Expedientes.Any())
                                     {
-                                        var expedienteId = property.Expedientes.First().ExpedienteId;
-                                        @if (role == "admin" || role == "agent")
+                                        Expediente? selectedCase = null;
+
+                                        if (role == "buyer")
                                         {
-                                            <a href="/expedientes/details/@expedienteId"
+                                            selectedCase = property.Expedientes
+                                            .FirstOrDefault(e => e.Cliente != null && e.Cliente.UsuarioId == Session.CurrentUserId);
+                                        }
+                                        else if (role == "seller")
+                                        {
+                                            selectedCase = property.Expedientes.FirstOrDefault();
+                                        }
+                                        else if (role == "agent")
+                                        {
+                                            selectedCase = property.Expedientes
+                                            .FirstOrDefault(e => e.AgenteId == Session.CurrentUserId);
+                                        }
+                                        else if (role == "admin")
+                                        {
+                                            selectedCase = property.Expedientes.FirstOrDefault();
+                                        }
+
+                                        if (selectedCase != null)
+                                        {
+                                            <a href="/expedientes/details/@selectedCase.ExpedienteId"
                                                class="btn btn-sm btn-outline-success">
                                                 <i class="bi bi-folder2-open"></i> View Case
                                             </a>
                                         }
-                                        
+                                        else if (role == "admin" || role == "agent")
+                                        {
+                                            <a href="/expedientes/create/@property.PropiedadId"
+                                               class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-folder-plus"></i> Create Case
+                                            </a>
+                                        }
                                     }
                                     else if (role == "admin" || role == "agent")
                                     {
@@ -149,30 +177,41 @@
 
             properties = await PropiedadService.GetAllAsync();
 
-            if (role == "agent")
+            if (role == "admin")
+            {
+                properties = properties.ToList();
+            }
+            else if (role == "agent")
             {
                 properties = properties
                     .Where(p => p.AgenteId == userId)
                     .ToList();
             }
-
-            if (role == "buyer")
+            else if (role == "seller")
             {
-                cliente = await ExpedienteService.GetClientByIdAsync(userId);
-
-                expedientesCliente = await ExpedienteService.GetAllAsync();
-
-                expedientesCliente = expedientesCliente
-                    .Where(ec => ec.ClienteId == cliente.ClienteId)
+                properties = properties
+                    .Where(p => p.SellerId == userId)
                     .ToList();
+            }
+            else if (role == "buyer")
+            {
+                var allCases = await ExpedienteService.GetAllAsync();
 
-                var propiedadesIds = expedientesCliente
-                    .Select(ec => ec.PropiedadId)
+                var buyerPropertyIds = allCases
+                    .Where(e => e.Cliente != null &&
+                                e.Cliente.UsuarioId == userId &&
+                                e.PropiedadId != null)
+                    .Select(e => e.PropiedadId!.Value)
+                    .Distinct()
                     .ToList();
 
                 properties = properties
-                    .Where(p => propiedadesIds.Contains(p.PropiedadId))
+                    .Where(p => buyerPropertyIds.Contains(p.PropiedadId))
                     .ToList();
+            }
+            else
+            {
+                properties = new List<Propiedad>();
             }
         }
         catch (Exception ex)

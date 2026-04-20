@@ -3,7 +3,7 @@
 @using Luxprop.Data.Models
 @using Luxprop.Services
 @using Microsoft.EntityFrameworkCore
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject NavigationManager Navigation
 @inject SessionService SessionService
 
@@ -171,16 +171,19 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Asignar a la variable global
+        await using var db = await DbFactory.CreateDbContextAsync();
+
         role = NormalizeRole(await SessionService.GetUserRoleAsync());
 
         // ADMIN → cargar agentes
         if (role == "admin")
         {
-            agentes = await Db.Usuarios
-                .Where(u => u.UsuarioRols
-                    .Any(ur => ur.Rol.Nombre.ToLower() == "agente"
-                            || ur.Rol.Nombre.ToLower() == "agent"))
+            agentes = await db.Usuarios
+                .Where(u =>
+                    u.Activo == true &&
+                    u.UsuarioRols.Any(ur =>
+                        ur.Rol.Nombre.ToLower() == "agente" ||
+                        ur.Rol.Nombre.ToLower() == "agent"))
                 .ToListAsync();
         }
 
@@ -188,6 +191,13 @@
         if (role == "agent")
         {
             property.AgenteId = await SessionService.GetUserIdAsync();
+        }
+
+        // SELLER → asignarse automáticamente como dueño de la propiedad
+        if (role == "seller")
+        {
+            property.SellerId = await SessionService.GetUserIdAsync();
+            property.EstadoPublicacion = "Pending";
         }
 
         await LoadData();
@@ -211,6 +221,8 @@
         {
             "administrador" or "admin" => "admin",
             "agente" or "agent" => "agent",
+            "seller" or "vendedor" => "seller",
+            "buyer" or "comprador" => "buyer",
             _ => string.Empty
         };
     }
@@ -218,10 +230,11 @@
 
     private async Task LoadData()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         try
         {
-            agents = Db.Usuarios.ToList();
-            locations = Db.Ubicacions.ToList();
+            agents = db.Usuarios.ToList();
+            locations = db.Ubicacions.ToList();
         }
         catch (Exception ex)
         {
@@ -232,14 +245,32 @@
 
     private async Task HandleSubmit()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         isLoading = true;
         errorMessage = string.Empty;
 
         try
         {
+            var currentUserId = await SessionService.GetUserIdAsync();
+            var currentRole = NormalizeRole(await SessionService.GetUserRoleAsync());
+
             property.MlsId = GenerateMlsId();
-            Db.Propiedads.Add(property);
-            await Db.SaveChangesAsync();
+
+            if (currentRole == "seller")
+            {
+                property.SellerId = currentUserId;
+                property.AgenteId = null; // aún no asignado
+                property.EstadoPublicacion = "Pending";
+            }
+
+            if (currentRole == "agent")
+            {
+                property.AgenteId = currentUserId;
+            }
+
+            db.Propiedads.Add(property);
+            await db.SaveChangesAsync();
+
             Navigation.NavigateTo("/properties");
         }
         catch (Exception ex)

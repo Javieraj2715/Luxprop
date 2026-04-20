@@ -4,7 +4,7 @@
 @using Luxprop.Data.Models
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.EntityFrameworkCore
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 @inject Luxprop.Services.SessionService SessionService
@@ -263,6 +263,7 @@
 
     private async Task LoadDashboardData()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         try
         {
             await LoadProperties();
@@ -271,7 +272,7 @@
             docsToExpire = await DashboardService.GetDocumentsToExpireAsync(7);
             upcomingReminders = await DashboardService.GetUpcomingRemindersAsync(7);
 
-            var properties = await Db.Propiedads.ToListAsync();
+            var properties = await db.Propiedads.ToListAsync();
             totalProperties = properties.Count;
             activeProperties = properties.Count(p => p.EstadoPublicacion == "Active");
             recentProperties = properties.OrderByDescending(p => p.PropiedadId).Take(5).ToList();
@@ -345,7 +346,8 @@
 
     private async Task LoadProperties()
     {
-        var list = await Db.Propiedads.ToListAsync();
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var list = await db.Propiedads.ToListAsync();
         totalProperties = list.Count;
         activeProperties = list.Count(p => p.EstadoPublicacion == "Active");
         recentProperties = list.OrderByDescending(p => p.PropiedadId).Take(5).ToList();

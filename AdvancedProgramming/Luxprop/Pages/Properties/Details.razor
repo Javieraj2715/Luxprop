@@ -4,7 +4,7 @@
 @using Luxprop.Data.Models
 @using Luxprop.Services
 @using Microsoft.EntityFrameworkCore
-@inject LuxpropContext Db
+@inject IDbContextFactory<LuxpropContext> DbFactory
 @inject NavigationManager Navigation
 @inject IUtilsService UtilsService
 @inject Luxprop.Services.SessionService SessionService
@@ -86,9 +86,10 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
         role = await UtilsService.NormalizeRole(await SessionService.GetUserRoleAsync());
 
-        property = await Db.Propiedads
+        property = await db.Propiedads
             .Include(p => p.Ubicacion)
             .FirstOrDefaultAsync(p => p.PropiedadId == id);
     }
@@ -107,8 +108,15 @@ else
 
     private async Task DeleteTour()
     {
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        var propDb = await db.Propiedads.FirstOrDefaultAsync(p => p.PropiedadId == id);
+        if (propDb == null) return;
+
+        propDb.Recorrido360Url = null;
+        await db.SaveChangesAsync();
+
         property.Recorrido360Url = null;
-        await Db.SaveChangesAsync();
         StateHasChanged();
     }
 }
